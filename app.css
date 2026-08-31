@@ -1,0 +1,109 @@
+:root {
+  --fg: #1a1a1a;
+  --bg: #ffffff;
+  --muted: #666;
+  --linea: #e2e2e2;
+  --ingreso: #1b7f4d;
+  --gasto: #b23b3b;
+  --acento: #2b6cb0;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  color: var(--fg);
+  background: var(--bg);
+  line-height: 1.4;
+}
+
+#app { max-width: 720px; margin: 0 auto; padding: 1rem; }
+
+button {
+  font: inherit;
+  padding: 0.4rem 0.7rem;
+  border: 1px solid var(--linea);
+  border-radius: 6px;
+  background: #f6f6f6;
+  cursor: pointer;
+}
+button.activo { background: var(--acento); color: #fff; border-color: var(--acento); }
+button:disabled { opacity: 0.6; cursor: default; }
+
+input, select {
+  font: inherit;
+  padding: 0.4rem;
+  border: 1px solid var(--linea);
+  border-radius: 6px;
+}
+
+.error { color: var(--gasto); min-height: 1.2em; margin: 0.5rem 0; }
+.vacio { color: var(--muted); }
+
+form.login {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 320px;
+  margin: 4rem auto 0;
+}
+form.login h1 { text-align: center; margin: 0 0 0.5rem; }
+
+.barra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--linea);
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.selector-periodo, .nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+.periodo-label { font-weight: 600; margin: 0 0.3rem; }
+
+.form-inline, .form-mov {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.lista { display: flex; flex-direction: column; gap: 0.4rem; }
+.fila {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.5rem;
+  border: 1px solid var(--linea);
+  border-radius: 6px;
+}
+.fila .nombre { font-weight: 600; }
+.fila .cat, .fila .fecha, .fila .tipo { color: var(--muted); font-size: 0.9rem; }
+.fila .monto { margin-left: auto; font-variant-numeric: tabular-nums; }
+.fila.tipo-ingreso .monto { color: var(--ingreso); }
+.fila.tipo-gasto .monto { color: var(--gasto); }
+.punto { width: 12px; height: 12px; border-radius: 50%; background: var(--muted); display: inline-block; }
+
+.cifras { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+.tarjeta {
+  flex: 1 1 160px;
+  border: 1px solid var(--linea);
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.tarjeta .titulo { color: var(--muted); font-size: 0.9rem; }
+.tarjeta .valor { font-size: 1.4rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.tarjeta.ingreso .valor { color: var(--ingreso); }
+.tarjeta.gasto .valor { color: var(--gasto); }
