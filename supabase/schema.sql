@@ -22,6 +22,36 @@ create table movimientos (
 );
 create index movimientos_user_fecha_idx on movimientos (user_id, fecha);
 
+-- Garantiza a nivel de base de datos que, si el movimiento referencia una
+-- categoría, esa categoría pertenezca al mismo user_id que el movimiento.
+-- No depende de la UI ni de RLS. La FK de arriba mantiene ON DELETE SET NULL.
+create or replace function movimientos_categoria_mismo_usuario()
+returns trigger
+language plpgsql
+as $$
+begin
+  if new.categoria_id is not null then
+    if not exists (
+      select 1
+      from categorias c
+      where c.id = new.categoria_id
+        and c.user_id = new.user_id
+    ) then
+      raise exception
+        'La categoría % no pertenece al usuario del movimiento (%).',
+        new.categoria_id, new.user_id
+        using errcode = 'check_violation';
+    end if;
+  end if;
+  return new;
+end;
+$$;
+
+create trigger trg_movimientos_categoria_usuario
+before insert or update of categoria_id, user_id on movimientos
+for each row
+execute function movimientos_categoria_mismo_usuario();
+
 alter table categorias enable row level security;
 alter table movimientos enable row level security;
 
