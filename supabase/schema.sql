@@ -15,12 +15,16 @@ create table movimientos (
   nombre text not null,
   monto numeric(12,2) not null check (monto >= 0),
   tipo text not null check (tipo in ('gasto','ingreso')),
+  -- modo 'estimado' = lo planeado para el período; 'real' = lo que ocurrió.
+  -- 'pagado' solo tiene sentido en modo estimado (se ignora en modo real).
+  modo text not null default 'real' check (modo in ('real','estimado')),
+  pagado boolean not null default false,
   categoria_id uuid references categorias on delete set null,
   fecha date not null,
   detalle text,
   created_at timestamptz not null default now()
 );
-create index movimientos_user_fecha_idx on movimientos (user_id, fecha);
+create index movimientos_user_modo_fecha_idx on movimientos (user_id, modo, fecha);
 
 -- Garantiza a nivel de base de datos que, si el movimiento referencia una
 -- categoría, esa categoría pertenezca al mismo user_id que el movimiento.
