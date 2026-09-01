@@ -59,3 +59,12 @@ create policy "propios" on categorias for all
   using (user_id = auth.uid()) with check (user_id = auth.uid());
 create policy "propios" on movimientos for all
   using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+-- Permisos a nivel de tabla para los roles de la API (PostgREST). Sin estos
+-- GRANT, una consulta autenticada devuelve 42501 "permission denied" aunque
+-- RLS y las políticas estén bien. Las políticas de arriba siguen filtrando
+-- fila por fila: un usuario solo ve/edita lo suyo.
+grant usage on schema public to anon, authenticated;
+grant select, insert, update, delete on all tables in schema public to anon, authenticated;
+alter default privileges in schema public
+  grant select, insert, update, delete on tables to anon, authenticated;
