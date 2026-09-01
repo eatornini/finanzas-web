@@ -21,7 +21,7 @@ function fmt(n) {
   });
 }
 
-export async function montarMovimientos(contenedor, { rango }) {
+export async function montarMovimientos(contenedor, { rango, modo }) {
   limpiar(contenedor);
 
   const error = el("p", { class: "error", role: "alert" });
@@ -35,21 +35,21 @@ export async function montarMovimientos(contenedor, { rango }) {
     // Se seguirá intentando en recargar(); el alta permite "Sin categoría".
   }
 
-  contenedor.prepend(formularioNuevo(categorias, recargar, error, rango));
+  contenedor.prepend(formularioNuevo(categorias, recargar, error, rango, modo));
   await recargar();
 
   async function recargar() {
     error.textContent = "";
     limpiar(lista);
     try {
-      const movimientos = await listarMovimientos(rango);
+      const movimientos = await listarMovimientos({ ...rango, modo });
       if (movimientos.length === 0) {
         lista.append(
           el("p", { class: "vacio", text: "No hay movimientos en este período." })
         );
         return;
       }
-      for (const m of movimientos) lista.append(fila(m, recargar, error));
+      for (const m of movimientos) lista.append(fila(m, recargar, error, modo));
     } catch (e) {
       error.textContent = "No se pudo conectar. ";
       error.append(el("button", { text: "Reintentar", onClick: recargar }));
@@ -63,7 +63,7 @@ function opcionesCategoria(categorias, tipo) {
     .map((c) => el("option", { value: c.id, text: c.nombre }));
 }
 
-function formularioNuevo(categorias, recargar, error, rango) {
+function formularioNuevo(categorias, recargar, error, rango, modo) {
   const nombre = el("input", { placeholder: "Nombre", required: "true" });
   const monto = el("input", {
     type: "number",
@@ -110,6 +110,8 @@ function formularioNuevo(categorias, recargar, error, rango) {
             nombre: nombre.value.trim(),
             monto: montoNum,
             tipo: tipo.value,
+            modo,
+            pagado: false,
             categoria_id: categoria.value || null,
             fecha: fecha.value || hoyISO(),
             detalle: detalle.value.trim() || null,
@@ -130,7 +132,7 @@ function formularioNuevo(categorias, recargar, error, rango) {
   );
 }
 
-function fila(m, recargar, error) {
+function fila(m, recargar, error, modo) {
   const signo = m.tipo === "ingreso" ? "+" : "−";
   const cat = m.categoria ? m.categoria.nombre : "Sin categoría";
 
@@ -162,12 +164,31 @@ function fila(m, recargar, error) {
     },
   });
 
-  return el("div", { class: `fila tipo-${m.tipo}` }, [
+  const controles = [editarMonto, borrar];
+  if (modo === "estimado") {
+    const togglePagado = el("button", {
+      class: m.pagado ? "pagado" : "pendiente",
+      text: m.pagado ? "Pagado" : "Pendiente",
+      onClick: async () => {
+        try {
+          await actualizarMovimiento(m.id, { pagado: !m.pagado });
+          await recargar();
+        } catch (e) {
+          error.textContent = "No se pudo actualizar el estado.";
+        }
+      },
+    });
+    controles.unshift(togglePagado);
+  }
+
+  const claseFila =
+    modo === "estimado" && m.pagado ? `fila tipo-${m.tipo} fila-pagada` : `fila tipo-${m.tipo}`;
+
+  return el("div", { class: claseFila }, [
     el("span", { class: "nombre", text: m.nombre }),
     el("span", { class: "cat", text: cat }),
     el("span", { class: "fecha", text: m.fecha }),
     el("span", { class: "monto", text: `${signo} ${fmt(m.monto)}` }),
-    editarMonto,
-    borrar,
+    ...controles,
   ]);
 }

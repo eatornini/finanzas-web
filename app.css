@@ -6,6 +6,8 @@
   --ingreso: #1b7f4d;
   --gasto: #b23b3b;
   --acento: #2b6cb0;
+  --estimado: #6b46c1;
+  --pendiente: #b7791f;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
@@ -59,7 +61,7 @@ form.login h1 { text-align: center; margin: 0 0 0.5rem; }
   margin-bottom: 0.75rem;
 }
 
-.selector-periodo, .nav {
+.selector-periodo, .selector-modo, .nav {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
@@ -67,6 +69,17 @@ form.login h1 { text-align: center; margin: 0 0 0.5rem; }
   margin-bottom: 0.75rem;
 }
 .periodo-label { font-weight: 600; margin: 0 0.3rem; }
+
+/* Modo estimado: el botón activo usa el acento violeta para que se note
+   de un vistazo en qué modo se está trabajando. */
+.selector-modo button.activo {
+  background: var(--estimado);
+  border-color: var(--estimado);
+}
+.selector-modo button:first-child.activo {
+  background: var(--acento);
+  border-color: var(--acento);
+}
 
 .form-inline, .form-mov {
   display: flex;
@@ -91,9 +104,34 @@ form.login h1 { text-align: center; margin: 0 0 0.5rem; }
 .fila .monto { margin-left: auto; font-variant-numeric: tabular-nums; }
 .fila.tipo-ingreso .monto { color: var(--ingreso); }
 .fila.tipo-gasto .monto { color: var(--gasto); }
+.fila.fila-pagada { opacity: 0.55; }
 .punto { width: 12px; height: 12px; border-radius: 50%; background: var(--muted); display: inline-block; }
 
+button.pagado {
+  background: #e7f4ec;
+  border-color: var(--ingreso);
+  color: var(--ingreso);
+}
+button.pendiente {
+  background: #fdf3e2;
+  border-color: var(--pendiente);
+  color: var(--pendiente);
+}
+
 .cifras { display: flex; flex-wrap: wrap; gap: 0.75rem; }
+.grupo-resumen {
+  flex: 1 1 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: stretch;
+}
+.grupo-resumen h3 {
+  flex: 1 1 100%;
+  margin: 0.5rem 0 0;
+  font-size: 1rem;
+  color: var(--muted);
+}
 .tarjeta {
   flex: 1 1 160px;
   border: 1px solid var(--linea);

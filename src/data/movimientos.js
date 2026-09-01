@@ -2,24 +2,35 @@ import { supabase } from "../supabaseClient.js";
 import { verificar } from "./_helpers.js";
 
 const SELECT =
-  "id, nombre, monto, tipo, categoria_id, fecha, detalle, categoria:categorias(nombre, color)";
+  "id, nombre, monto, tipo, modo, pagado, categoria_id, fecha, detalle, " +
+  "categoria:categorias(nombre, color)";
 
-export async function listarMovimientos({ desde, hasta }) {
+export async function listarMovimientos({ desde, hasta, modo }) {
   return verificar(
     await supabase
       .from("movimientos")
       .select(SELECT)
+      .eq("modo", modo)
       .gte("fecha", desde)
       .lte("fecha", hasta)
       .order("fecha", { ascending: false })
   );
 }
 
-export async function crearMovimiento({ nombre, monto, tipo, categoria_id, fecha, detalle }) {
+export async function crearMovimiento({
+  nombre,
+  monto,
+  tipo,
+  modo,
+  pagado = false,
+  categoria_id,
+  fecha,
+  detalle,
+}) {
   return verificar(
     await supabase
       .from("movimientos")
-      .insert({ nombre, monto, tipo, categoria_id, fecha, detalle })
+      .insert({ nombre, monto, tipo, modo, pagado, categoria_id, fecha, detalle })
       .select(SELECT)
       .single()
   );

@@ -22,6 +22,8 @@ export function montarShell(contenedor) {
   let fechaRef = new Date();
   let tipo = "mes";
   let activa = "movimientos";
+  let modo =
+    localStorage.getItem("finanzas.modo") === "estimado" ? "estimado" : "real";
 
   const cuerpo = el("main", { class: "cuerpo" });
   const etiqueta = el("span", { class: "periodo-label" });
@@ -30,7 +32,7 @@ export function montarShell(contenedor) {
     const rango = rangoPeriodo(fechaRef, tipo);
     etiqueta.textContent = etiquetaPeriodo(fechaRef, tipo);
     const vista = VISTAS.find((v) => v.clave === activa);
-    vista.montar(cuerpo, { rango, tipo, fechaRef });
+    vista.montar(cuerpo, { rango, tipo, fechaRef, modo });
   }
 
   const btnTipo = {};
@@ -49,6 +51,28 @@ export function montarShell(contenedor) {
       btnTipo[t].classList.toggle("activo", tipo === t);
     }
   }
+
+  const btnModo = {};
+  for (const m of ["real", "estimado"]) {
+    btnModo[m] = el("button", {
+      text: m === "real" ? "Real" : "Estimado",
+      onClick: () => {
+        modo = m;
+        localStorage.setItem("finanzas.modo", modo);
+        sincronizarModo();
+        pintarVista();
+      },
+    });
+  }
+  function sincronizarModo() {
+    for (const m of ["real", "estimado"]) {
+      btnModo[m].classList.toggle("activo", modo === m);
+    }
+  }
+  const selectorModo = el("div", { class: "selector-modo" }, [
+    btnModo.real,
+    btnModo.estimado,
+  ]);
 
   const selectorPeriodo = el("div", { class: "selector-periodo" }, [
     btnTipo.semana,
@@ -93,8 +117,9 @@ export function montarShell(contenedor) {
     el("button", { class: "salir", text: "Salir", onClick: () => cerrarSesion() }),
   ]);
 
-  contenedor.append(barra, selectorPeriodo, nav, cuerpo);
+  contenedor.append(barra, selectorPeriodo, selectorModo, nav, cuerpo);
   sincronizarTipo();
+  sincronizarModo();
   sincronizarNav();
   pintarVista();
 }
