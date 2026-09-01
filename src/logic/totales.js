@@ -12,3 +12,15 @@ export function calcularTotales(movimientos) {
   gastos = r2(gastos);
   return { ingresos, gastos, balance: r2(ingresos - gastos) };
 }
+
+// Para el modo estimado: separa lo ya pagado de lo pendiente.
+// Cada bloque tiene la misma forma que calcularTotales.
+export function desglosarPorPago(movimientos) {
+  const pagados = movimientos.filter((m) => m.pagado === true);
+  const pendientes = movimientos.filter((m) => m.pagado !== true);
+  return {
+    total: calcularTotales(movimientos),
+    pagado: calcularTotales(pagados),
+    pendiente: calcularTotales(pendientes),
+  };
+}

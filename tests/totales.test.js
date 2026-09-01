@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { calcularTotales } from "../src/logic/totales.js";
+import { calcularTotales, desglosarPorPago } from "../src/logic/totales.js";
 
 describe("calcularTotales", () => {
   it("lista vacía da todo en cero", () => {
@@ -45,5 +45,38 @@ describe("calcularTotales", () => {
       { monto: 5, tipo: "otro" },
     ];
     expect(calcularTotales(movs)).toEqual({ ingresos: 15.75, gastos: 0, balance: 15.75 });
+  });
+});
+
+describe("desglosarPorPago", () => {
+  it("lista vacía: total, pagado y pendiente en cero", () => {
+    expect(desglosarPorPago([])).toEqual({
+      total: { ingresos: 0, gastos: 0, balance: 0 },
+      pagado: { ingresos: 0, gastos: 0, balance: 0 },
+      pendiente: { ingresos: 0, gastos: 0, balance: 0 },
+    });
+  });
+
+  it("separa pagados de pendientes y el total es la suma de ambos", () => {
+    const movs = [
+      { monto: 2000, tipo: "ingreso", pagado: true },
+      { monto: 500, tipo: "gasto", pagado: true },
+      { monto: 300, tipo: "gasto", pagado: false },
+      { monto: 100, tipo: "ingreso", pagado: false },
+    ];
+    const d = desglosarPorPago(movs);
+    expect(d.pagado).toEqual({ ingresos: 2000, gastos: 500, balance: 1500 });
+    expect(d.pendiente).toEqual({ ingresos: 100, gastos: 300, balance: -200 });
+    expect(d.total).toEqual({ ingresos: 2100, gastos: 800, balance: 1300 });
+  });
+
+  it("trata pagado ausente o falsy como pendiente", () => {
+    const movs = [
+      { monto: 50, tipo: "gasto" },
+      { monto: 50, tipo: "gasto", pagado: null },
+    ];
+    const d = desglosarPorPago(movs);
+    expect(d.pendiente.gastos).toBe(100);
+    expect(d.pagado.gastos).toBe(0);
   });
 });
