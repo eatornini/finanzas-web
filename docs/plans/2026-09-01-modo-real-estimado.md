@@ -1,5 +1,10 @@
 # Modo real / estimado — Plan de implementación
 
+> **ESTADO: IMPLEMENTADO Y DESPLEGADO — 2026-09-01.**
+> Las 8 tareas están hechas (commits `5833c7c`, `9fee369`, `806c9bc`), la
+> migración `001` fue aplicada al proyecto Supabase y verificada en local y en
+> producción. Este documento queda como referencia de diseño.
+
 > Ejecutar tarea por tarea. Los pasos usan casilleros `- [ ]` para seguimiento.
 > Todas las rutas son relativas a `finanzas-web/`.
 
