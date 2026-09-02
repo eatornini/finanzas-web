@@ -6,6 +6,7 @@ import {
   periodoSiguiente,
   etiquetaPeriodo,
 } from "../logic/periodos.js";
+import { flechaIzq, flechaDer, salir } from "./iconos.js";
 import { montarMovimientos } from "./movimientosView.js";
 import { montarResumen } from "./resumenView.js";
 import { montarCategorias } from "./categoriasView.js";
@@ -78,23 +79,31 @@ export function montarShell(contenedor) {
     btnTipo.semana,
     btnTipo.mes,
     btnTipo["año"],
-    el("button", {
-      text: "‹",
-      "aria-label": "Período anterior",
-      onClick: () => {
-        fechaRef = periodoAnterior(fechaRef, tipo);
-        pintarVista();
+    el(
+      "button",
+      {
+        class: "boton--icono",
+        "aria-label": "Período anterior",
+        onClick: () => {
+          fechaRef = periodoAnterior(fechaRef, tipo);
+          pintarVista();
+        },
       },
-    }),
+      [flechaIzq()]
+    ),
     etiqueta,
-    el("button", {
-      text: "›",
-      "aria-label": "Período siguiente",
-      onClick: () => {
-        fechaRef = periodoSiguiente(fechaRef, tipo);
-        pintarVista();
+    el(
+      "button",
+      {
+        class: "boton--icono",
+        "aria-label": "Período siguiente",
+        onClick: () => {
+          fechaRef = periodoSiguiente(fechaRef, tipo);
+          pintarVista();
+        },
       },
-    }),
+      [flechaDer()]
+    ),
   ]);
 
   const botonesNav = VISTAS.map((v) =>
@@ -108,16 +117,34 @@ export function montarShell(contenedor) {
     })
   );
   function sincronizarNav() {
-    botonesNav.forEach((b, i) => b.classList.toggle("activo", VISTAS[i].clave === activa));
+    botonesNav.forEach((b, i) =>
+      b.classList.toggle("activo", VISTAS[i].clave === activa)
+    );
   }
   const nav = el("nav", { class: "nav" }, botonesNav);
 
-  const barra = el("header", { class: "barra" }, [
-    el("strong", { text: "Finanzas" }),
-    el("button", { class: "salir", text: "Salir", onClick: () => cerrarSesion() }),
+  const btnSalir = el(
+    "button",
+    { class: "salir", onClick: () => cerrarSesion() },
+    [salir(), "Salir"]
+  );
+
+  const sidebar = el("aside", { class: "sidebar" }, [
+    el("div", { class: "marca", text: "Finanzas" }),
+    nav,
+    btnSalir,
   ]);
 
-  contenedor.append(barra, selectorPeriodo, selectorModo, nav, cuerpo);
+  const topbar = el("header", { class: "topbar" }, [
+    el("div", { class: "marca-movil", text: "Finanzas" }),
+    selectorPeriodo,
+    selectorModo,
+  ]);
+
+  const principal = el("div", { class: "principal" }, [topbar, cuerpo]);
+  const app = el("div", { class: "app" }, [sidebar, principal]);
+
+  contenedor.append(app);
   sincronizarTipo();
   sincronizarModo();
   sincronizarNav();

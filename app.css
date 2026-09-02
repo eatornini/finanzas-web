@@ -96,22 +96,128 @@
 
 @layer layout {
   #app {
-    max-width: 720px;
-    margin: 0 auto;
-    padding: var(--esp-4);
+    min-height: 100vh;
   }
 
-  .barra {
+  .app {
+    display: grid;
+    grid-template-columns: var(--ancho-sidebar) 1fr;
+    min-height: 100vh;
+  }
+
+  .sidebar {
     display: flex;
+    flex-direction: column;
+    gap: var(--esp-2);
+    padding: var(--esp-5) var(--esp-4);
+    background: var(--bg-elevado);
+    border-right: 1px solid var(--borde);
+  }
+
+  .sidebar .marca {
+    font-size: var(--txt-lg);
+    font-weight: 700;
+    padding: 0 var(--esp-2) var(--esp-3);
+  }
+
+  .sidebar .nav {
+    flex-direction: column;
+    gap: var(--esp-1);
+    margin-bottom: 0;
+  }
+
+  .sidebar .nav button {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .sidebar .salir {
+    margin-top: auto;
+  }
+
+  .principal {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .topbar {
+    display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    justify-content: space-between;
+    gap: var(--esp-3) var(--esp-5);
+    padding: var(--esp-4) var(--esp-5);
     border-bottom: 1px solid var(--borde);
-    padding-bottom: var(--esp-3);
-    margin-bottom: var(--esp-4);
+  }
+
+  .topbar .selector-periodo,
+  .topbar .selector-modo {
+    margin-bottom: 0;
+  }
+
+  .marca-movil {
+    display: none;
+    font-weight: 700;
+    font-size: var(--txt-lg);
   }
 
   .cuerpo {
-    display: block;
+    width: 100%;
+    max-width: var(--ancho-cuerpo);
+    margin: 0 auto;
+    padding: var(--esp-5);
+    flex: 1;
+  }
+
+  @media (max-width: 720px) {
+    .app {
+      grid-template-columns: 1fr;
+    }
+
+    .sidebar {
+      position: fixed;
+      inset: auto 0 0 0;
+      z-index: 10;
+      flex-direction: row;
+      align-items: center;
+      gap: var(--esp-2);
+      padding: var(--esp-2);
+      border-right: 0;
+      border-top: 1px solid var(--borde);
+    }
+
+    .sidebar .marca {
+      display: none;
+    }
+
+    .sidebar .nav {
+      flex: 1;
+      flex-direction: row;
+    }
+
+    .sidebar .nav button {
+      justify-content: center;
+    }
+
+    .sidebar .salir {
+      margin-top: 0;
+    }
+
+    .principal {
+      padding-bottom: 64px;
+    }
+
+    .marca-movil {
+      display: block;
+    }
+
+    .topbar {
+      padding: var(--esp-3) var(--esp-4);
+    }
+
+    .cuerpo {
+      padding: var(--esp-4);
+    }
   }
 }
 
