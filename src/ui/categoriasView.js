@@ -39,7 +39,11 @@ function formularioNueva(recargar, error) {
     el("option", { value: "ingreso", text: "Ingreso" }),
   ]);
   const color = el("input", { type: "color", value: "#888888" });
-  const boton = el("button", { type: "submit", text: "Agregar" });
+  const boton = el("button", {
+    type: "submit",
+    class: "boton--primario",
+    text: "Agregar",
+  });
 
   return el(
     "form",

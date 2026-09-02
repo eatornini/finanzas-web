@@ -90,7 +90,11 @@ function formularioNuevo(categorias, recargar, error, rango, modo) {
   });
   const fecha = el("input", { type: "date", value: hoyISO() });
   const detalle = el("input", { placeholder: "Detalle (opcional)" });
-  const boton = el("button", { type: "submit", text: "Agregar" });
+  const boton = el("button", {
+    type: "submit",
+    class: "boton--primario",
+    text: "Agregar",
+  });
 
   return el(
     "form",

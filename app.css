@@ -235,7 +235,7 @@
     color: var(--fg);
   }
 
-  button:hover:not(:disabled) {
+  button:hover:not(:disabled):not(.activo):not(.boton--primario) {
     background: var(--bg-sutil);
   }
 
@@ -254,6 +254,10 @@
     background: var(--acento);
     border-color: var(--acento);
     color: var(--acento-fg);
+  }
+
+  button.boton--primario:hover:not(:disabled) {
+    filter: brightness(1.08);
   }
 
   .boton--icono {

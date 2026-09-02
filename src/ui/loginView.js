@@ -17,7 +17,11 @@ export function montarLogin(contenedor) {
     required: "true",
     autocomplete: "current-password",
   });
-  const boton = el("button", { type: "submit", text: "Entrar" });
+  const boton = el("button", {
+    type: "submit",
+    class: "boton--primario",
+    text: "Entrar",
+  });
 
   const form = el(
     "form",
