@@ -6,6 +6,7 @@ import {
   eliminarMovimiento,
 } from "../data/movimientos.js";
 import { listarCategorias } from "../data/categorias.js";
+import { lapiz, basura } from "./iconos.js";
 
 function hoyISO() {
   const d = new Date();
@@ -94,7 +95,7 @@ function formularioNuevo(categorias, recargar, error, rango, modo) {
   return el(
     "form",
     {
-      class: "form-mov",
+      class: "form-mov form-grid",
       onSubmit: async (ev) => {
         ev.preventDefault();
         error.textContent = "";
@@ -136,48 +137,64 @@ function fila(m, recargar, error, modo) {
   const signo = m.tipo === "ingreso" ? "+" : "−";
   const cat = m.categoria ? m.categoria.nombre : "Sin categoría";
 
-  const editarMonto = el("button", {
-    text: "Editar monto",
-    onClick: async () => {
-      const nuevo = prompt("Nuevo monto", m.monto);
-      const num = Number(nuevo);
-      if (nuevo === null || !Number.isFinite(num) || num < 0) return;
-      try {
-        await actualizarMovimiento(m.id, { monto: num });
-        await recargar();
-      } catch (e) {
-        error.textContent = "No se pudo actualizar el movimiento.";
-      }
+  const editarMonto = el(
+    "button",
+    {
+      class: "boton--icono",
+      "aria-label": "Editar monto",
+      title: "Editar monto",
+      onClick: async () => {
+        const nuevo = prompt("Nuevo monto", m.monto);
+        const num = Number(nuevo);
+        if (nuevo === null || !Number.isFinite(num) || num < 0) return;
+        try {
+          await actualizarMovimiento(m.id, { monto: num });
+          await recargar();
+        } catch (e) {
+          error.textContent = "No se pudo actualizar el movimiento.";
+        }
+      },
     },
-  });
+    [lapiz()]
+  );
 
-  const borrar = el("button", {
-    text: "Borrar",
-    onClick: async () => {
-      if (!confirm(`¿Borrar "${m.nombre}"?`)) return;
-      try {
-        await eliminarMovimiento(m.id);
-        await recargar();
-      } catch (e) {
-        error.textContent = "No se pudo borrar el movimiento.";
-      }
+  const borrar = el(
+    "button",
+    {
+      class: "boton--icono",
+      "aria-label": `Borrar ${m.nombre}`,
+      title: "Borrar",
+      onClick: async () => {
+        if (!confirm(`¿Borrar "${m.nombre}"?`)) return;
+        try {
+          await eliminarMovimiento(m.id);
+          await recargar();
+        } catch (e) {
+          error.textContent = "No se pudo borrar el movimiento.";
+        }
+      },
     },
-  });
+    [basura()]
+  );
 
   const controles = [editarMonto, borrar];
   if (modo === "estimado") {
-    const togglePagado = el("button", {
-      class: m.pagado ? "pagado" : "pendiente",
-      text: m.pagado ? "Pagado" : "Pendiente",
-      onClick: async () => {
-        try {
-          await actualizarMovimiento(m.id, { pagado: !m.pagado });
-          await recargar();
-        } catch (e) {
-          error.textContent = "No se pudo actualizar el estado.";
-        }
+    const togglePagado = el(
+      "button",
+      {
+        class: m.pagado ? "pagado" : "pendiente",
+        text: m.pagado ? "Pagado" : "Pendiente",
+        onClick: async () => {
+          try {
+            await actualizarMovimiento(m.id, { pagado: !m.pagado });
+            await recargar();
+          } catch (e) {
+            error.textContent = "No se pudo actualizar el estado.";
+          }
+        },
       },
-    });
+      []
+    );
     controles.unshift(togglePagado);
   }
 
@@ -189,6 +206,6 @@ function fila(m, recargar, error, modo) {
     el("span", { class: "cat", text: cat }),
     el("span", { class: "fecha", text: m.fecha }),
     el("span", { class: "monto", text: `${signo} ${fmt(m.monto)}` }),
-    ...controles,
+    el("div", { class: "acciones" }, controles),
   ]);
 }

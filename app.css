@@ -328,12 +328,19 @@
     text-align: center;
   }
 
-  .form-inline,
-  .form-mov {
+  .form-inline {
     display: flex;
     flex-wrap: wrap;
     gap: var(--esp-3);
     align-items: center;
+    margin-bottom: var(--esp-5);
+  }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: var(--esp-3);
+    align-items: end;
     margin-bottom: var(--esp-5);
   }
 
@@ -344,8 +351,8 @@
   }
 
   .fila {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: 1fr auto auto auto auto;
     gap: var(--esp-2) var(--esp-3);
     align-items: center;
     padding: var(--esp-3) var(--esp-4);
@@ -366,8 +373,15 @@
   }
 
   .fila .monto {
-    margin-left: auto;
     font-variant-numeric: tabular-nums;
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .fila .acciones {
+    display: flex;
+    gap: var(--esp-1);
+    align-items: center;
   }
 
   .fila.tipo-ingreso .monto {
@@ -454,6 +468,20 @@
   @media (max-width: 720px) {
     .grupos {
       grid-template-columns: 1fr;
+    }
+
+    .fila {
+      grid-template-columns: 1fr auto;
+    }
+
+    .fila .cat,
+    .fila .fecha {
+      grid-column: 1 / -1;
+    }
+
+    .fila .acciones {
+      grid-column: 1 / -1;
+      justify-content: flex-end;
     }
   }
 
