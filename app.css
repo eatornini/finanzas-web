@@ -1,147 +1,371 @@
-:root {
-  --fg: #1a1a1a;
-  --bg: #ffffff;
-  --muted: #666;
-  --linea: #e2e2e2;
-  --ingreso: #1b7f4d;
-  --gasto: #b23b3b;
-  --acento: #2b6cb0;
-  --estimado: #6b46c1;
-  --pendiente: #b7791f;
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+@layer tokens, base, layout, componentes, utilidades;
+
+@layer tokens {
+  :root {
+    color-scheme: light dark;
+
+    --bg: #ffffff;
+    --bg-elevado: #ffffff;
+    --bg-sutil: #f5f5f6;
+    --fg: #18181b;
+    --fg-tenue: #6b6b74;
+    --borde: #e4e4e7;
+    --acento: #2563a8;
+    --acento-fg: #ffffff;
+
+    --ingreso: #1b7f4d;
+    --gasto: #c0392b;
+    --estimado: #6b46c1;
+    --pendiente: #a56a12;
+
+    --esp-1: 4px;
+    --esp-2: 8px;
+    --esp-3: 12px;
+    --esp-4: 16px;
+    --esp-5: 24px;
+    --esp-6: 32px;
+
+    --r-sm: 6px;
+    --r-md: 10px;
+    --r-lg: 14px;
+
+    --txt-sm: 0.875rem;
+    --txt-base: 1rem;
+    --txt-lg: 1.25rem;
+    --txt-xl: 1.75rem;
+
+    --sombra-1: 0 1px 2px rgba(0, 0, 0, 0.04), 0 2px 8px rgba(0, 0, 0, 0.06);
+
+    --ancho-cuerpo: 960px;
+    --ancho-sidebar: 240px;
+
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #121214;
+      --bg-elevado: #1c1c1f;
+      --bg-sutil: #202024;
+      --fg: #ececee;
+      --fg-tenue: #9a9aa2;
+      --borde: #2e2e33;
+      --acento: #5b9bd8;
+      --acento-fg: #0b0b0c;
+
+      --ingreso: #46c98a;
+      --gasto: #f27a72;
+      --estimado: #a78bfa;
+      --pendiente: #e0a44a;
+
+      --sombra-1: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 10px rgba(0, 0, 0, 0.45);
+    }
+  }
 }
 
-* { box-sizing: border-box; }
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
 
-body {
-  margin: 0;
-  color: var(--fg);
-  background: var(--bg);
-  line-height: 1.4;
-}
+  body {
+    margin: 0;
+    color: var(--fg);
+    background: var(--bg);
+    font-size: var(--txt-base);
+    line-height: 1.5;
+  }
 
-#app { max-width: 720px; margin: 0 auto; padding: 1rem; }
+  h1,
+  h2,
+  h3 {
+    line-height: 1.25;
+  }
 
-button {
-  font: inherit;
-  padding: 0.4rem 0.7rem;
-  border: 1px solid var(--linea);
-  border-radius: 6px;
-  background: #f6f6f6;
-  cursor: pointer;
-}
-button.activo { background: var(--acento); color: #fff; border-color: var(--acento); }
-button:disabled { opacity: 0.6; cursor: default; }
+  button {
+    font: inherit;
+    cursor: pointer;
+  }
 
-input, select {
-  font: inherit;
-  padding: 0.4rem;
-  border: 1px solid var(--linea);
-  border-radius: 6px;
-}
-
-.error { color: var(--gasto); min-height: 1.2em; margin: 0.5rem 0; }
-.vacio { color: var(--muted); }
-
-form.login {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  max-width: 320px;
-  margin: 4rem auto 0;
-}
-form.login h1 { text-align: center; margin: 0 0 0.5rem; }
-
-.barra {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid var(--linea);
-  padding-bottom: 0.5rem;
-  margin-bottom: 0.75rem;
+  input,
+  select {
+    font: inherit;
+    color: var(--fg);
+  }
 }
 
-.selector-periodo, .selector-modo, .nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  align-items: center;
-  margin-bottom: 0.75rem;
-}
-.periodo-label { font-weight: 600; margin: 0 0.3rem; }
+@layer layout {
+  #app {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: var(--esp-4);
+  }
 
-/* Modo estimado: el botón activo usa el acento violeta para que se note
-   de un vistazo en qué modo se está trabajando. */
-.selector-modo button.activo {
-  background: var(--estimado);
-  border-color: var(--estimado);
-}
-.selector-modo button:first-child.activo {
-  background: var(--acento);
-  border-color: var(--acento);
-}
+  .barra {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--borde);
+    padding-bottom: var(--esp-3);
+    margin-bottom: var(--esp-4);
+  }
 
-.form-inline, .form-mov {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  align-items: center;
-  margin-bottom: 1rem;
+  .cuerpo {
+    display: block;
+  }
 }
 
-.lista { display: flex; flex-direction: column; gap: 0.4rem; }
-.fila {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  align-items: center;
-  padding: 0.5rem;
-  border: 1px solid var(--linea);
-  border-radius: 6px;
-}
-.fila .nombre { font-weight: 600; }
-.fila .cat, .fila .fecha, .fila .tipo { color: var(--muted); font-size: 0.9rem; }
-.fila .monto { margin-left: auto; font-variant-numeric: tabular-nums; }
-.fila.tipo-ingreso .monto { color: var(--ingreso); }
-.fila.tipo-gasto .monto { color: var(--gasto); }
-.fila.fila-pagada { opacity: 0.55; }
-.punto { width: 12px; height: 12px; border-radius: 50%; background: var(--muted); display: inline-block; }
+@layer componentes {
+  button,
+  .boton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--esp-2);
+    padding: var(--esp-2) var(--esp-3);
+    border: 1px solid var(--borde);
+    border-radius: var(--r-sm);
+    background: var(--bg-elevado);
+    color: var(--fg);
+  }
 
-button.pagado {
-  background: #e7f4ec;
-  border-color: var(--ingreso);
-  color: var(--ingreso);
-}
-button.pendiente {
-  background: #fdf3e2;
-  border-color: var(--pendiente);
-  color: var(--pendiente);
-}
+  button:hover:not(:disabled) {
+    background: var(--bg-sutil);
+  }
 
-.cifras { display: flex; flex-wrap: wrap; gap: 0.75rem; }
-.grupo-resumen {
-  flex: 1 1 100%;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  align-items: stretch;
+  button:disabled {
+    opacity: 0.55;
+    cursor: default;
+  }
+
+  button.activo {
+    background: var(--acento);
+    border-color: var(--acento);
+    color: var(--acento-fg);
+  }
+
+  .boton--primario {
+    background: var(--acento);
+    border-color: var(--acento);
+    color: var(--acento-fg);
+  }
+
+  .boton--icono {
+    width: 36px;
+    height: 36px;
+    padding: var(--esp-2);
+    border-color: transparent;
+    background: transparent;
+    color: var(--fg-tenue);
+  }
+
+  .boton--icono:hover:not(:disabled) {
+    background: var(--bg-sutil);
+    color: var(--fg);
+  }
+
+  .boton--icono svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  :where(button, input, select):focus-visible {
+    outline: 2px solid var(--acento);
+    outline-offset: 1px;
+  }
+
+  input,
+  select {
+    padding: var(--esp-2) var(--esp-3);
+    border: 1px solid var(--borde);
+    border-radius: var(--r-sm);
+    background: var(--bg);
+  }
+
+  .selector-periodo,
+  .selector-modo,
+  .nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--esp-2);
+    align-items: center;
+    margin-bottom: var(--esp-4);
+  }
+
+  .periodo-label {
+    font-weight: 600;
+    min-width: 9ch;
+    text-align: center;
+  }
+
+  .selector-modo button.activo {
+    background: var(--estimado);
+    border-color: var(--estimado);
+    color: #fff;
+  }
+
+  .selector-modo button:first-child.activo {
+    background: var(--acento);
+    border-color: var(--acento);
+    color: var(--acento-fg);
+  }
+
+  .error {
+    color: var(--gasto);
+    min-height: 1.2em;
+    margin: var(--esp-3) 0;
+  }
+
+  .vacio {
+    color: var(--fg-tenue);
+    padding: var(--esp-4);
+    text-align: center;
+  }
+
+  .form-inline,
+  .form-mov {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--esp-3);
+    align-items: center;
+    margin-bottom: var(--esp-5);
+  }
+
+  .lista {
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-2);
+  }
+
+  .fila {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--esp-2) var(--esp-3);
+    align-items: center;
+    padding: var(--esp-3) var(--esp-4);
+    border: 1px solid var(--borde);
+    border-radius: var(--r-md);
+    background: var(--bg-elevado);
+  }
+
+  .fila .nombre {
+    font-weight: 600;
+  }
+
+  .fila .cat,
+  .fila .fecha,
+  .fila .tipo {
+    color: var(--fg-tenue);
+    font-size: var(--txt-sm);
+  }
+
+  .fila .monto {
+    margin-left: auto;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .fila.tipo-ingreso .monto {
+    color: var(--ingreso);
+  }
+
+  .fila.tipo-gasto .monto {
+    color: var(--gasto);
+  }
+
+  .fila.fila-pagada {
+    opacity: 0.55;
+  }
+
+  .punto {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--fg-tenue);
+    display: inline-block;
+  }
+
+  button.pagado {
+    background: color-mix(in srgb, var(--ingreso) 15%, transparent);
+    border-color: var(--ingreso);
+    color: var(--ingreso);
+  }
+
+  button.pendiente {
+    background: color-mix(in srgb, var(--pendiente) 18%, transparent);
+    border-color: var(--pendiente);
+    color: var(--pendiente);
+  }
+
+  .cifras {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--esp-4);
+  }
+
+  .grupo-resumen {
+    flex: 1 1 100%;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--esp-4);
+    align-items: stretch;
+  }
+
+  .grupo-resumen h3 {
+    flex: 1 1 100%;
+    margin: var(--esp-3) 0 0;
+    font-size: var(--txt-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--fg-tenue);
+  }
+
+  .tarjeta {
+    flex: 1 1 160px;
+    border: 1px solid var(--borde);
+    border-radius: var(--r-lg);
+    padding: var(--esp-4);
+    background: var(--bg-elevado);
+    box-shadow: var(--sombra-1);
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-1);
+  }
+
+  .tarjeta .titulo {
+    color: var(--fg-tenue);
+    font-size: var(--txt-sm);
+  }
+
+  .tarjeta .valor {
+    font-size: var(--txt-xl);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .tarjeta.ingreso .valor {
+    color: var(--ingreso);
+  }
+
+  .tarjeta.gasto .valor {
+    color: var(--gasto);
+  }
+
+  form.login {
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-4);
+    max-width: 340px;
+    margin: 10vh auto 0;
+    padding: var(--esp-6);
+    border: 1px solid var(--borde);
+    border-radius: var(--r-lg);
+    background: var(--bg-elevado);
+    box-shadow: var(--sombra-1);
+  }
+
+  form.login h1 {
+    text-align: center;
+    margin: 0;
+    font-size: var(--txt-xl);
+  }
 }
-.grupo-resumen h3 {
-  flex: 1 1 100%;
-  margin: 0.5rem 0 0;
-  font-size: 1rem;
-  color: var(--muted);
-}
-.tarjeta {
-  flex: 1 1 160px;
-  border: 1px solid var(--linea);
-  border-radius: 8px;
-  padding: 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-}
-.tarjeta .titulo { color: var(--muted); font-size: 0.9rem; }
-.tarjeta .valor { font-size: 1.4rem; font-weight: 700; font-variant-numeric: tabular-nums; }
-.tarjeta.ingreso .valor { color: var(--ingreso); }
-.tarjeta.gasto .valor { color: var(--gasto); }
