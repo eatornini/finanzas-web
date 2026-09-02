@@ -397,11 +397,20 @@
   }
 
   .punto {
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    border-radius: 999px;
     background: var(--fg-tenue);
     display: inline-block;
+    flex: none;
+  }
+
+  .fila--categoria {
+    grid-template-columns: auto 1fr auto auto;
+  }
+
+  .fila--categoria .tipo {
+    text-transform: capitalize;
   }
 
   button.pagado {
@@ -482,6 +491,15 @@
     .fila .acciones {
       grid-column: 1 / -1;
       justify-content: flex-end;
+    }
+
+    .fila--categoria {
+      grid-template-columns: auto 1fr auto;
+    }
+
+    .fila--categoria .tipo {
+      grid-column: 1 / -1;
+      margin-left: calc(18px + var(--esp-3));
     }
   }
 

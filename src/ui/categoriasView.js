@@ -5,6 +5,7 @@ import {
   actualizarCategoria,
   eliminarCategoria,
 } from "../data/categorias.js";
+import { lapiz, basura } from "./iconos.js";
 
 export function montarCategorias(contenedor) {
   limpiar(contenedor);
@@ -75,38 +76,50 @@ function fila(c, recargar, error) {
   const punto = el("span", { class: "punto" });
   if (c.color) punto.style.background = c.color;
 
-  const renombrar = el("button", {
-    text: "Renombrar",
-    onClick: async () => {
-      const nuevo = prompt("Nuevo nombre", c.nombre);
-      if (nuevo === null || !nuevo.trim()) return;
-      try {
-        await actualizarCategoria(c.id, { nombre: nuevo.trim() });
-        await recargar();
-      } catch (e) {
-        error.textContent = "No se pudo actualizar la categoría.";
-      }
+  const renombrar = el(
+    "button",
+    {
+      class: "boton--icono",
+      "aria-label": `Renombrar ${c.nombre}`,
+      title: "Renombrar",
+      onClick: async () => {
+        const nuevo = prompt("Nuevo nombre", c.nombre);
+        if (nuevo === null || !nuevo.trim()) return;
+        try {
+          await actualizarCategoria(c.id, { nombre: nuevo.trim() });
+          await recargar();
+        } catch (e) {
+          error.textContent = "No se pudo actualizar la categoría.";
+        }
+      },
     },
-  });
+    [lapiz()]
+  );
 
-  const borrar = el("button", {
-    text: "Borrar",
-    onClick: async () => {
-      if (!confirm(`¿Borrar "${c.nombre}"? Los movimientos quedarán sin categoría.`)) return;
-      try {
-        await eliminarCategoria(c.id);
-        await recargar();
-      } catch (e) {
-        error.textContent = "No se pudo borrar la categoría.";
-      }
+  const borrar = el(
+    "button",
+    {
+      class: "boton--icono",
+      "aria-label": `Borrar ${c.nombre}`,
+      title: "Borrar",
+      onClick: async () => {
+        if (!confirm(`¿Borrar "${c.nombre}"? Los movimientos quedarán sin categoría.`))
+          return;
+        try {
+          await eliminarCategoria(c.id);
+          await recargar();
+        } catch (e) {
+          error.textContent = "No se pudo borrar la categoría.";
+        }
+      },
     },
-  });
+    [basura()]
+  );
 
-  return el("div", { class: `fila tipo-${c.tipo}` }, [
+  return el("div", { class: `fila fila--categoria tipo-${c.tipo}` }, [
     punto,
     el("span", { class: "nombre", text: c.nombre }),
     el("span", { class: "tipo", text: c.tipo }),
-    renombrar,
-    borrar,
+    el("div", { class: "acciones" }, [renombrar, borrar]),
   ]);
 }
