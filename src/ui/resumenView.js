@@ -19,9 +19,11 @@ function tarjeta(titulo, valor, clase) {
 function grupo(titulo, t) {
   return el("div", { class: "grupo-resumen" }, [
     el("h3", { text: titulo }),
-    tarjeta("Ingresos", t.ingresos, "ingreso"),
-    tarjeta("Gastos", t.gastos, "gasto"),
-    tarjeta("Balance", t.balance, t.balance >= 0 ? "ingreso" : "gasto"),
+    el("div", { class: "tarjetas-grupo" }, [
+      tarjeta("Ingresos", t.ingresos, "ingreso"),
+      tarjeta("Gastos", t.gastos, "gasto"),
+      tarjeta("Balance", t.balance, t.balance >= 0 ? "ingreso" : "gasto"),
+    ]),
   ]);
 }
 
@@ -37,16 +39,20 @@ export async function montarResumen(contenedor, { rango, modo }) {
     if (modo === "estimado") {
       const d = desglosarPorPago(movimientos);
       cifras.append(
-        grupo("Estimado", d.total),
-        grupo("Pagado", d.pagado),
-        grupo("Pendiente", d.pendiente)
+        el("div", { class: "grupos" }, [
+          grupo("Estimado", d.total),
+          grupo("Pagado", d.pagado),
+          grupo("Pendiente", d.pendiente),
+        ])
       );
     } else {
       const { ingresos, gastos, balance } = calcularTotales(movimientos);
       cifras.append(
-        tarjeta("Ingresos", ingresos, "ingreso"),
-        tarjeta("Gastos", gastos, "gasto"),
-        tarjeta("Balance", balance, balance >= 0 ? "ingreso" : "gasto")
+        el("div", { class: "tarjetas-fila" }, [
+          tarjeta("Ingresos", ingresos, "ingreso"),
+          tarjeta("Gastos", gastos, "gasto"),
+          tarjeta("Balance", balance, balance >= 0 ? "ingreso" : "gasto"),
+        ])
       );
     }
   } catch (e) {
