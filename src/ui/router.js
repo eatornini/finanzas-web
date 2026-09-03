@@ -13,6 +13,6 @@ export async function iniciarRouter() {
 function pintar(sesion) {
   const contenedor = raiz();
   limpiar(contenedor);
-  if (sesion) montarShell(contenedor);
+  if (sesion) montarShell(contenedor, sesion);
   else montarLogin(contenedor);
 }
