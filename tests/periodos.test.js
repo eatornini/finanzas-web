@@ -4,6 +4,7 @@ import {
   periodoAnterior,
   periodoSiguiente,
   etiquetaPeriodo,
+  etiquetaCorta,
 } from "../src/logic/periodos.js";
 
 // Nota: los meses de Date() son base 0 (7 = agosto).
@@ -108,5 +109,18 @@ describe("etiquetaPeriodo", () => {
 describe("tipo inválido", () => {
   it("lanza error", () => {
     expect(() => rangoPeriodo(new Date(2026, 0, 1), "quincena")).toThrow();
+  });
+});
+
+describe("etiquetaCorta", () => {
+  it("mes: abreviatura de 3 letras", () => {
+    expect(etiquetaCorta(new Date(2026, 8, 4), "mes")).toBe("sep");
+  });
+  it("año: el año como texto", () => {
+    expect(etiquetaCorta(new Date(2026, 8, 4), "año")).toBe("2026");
+  });
+  it("semana: dd/mm del lunes de esa semana", () => {
+    // 2026-09-04 es viernes; el lunes de esa semana es 2026-08-31.
+    expect(etiquetaCorta(new Date(2026, 8, 4), "semana")).toBe("31/08");
   });
 });

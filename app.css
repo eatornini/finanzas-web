@@ -933,6 +933,42 @@
     transition: background-color 0.12s ease, border-color 0.12s ease;
   }
 
+  button.fila--resultado {
+    width: 100%;
+    text-align: left;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+  }
+
+  /* --- Buscador global --- */
+  .buscador-cabecera {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--esp-3);
+    margin-bottom: var(--esp-4);
+  }
+
+  .buscador-cabecera .campo-busqueda {
+    flex: 1;
+    min-width: 180px;
+  }
+
+  .buscador-cabecera .campo-busqueda input {
+    width: 100%;
+  }
+
+  .buscador-vacio {
+    text-align: center;
+    padding: var(--esp-6) 0;
+  }
+
+  .buscador-cargar-mas {
+    display: block;
+    margin: var(--esp-4) auto 0;
+  }
+
   .fila:hover {
     background: var(--bg-sutil);
     border-color: color-mix(in srgb, var(--fg) 12%, var(--borde));
@@ -1146,6 +1182,56 @@
     color: var(--gasto);
   }
 
+  /* --- Reportes: comparativa entre períodos y tendencia --- */
+  .reportes-vista {
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-5);
+  }
+
+  .comparativa-tarjetas {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: var(--esp-4);
+    margin-top: var(--esp-3);
+  }
+
+  .tarjeta-delta {
+    font-size: var(--txt-xs);
+    color: var(--fg-tenue);
+  }
+
+  .tarjeta-delta--positivo {
+    color: var(--ingreso);
+  }
+
+  .tarjeta-delta--negativo {
+    color: var(--gasto);
+  }
+
+  .tendencia-grafico {
+    margin-top: var(--esp-3);
+  }
+
+  .tendencia-grafico svg {
+    width: 100%;
+    height: auto;
+  }
+
+  .tendencia-barra--ingreso {
+    fill: var(--ingreso);
+  }
+
+  .tendencia-barra--gasto {
+    fill: var(--gasto);
+  }
+
+  .tendencia-eje-etiqueta {
+    fill: var(--fg-tenue);
+    font-size: 4.5px;
+    text-anchor: middle;
+  }
+
   /* --- Panel lateral: resumen, dona, actividad --- */
   /* Peso visual reducido a propósito: la lista de movimientos es el
      contenido principal, este panel es apoyo secundario. */
@@ -1252,6 +1338,29 @@
     height: 92px;
     flex: none;
     border-radius: 50%;
+  }
+
+  .dona-svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .dona-segmento {
+    cursor: pointer;
+    transition: opacity 0.15s, stroke-width 0.15s;
+  }
+
+  .dona-segmento:focus-visible {
+    outline: 2px solid var(--acento);
+    outline-offset: 2px;
+  }
+
+  .dona-segmento--atenuado {
+    opacity: 0.35;
+  }
+
+  .dona-segmento--activo {
+    stroke-width: 24;
   }
 
   .dona-centro {
@@ -1696,6 +1805,10 @@
   }
   .dona-item:hover {
     color: var(--acento);
+  }
+  .dona-item--activo {
+    color: var(--acento);
+    font-weight: var(--peso-semibold);
   }
 
   /* --- Shell: toggle "incluir inactivos" --- */

@@ -59,6 +59,18 @@ export function periodoSiguiente(fechaRef, tipo) {
   return desplazar(fechaRef, tipo, 1);
 }
 
+// Etiqueta corta para ejes de gráfico (vs. etiquetaPeriodo, más larga).
+export function etiquetaCorta(fecha, tipo) {
+  if (tipo === "año") return `${fecha.getFullYear()}`;
+  if (tipo === "mes") return MESES_ABBR[fecha.getMonth()];
+  if (tipo === "semana") {
+    const lunes = rangoPeriodo(fecha, "semana").desde;
+    const d = new Date(`${lunes}T00:00:00`);
+    return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
+  }
+  throw new Error(`tipo de período inválido: ${tipo}`);
+}
+
 export function etiquetaPeriodo(fechaRef, tipo) {
   const d = fechaRef;
   if (tipo === "mes") return `${MESES[d.getMonth()]} ${d.getFullYear()}`;
