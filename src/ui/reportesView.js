@@ -15,12 +15,13 @@ function tarjetaComparativa(titulo, actual, anterior, claseBase, invertir = fals
   const { porcentaje } = calcularVariacion(actual, anterior);
   let textoDelta = "— vs. período anterior";
   let claseDelta = "";
-  if (porcentaje !== null && porcentaje !== 0) {
-    const subio = porcentaje > 0;
-    const signo = subio ? "▲" : "▼";
+  if (porcentaje !== null) {
+    const signo = porcentaje > 0 ? "▲" : porcentaje < 0 ? "▼" : "•";
     textoDelta = `${signo} ${Math.abs(Math.round(porcentaje))}% vs. período anterior`;
-    const positivo = invertir ? !subio : subio;
-    claseDelta = positivo ? "tarjeta-delta--positivo" : "tarjeta-delta--negativo";
+    if (porcentaje !== 0) {
+      const positivo = invertir ? porcentaje < 0 : porcentaje > 0;
+      claseDelta = positivo ? "tarjeta-delta--positivo" : "tarjeta-delta--negativo";
+    }
   }
   return el("div", { class: `tarjeta ${claseBase}` }, [
     el("span", { class: "titulo", text: titulo }),
