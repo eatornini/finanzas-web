@@ -1,5 +1,11 @@
 @layer tokens, base, layout, componentes, utilidades;
 
+@font-face {
+  font-family: "Material Symbols";
+  src: url("assets/fonts/material-symbols.woff2") format("woff2");
+  font-display: swap;
+}
+
 @layer tokens {
   :root {
     color-scheme: light dark;
@@ -1435,5 +1441,213 @@
     text-align: center;
     margin: 0;
     font-size: var(--txt-xl);
+  }
+}
+
+/* ============================================================
+   Paridad con la app Android — Fase 1
+   ============================================================ */
+@layer componentes {
+  .ms-icono {
+    font-family: "Material Symbols";
+    font-weight: normal;
+    font-style: normal;
+    font-size: 1.25rem;
+    line-height: 1;
+    letter-spacing: normal;
+    white-space: nowrap;
+    vertical-align: middle;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* --- Formulario de categoría --- */
+  .cat-preview {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--r-md);
+    color: #fff;
+    flex: none;
+  }
+  .cat-preview .cat-emoji {
+    font-size: 20px;
+  }
+  .cat-swatches {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--esp-1);
+    margin: var(--esp-1) 0;
+  }
+  .cat-swatch {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    border-radius: var(--r-sm);
+    border: 2px solid transparent;
+    cursor: pointer;
+  }
+  .cat-swatch:hover {
+    border-color: var(--fg-tenue);
+  }
+  .cat-icono-fila {
+    display: flex;
+    align-items: center;
+    gap: var(--esp-2);
+    margin: var(--esp-1) 0;
+  }
+  .cat-emoji-input {
+    width: 3rem;
+    text-align: center;
+  }
+  .campo-etiqueta {
+    display: block;
+    font-size: var(--txt-sm);
+    color: var(--fg-tenue);
+    margin-bottom: var(--esp-1);
+  }
+  .cat-iconos-grilla {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
+    gap: var(--esp-1);
+    max-height: 180px;
+    overflow-y: auto;
+    padding: var(--esp-1);
+    border: 1px solid var(--borde);
+    border-radius: var(--r-md);
+  }
+  .cat-icono-op {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 1;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: var(--r-sm);
+    background: transparent;
+    cursor: pointer;
+    color: var(--fg);
+  }
+  .cat-icono-op.activo {
+    border-color: var(--acento);
+    background: var(--acento-tenue);
+  }
+
+  /* --- Vista Categorías --- */
+  .categorias-cabecera {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--esp-3);
+    margin-bottom: var(--esp-3);
+    flex-wrap: wrap;
+  }
+  .categorias-grupo {
+    margin-bottom: var(--esp-5);
+  }
+  .categorias-grupo h3 {
+    margin: 0 0 var(--esp-2);
+  }
+  .fila--categoria .cat-fila-icono {
+    display: inline-flex;
+    width: 28px;
+    justify-content: center;
+  }
+  .fila--categoria .cat-fila-icono .cat-emoji {
+    font-size: 18px;
+  }
+
+  /* --- Formulario de movimiento: chips de categoría --- */
+  .mov-chips,
+  .mov-lista-cats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--esp-1);
+  }
+  .mov-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--esp-1);
+    padding: var(--esp-1) var(--esp-3);
+    border: 1px solid var(--borde);
+    border-radius: var(--r-pill);
+    background: transparent;
+    cursor: pointer;
+    font-size: var(--txt-sm);
+    color: var(--fg);
+  }
+  .mov-chip .ms-icono,
+  .mov-chip .cat-emoji {
+    font-size: 16px;
+  }
+  .mov-chip.activo {
+    border-color: var(--chip-color, var(--acento));
+    background: color-mix(in srgb, var(--chip-color, var(--acento)) 15%, transparent);
+  }
+  .mov-chip--mas,
+  .mov-chip--nueva {
+    font-weight: var(--peso-semibold);
+  }
+  .campo--check {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--esp-2);
+  }
+
+  /* --- Lista de movimientos: inactivos --- */
+  .fila--inactiva {
+    opacity: 0.55;
+  }
+  .badge-inactivo {
+    font-size: var(--txt-xs);
+    padding: 1px 6px;
+    border-radius: var(--r-pill);
+    background: color-mix(in srgb, currentColor 15%, transparent);
+    margin-left: var(--esp-2);
+  }
+  .fila .estado-on,
+  .fila .estado-off {
+    opacity: 0.5;
+  }
+  .fila .estado-on:hover,
+  .fila .estado-off:hover {
+    opacity: 1;
+  }
+
+  /* --- Resumen: ocultar total y drill-down --- */
+  .boton-ojo {
+    margin-left: auto;
+  }
+  .dona-item {
+    display: flex;
+    align-items: center;
+    gap: var(--esp-2);
+    width: 100%;
+    background: transparent;
+    border: 0;
+    padding: var(--esp-1) 0;
+    cursor: pointer;
+    color: inherit;
+    text-align: left;
+    font: inherit;
+  }
+  .dona-item:hover {
+    color: var(--acento);
+  }
+
+  /* --- Shell: toggle "incluir inactivos" --- */
+  .boton--chip {
+    padding: var(--esp-1) var(--esp-3);
+    border-radius: var(--r-pill);
+    border: 1px solid var(--borde);
+    background: transparent;
+    cursor: pointer;
+    font-size: var(--txt-sm);
+    color: var(--fg);
+  }
+  .boton--chip.activo {
+    background: var(--acento-tenue);
+    border-color: var(--acento);
   }
 }
