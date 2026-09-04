@@ -3,15 +3,23 @@ import { verificar } from "./_helpers.js";
 
 export async function listarCategorias() {
   return verificar(
-    await supabase.from("categorias").select("*").order("nombre")
+    await supabase.from("categorias").select("*").order("orden").order("nombre")
   );
 }
 
-export async function crearCategoria({ nombre, tipo, color }) {
+export async function crearCategoria({
+  nombre,
+  tipo,
+  modo,
+  color,
+  emoji = null,
+  icono = null,
+  orden = 0,
+}) {
   return verificar(
     await supabase
       .from("categorias")
-      .insert({ nombre, tipo, color })
+      .insert({ nombre, tipo, modo, color, emoji, icono, orden })
       .select()
       .single()
   );
@@ -19,12 +27,7 @@ export async function crearCategoria({ nombre, tipo, color }) {
 
 export async function actualizarCategoria(id, cambios) {
   return verificar(
-    await supabase
-      .from("categorias")
-      .update(cambios)
-      .eq("id", id)
-      .select()
-      .single()
+    await supabase.from("categorias").update(cambios).eq("id", id).select().single()
   );
 }
 

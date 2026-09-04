@@ -1,5 +1,16 @@
 const r2 = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
 
+// Selecciona los movimientos que participan en los totales/resumen,
+// replicando la regla de la app Android (debeParticiparEnCalculos):
+// - un movimiento activo (o sin dato) siempre cuenta;
+// - un inactivo solo cuenta en modo estimado con "incluir inactivos".
+export function filtrarParaCalculos(movimientos, { modo, incluirInactivos }) {
+  return movimientos.filter((m) => {
+    if (m.activo !== false) return true;
+    return modo === "estimado" && incluirInactivos === true;
+  });
+}
+
 export function calcularTotales(movimientos) {
   let ingresos = 0;
   let gastos = 0;

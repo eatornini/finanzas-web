@@ -38,6 +38,15 @@ export const basura = () =>
   ]);
 export const check = () => svg("M20 6L9 17l-5-5");
 export const cerrarIcono = () => svg(["M18 6 6 18", "M6 6l12 12"]);
+export const ojoIcono = () =>
+  svg(["M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z", "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"]);
+export const ojoTachadoIcono = () =>
+  svg([
+    "M3 3l18 18",
+    "M10.6 10.6a3 3 0 0 0 4.2 4.2",
+    "M9.9 4.5A9.6 9.6 0 0 1 12 4c6.5 0 10 8 10 8a17.7 17.7 0 0 1-2.4 3.4",
+    "M6.6 6.6A17.8 17.8 0 0 0 2 12s3.5 7 10 7a9.7 9.7 0 0 0 4.1-.9",
+  ]);
 
 // --- Iconos añadidos para el rediseño ---
 export const listaIcono = () =>

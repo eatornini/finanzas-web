@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { calcularTotales, desglosarPorPago } from "../src/logic/totales.js";
+import { calcularTotales, desglosarPorPago, filtrarParaCalculos } from "../src/logic/totales.js";
 
 describe("calcularTotales", () => {
   it("lista vacía da todo en cero", () => {
@@ -78,5 +78,39 @@ describe("desglosarPorPago", () => {
     const d = desglosarPorPago(movs);
     expect(d.pendiente.gastos).toBe(100);
     expect(d.pagado.gastos).toBe(0);
+  });
+});
+
+describe("filtrarParaCalculos", () => {
+  const base = { monto: 10, tipo: "gasto" };
+
+  it("incluye activos y excluye inactivos en modo real", () => {
+    const movs = [
+      { ...base, activo: true },
+      { ...base, activo: false },
+    ];
+    const r = filtrarParaCalculos(movs, { modo: "real", incluirInactivos: false });
+    expect(r).toHaveLength(1);
+    expect(r[0].activo).toBe(true);
+  });
+
+  it("en modo real ignora incluirInactivos", () => {
+    const movs = [{ ...base, activo: false }];
+    expect(filtrarParaCalculos(movs, { modo: "real", incluirInactivos: true })).toHaveLength(0);
+  });
+
+  it("en estimado excluye inactivos por defecto", () => {
+    const movs = [{ ...base, activo: false }];
+    expect(filtrarParaCalculos(movs, { modo: "estimado", incluirInactivos: false })).toHaveLength(0);
+  });
+
+  it("en estimado incluye inactivos si incluirInactivos es true", () => {
+    const movs = [{ ...base, activo: false }];
+    expect(filtrarParaCalculos(movs, { modo: "estimado", incluirInactivos: true })).toHaveLength(1);
+  });
+
+  it("trata un movimiento sin campo activo como activo", () => {
+    const movs = [{ ...base }];
+    expect(filtrarParaCalculos(movs, { modo: "real", incluirInactivos: false })).toHaveLength(1);
   });
 });

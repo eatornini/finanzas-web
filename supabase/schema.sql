@@ -5,7 +5,12 @@ create table categorias (
   user_id uuid not null default auth.uid() references auth.users on delete cascade,
   nombre text not null,
   tipo text not null check (tipo in ('gasto','ingreso')),
+  -- una categoría pertenece a un modo: las de 'estimado' son lista aparte.
+  modo text not null default 'real' check (modo in ('real','estimado')),
   color text,
+  emoji text,
+  icono text,
+  orden integer not null default 0,
   created_at timestamptz not null default now()
 );
 
@@ -19,12 +24,38 @@ create table movimientos (
   -- 'pagado' solo tiene sentido en modo estimado (se ignora en modo real).
   modo text not null default 'real' check (modo in ('real','estimado')),
   pagado boolean not null default false,
+  -- 'activo' = participa en los totales. Un inactivo se ve en la lista pero
+  -- no suma (salvo en estimado con la preferencia "incluir inactivos").
+  activo boolean not null default true,
+  imagen text,
+  recurrente boolean not null default false,
+  frecuencia text check (frecuencia is null or frecuencia in
+    ('mensual','bimestral','trimestral','anual')),
   categoria_id uuid references categorias on delete set null,
-  fecha date not null,
+  fecha timestamptz not null,
+  -- día calendario de Santiago, derivado por trigger; se filtra por período con esto.
+  fecha_local date not null default (now() at time zone 'America/Santiago')::date,
   detalle text,
   created_at timestamptz not null default now()
 );
-create index movimientos_user_modo_fecha_idx on movimientos (user_id, modo, fecha);
+create index movimientos_user_modo_fechalocal_idx
+  on movimientos (user_id, modo, fecha_local);
+
+-- Deriva fecha_local desde fecha (timestamptz) en la zona de negocio.
+create or replace function set_fecha_local()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.fecha_local := (new.fecha at time zone 'America/Santiago')::date;
+  return new;
+end;
+$$;
+
+create trigger trg_fecha_local
+before insert or update of fecha on movimientos
+for each row
+execute function set_fecha_local();
 
 -- Garantiza a nivel de base de datos que, si el movimiento referencia una
 -- categoría, esa categoría pertenezca al mismo user_id que el movimiento.
@@ -72,3 +103,29 @@ grant usage on schema public to anon, authenticated;
 grant select, insert, update, delete on all tables in schema public to anon, authenticated;
 alter default privileges in schema public
   grant select, insert, update, delete on tables to anon, authenticated;
+
+-- Agregaciones para la UI (respetan RLS: security invoker).
+-- Conteo de uso por categoría, para ordenar los chips rápidos del formulario.
+create or replace function uso_categorias(p_tipo text, p_modo text)
+returns table (categoria_id uuid, n bigint)
+language sql stable as $$
+  select categoria_id, count(*)
+  from movimientos
+  where tipo = p_tipo and modo = p_modo and categoria_id is not null
+  group by categoria_id
+$$;
+
+-- Autocompletado de comercio: nombres previos más usados que empiezan con la query.
+create or replace function sugerencias_comercio(p_tipo text, p_modo text, p_query text)
+returns table (nombre text, n bigint)
+language sql stable as $$
+  select nombre, count(*)
+  from movimientos
+  where tipo = p_tipo and modo = p_modo and nombre ilike p_query || '%'
+  group by nombre
+  order by count(*) desc
+  limit 8
+$$;
+
+grant execute on function uso_categorias(text, text)             to anon, authenticated;
+grant execute on function sugerencias_comercio(text, text, text) to anon, authenticated;

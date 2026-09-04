@@ -1,129 +1,147 @@
 import { el, limpiar } from "./dom.js";
-import {
-  listarCategorias,
-  crearCategoria,
-  actualizarCategoria,
-  eliminarCategoria,
-} from "../data/categorias.js";
-import { lapiz, basura } from "./iconos.js";
+import { listarCategorias, actualizarCategoria, eliminarCategoria } from "../data/categorias.js";
+import { abrirCategoriaForm } from "./categoriaForm.js";
+import { nodoIconoCategoria } from "./iconoCategoria.js";
+import { prefs } from "../prefs.js";
+import { lapiz, basura, flechaArribaCirculo, flechaAbajoCirculo } from "./iconos.js";
 
 export function montarCategorias(contenedor) {
   limpiar(contenedor);
+  let modo = prefs.get("modo");
+  let todas = [];
+  const normalizados = new Set();
 
   const error = el("p", { class: "error", role: "alert" });
-  const lista = el("div", { class: "lista" });
+  const cuerpo = el("div", { class: "categorias-cuerpo" });
+
+  const btnModo = {};
+  for (const m of ["real", "estimado"]) {
+    btnModo[m] = el("button", {
+      text: m === "real" ? "Real" : "Estimado",
+      class: modo === m ? "activo" : "",
+      onClick: () => {
+        modo = m;
+        sincronizarModo();
+        pintar();
+      },
+    });
+  }
+  function sincronizarModo() {
+    for (const m of ["real", "estimado"]) btnModo[m].classList.toggle("activo", modo === m);
+  }
+
+  const btnNueva = el("button", {
+    class: "boton--primario",
+    text: "+ Nueva categoría",
+    onClick: () =>
+      abrirCategoriaForm({ modoInicial: modo, tipoInicial: "gasto", onGuardado: recargar }),
+  });
+
+  contenedor.append(
+    el("div", { class: "categorias-cabecera" }, [
+      el("div", { class: "selector-modo" }, [btnModo.real, btnModo.estimado]),
+      btnNueva,
+    ]),
+    error,
+    cuerpo
+  );
+
+  recargar();
 
   async function recargar() {
     error.textContent = "";
-    limpiar(lista);
     try {
-      const categorias = await listarCategorias();
-      if (categorias.length === 0) {
-        lista.append(el("p", { class: "vacio", text: "Aún no tienes categorías." }));
-        return;
-      }
-      for (const c of categorias) lista.append(fila(c, recargar, error));
+      todas = await listarCategorias();
+      pintar();
     } catch (e) {
       error.textContent = "No se pudieron cargar las categorías.";
     }
   }
 
-  contenedor.append(formularioNueva(recargar, error), lista, error);
-  recargar();
-}
+  async function normalizarOrden(grupo, clave) {
+    // Si el grupo nunca se reordenó, todos los "orden" valen 0 y ↑/↓ no puede
+    // intercambiar. Se asigna orden = índice una sola vez.
+    const ordenes = grupo.map((c) => c.orden);
+    const hayDuplicados = new Set(ordenes).size !== ordenes.length;
+    if (!hayDuplicados || normalizados.has(clave)) return false;
+    normalizados.add(clave);
+    try {
+      await Promise.all(
+        grupo.map((c, i) => (c.orden === i ? null : actualizarCategoria(c.id, { orden: i })))
+      );
+      await recargar();
+      return true;
+    } catch (e) {
+      error.textContent = "No se pudo ordenar las categorías.";
+      return false;
+    }
+  }
 
-function formularioNueva(recargar, error) {
-  const nombre = el("input", { placeholder: "Nombre", required: "true" });
-  const tipo = el("select", {}, [
-    el("option", { value: "gasto", text: "Gasto" }),
-    el("option", { value: "ingreso", text: "Ingreso" }),
-  ]);
-  const color = el("input", { type: "color", value: "#888888" });
-  const boton = el("button", {
-    type: "submit",
-    class: "boton--primario",
-    text: "Agregar",
-  });
+  async function pintar() {
+    limpiar(cuerpo);
+    for (const tipo of ["gasto", "ingreso"]) {
+      const clave = `${modo}-${tipo}`;
+      const delGrupo = todas
+        .filter((c) => c.modo === modo && c.tipo === tipo)
+        .sort((a, b) => a.orden - b.orden || a.nombre.localeCompare(b.nombre));
+      if (delGrupo.length > 1 && (await normalizarOrden(delGrupo, clave))) return;
+      cuerpo.append(
+        el("section", { class: "categorias-grupo" }, [
+          el("h3", { text: tipo === "gasto" ? "Gastos" : "Ingresos" }),
+          delGrupo.length
+            ? el("div", { class: "lista" }, delGrupo.map((c, i) => fila(c, delGrupo, i)))
+            : el("p", { class: "vacio", text: "Sin categorías en este grupo." }),
+        ])
+      );
+    }
+  }
 
-  return el(
-    "form",
-    {
-      class: "form-inline",
-      onSubmit: async (ev) => {
-        ev.preventDefault();
-        if (!nombre.value.trim()) {
-          error.textContent = "El nombre es obligatorio.";
-          return;
-        }
-        error.textContent = "";
-        boton.disabled = true;
-        try {
-          await crearCategoria({
-            nombre: nombre.value.trim(),
-            tipo: tipo.value,
-            color: color.value,
-          });
-          nombre.value = "";
-          await recargar();
-        } catch (e) {
-          error.textContent = "No se pudo crear la categoría.";
-        } finally {
-          boton.disabled = false;
-        }
-      },
-    },
-    [nombre, tipo, color, boton]
-  );
-}
+  function fila(c, grupo, indice) {
+    const icono = el("span", { class: "cat-fila-icono" }, [nodoIconoCategoria(c)]);
+    if (c.color) icono.style.color = c.color;
 
-function fila(c, recargar, error) {
-  const punto = el("span", { class: "punto" });
-  if (c.color) punto.style.background = c.color;
+    const subir = botonIcono("Subir", flechaArribaCirculo, indice === 0, () =>
+      intercambiarOrden(c, grupo[indice - 1])
+    );
+    const bajar = botonIcono("Bajar", flechaAbajoCirculo, indice === grupo.length - 1, () =>
+      intercambiarOrden(c, grupo[indice + 1])
+    );
+    const editar = botonIcono("Editar", lapiz, false, () =>
+      abrirCategoriaForm({ categoria: c, modoInicial: modo, onGuardado: recargar })
+    );
+    const borrar = botonIcono("Borrar", basura, false, async () => {
+      if (!confirm(`¿Borrar "${c.nombre}"? Los movimientos quedarán sin categoría.`)) return;
+      try {
+        await eliminarCategoria(c.id);
+        await recargar();
+      } catch (e) {
+        error.textContent = "No se pudo borrar la categoría.";
+      }
+    });
 
-  const renombrar = el(
-    "button",
-    {
-      class: "boton--icono",
-      "aria-label": `Renombrar ${c.nombre}`,
-      title: "Renombrar",
-      onClick: async () => {
-        const nuevo = prompt("Nuevo nombre", c.nombre);
-        if (nuevo === null || !nuevo.trim()) return;
-        try {
-          await actualizarCategoria(c.id, { nombre: nuevo.trim() });
-          await recargar();
-        } catch (e) {
-          error.textContent = "No se pudo actualizar la categoría.";
-        }
-      },
-    },
-    [lapiz()]
-  );
+    return el("div", { class: "fila fila--categoria" }, [
+      icono,
+      el("span", { class: "nombre", text: c.nombre }),
+      el("div", { class: "acciones" }, [subir, bajar, editar, borrar]),
+    ]);
+  }
 
-  const borrar = el(
-    "button",
-    {
-      class: "boton--icono",
-      "aria-label": `Borrar ${c.nombre}`,
-      title: "Borrar",
-      onClick: async () => {
-        if (!confirm(`¿Borrar "${c.nombre}"? Los movimientos quedarán sin categoría.`))
-          return;
-        try {
-          await eliminarCategoria(c.id);
-          await recargar();
-        } catch (e) {
-          error.textContent = "No se pudo borrar la categoría.";
-        }
-      },
-    },
-    [basura()]
-  );
+  function botonIcono(label, fabricaIcono, deshabilitado, onClick) {
+    const b = el("button", { class: "boton--icono", "aria-label": label, title: label, onClick }, [
+      fabricaIcono(),
+    ]);
+    if (deshabilitado) b.disabled = true;
+    return b;
+  }
 
-  return el("div", { class: `fila fila--categoria tipo-${c.tipo}` }, [
-    punto,
-    el("span", { class: "nombre", text: c.nombre }),
-    el("span", { class: "tipo", text: c.tipo }),
-    el("div", { class: "acciones" }, [renombrar, borrar]),
-  ]);
+  async function intercambiarOrden(a, b) {
+    if (!a || !b) return;
+    try {
+      await actualizarCategoria(a.id, { orden: b.orden });
+      await actualizarCategoria(b.id, { orden: a.orden });
+      await recargar();
+    } catch (e) {
+      error.textContent = "No se pudo reordenar.";
+    }
+  }
 }

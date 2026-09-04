@@ -1,18 +1,18 @@
 import { el, limpiar } from "./dom.js";
 import { listarMovimientos } from "../data/movimientos.js";
-import { calcularTotales, desglosarPorPago } from "../logic/totales.js";
+import { calcularTotales, desglosarPorPago, filtrarParaCalculos } from "../logic/totales.js";
+import { formatoCLP } from "../logic/dinero.js";
+import { prefs } from "../prefs.js";
+import { ojoIcono, ojoTachadoIcono } from "./iconos.js";
 
-function fmt(n) {
-  return Number(n).toLocaleString("es", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+function valorOculto(valor) {
+  return prefs.get("ocultarTotal") ? "*****" : formatoCLP(valor);
 }
 
 function tarjeta(titulo, valor, clase) {
   return el("div", { class: `tarjeta ${clase}` }, [
     el("span", { class: "titulo", text: titulo }),
-    el("span", { class: "valor", text: fmt(valor) }),
+    el("span", { class: "valor", text: valorOculto(valor) }),
   ]);
 }
 
@@ -31,13 +31,32 @@ export async function montarResumen(contenedor, { rango, modo }) {
   limpiar(contenedor);
 
   const error = el("p", { class: "error", role: "alert" });
+  const oculto = prefs.get("ocultarTotal");
+  const btnOjo = el(
+    "button",
+    {
+      class: "boton--icono boton-ojo",
+      "aria-label": oculto ? "Mostrar montos" : "Ocultar montos",
+      title: oculto ? "Mostrar montos" : "Ocultar montos",
+      "aria-pressed": String(oculto),
+      onClick: () => {
+        prefs.set("ocultarTotal", !prefs.get("ocultarTotal"));
+        montarResumen(contenedor, { rango, modo });
+      },
+    },
+    [oculto ? ojoTachadoIcono() : ojoIcono()]
+  );
   const cifras = el("div", { class: "cifras" });
-  contenedor.append(cifras, error);
+  contenedor.append(el("div", { class: "resumen-cabecera" }, [btnOjo]), cifras, error);
 
   try {
     const movimientos = await listarMovimientos({ ...rango, modo });
+    const paraTotales = filtrarParaCalculos(movimientos, {
+      modo,
+      incluirInactivos: prefs.get("incluirInactivos"),
+    });
     if (modo === "estimado") {
-      const d = desglosarPorPago(movimientos);
+      const d = desglosarPorPago(paraTotales);
       cifras.append(
         el("div", { class: "grupos" }, [
           grupo("Estimado", d.total),
@@ -46,7 +65,7 @@ export async function montarResumen(contenedor, { rango, modo }) {
         ])
       );
     } else {
-      const { ingresos, gastos, balance } = calcularTotales(movimientos);
+      const { ingresos, gastos, balance } = calcularTotales(paraTotales);
       cifras.append(
         el("div", { class: "tarjetas-fila" }, [
           tarjeta("Ingresos", ingresos, "ingreso"),
