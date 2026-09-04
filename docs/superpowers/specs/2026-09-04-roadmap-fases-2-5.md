@@ -157,9 +157,9 @@ Funciones de la APK que estas fases cubren:
 - [ ] Drill-down por categoría (Fase 0+1 ✔)
 - [ ] Persistencia de período (Fase 0+1 ✔)
 - [ ] Copiar mes / borrar mes / activar-desactivar todos (Fase 2 ✔)
-- [ ] Torta interactiva → Fase 3
-- [ ] Reportes / comparativas → Fase 3
-- [ ] Buscador global → Fase 3
+- [ ] Torta interactiva (Fase 3 ✔)
+- [ ] Reportes / comparativas (Fase 3 ✔)
+- [ ] Buscador global (Fase 3 ✔)
 - [ ] Adjuntar imagen → Fase 4b
 - [ ] OCR de comprobante → Fase 4c
 - [ ] Instalable / offline (PWA) → Fase 4a
