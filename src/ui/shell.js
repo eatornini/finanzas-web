@@ -23,23 +23,14 @@ import {
 import { montarMovimientos } from "./movimientosView.js";
 import { montarResumen } from "./resumenView.js";
 import { montarCategorias } from "./categoriasView.js";
+import { montarReportes } from "./reportesView.js";
 import { montarPlaceholder } from "./placeholderView.js";
 
 const VISTAS = [
   { clave: "movimientos", titulo: "Movimientos", icono: listaIcono, montar: montarMovimientos },
   { clave: "resumen", titulo: "Resumen", icono: relojIcono, montar: montarResumen },
   { clave: "categorias", titulo: "Categorías", icono: etiquetaIcono, montar: montarCategorias },
-  {
-    clave: "reportes",
-    titulo: "Reportes",
-    icono: graficoIcono,
-    montar: (c) =>
-      montarPlaceholder(c, {
-        icono: graficoIcono,
-        titulo: "Reportes",
-        descripcion: "Próximamente: tendencias y comparativas entre períodos.",
-      }),
-  },
+  { clave: "reportes", titulo: "Reportes", icono: graficoIcono, montar: montarReportes },
   {
     clave: "configuracion",
     titulo: "Configuración",

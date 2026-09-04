@@ -1146,6 +1146,56 @@
     color: var(--gasto);
   }
 
+  /* --- Reportes: comparativa entre períodos y tendencia --- */
+  .reportes-vista {
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-5);
+  }
+
+  .comparativa-tarjetas {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: var(--esp-4);
+    margin-top: var(--esp-3);
+  }
+
+  .tarjeta-delta {
+    font-size: var(--txt-xs);
+    color: var(--fg-tenue);
+  }
+
+  .tarjeta-delta--positivo {
+    color: var(--ingreso);
+  }
+
+  .tarjeta-delta--negativo {
+    color: var(--gasto);
+  }
+
+  .tendencia-grafico {
+    margin-top: var(--esp-3);
+  }
+
+  .tendencia-grafico svg {
+    width: 100%;
+    height: auto;
+  }
+
+  .tendencia-barra--ingreso {
+    fill: var(--ingreso);
+  }
+
+  .tendencia-barra--gasto {
+    fill: var(--gasto);
+  }
+
+  .tendencia-eje-etiqueta {
+    fill: var(--fg-tenue);
+    font-size: 4.5px;
+    text-anchor: middle;
+  }
+
   /* --- Panel lateral: resumen, dona, actividad --- */
   /* Peso visual reducido a propósito: la lista de movimientos es el
      contenido principal, este panel es apoyo secundario. */
