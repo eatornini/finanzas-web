@@ -1616,8 +1616,21 @@
   }
 
   /* --- Resumen: ocultar total y drill-down --- */
+  .panel-tarjeta-cabecera {
+    display: flex;
+    align-items: center;
+    gap: var(--esp-2);
+  }
+  .panel-tarjeta-cabecera h3 {
+    margin: 0;
+  }
   .boton-ojo {
     margin-left: auto;
+  }
+  .resumen-cabecera {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: var(--esp-2);
   }
   .dona-item {
     display: flex;

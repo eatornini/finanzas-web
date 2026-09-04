@@ -1,31 +1,16 @@
 import { el, limpiar } from "./dom.js";
-import {
-  listarMovimientos,
-  crearMovimiento,
-  actualizarMovimiento,
-  eliminarMovimiento,
-} from "../data/movimientos.js";
+import { listarMovimientos, actualizarMovimiento, eliminarMovimiento } from "../data/movimientos.js";
 import { listarCategorias } from "../data/categorias.js";
-import { lapiz, basura, lupaIcono, embudoIcono, chevronAbajo } from "./iconos.js";
-import { iconoMovimiento, colorMovimiento } from "./iconosCategoria.js";
+import { lapiz, basura, lupaIcono, embudoIcono, chevronAbajo, check } from "./iconos.js";
+import { colorMovimiento } from "./iconosCategoria.js";
+import { nodoIconoCategoria } from "./iconoCategoria.js";
 import { montarPanelResumen } from "./panelResumenView.js";
-import { montarModal } from "./modal.js";
+import { abrirMovimientoForm } from "./movimientoForm.js";
+import { filtrarParaCalculos } from "../logic/totales.js";
+import { formatoCLP } from "../logic/dinero.js";
+import { prefs } from "../prefs.js";
 
-function hoyISO() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
-    d.getDate()
-  ).padStart(2, "0")}`;
-}
-
-function fmt(n) {
-  return Number(n).toLocaleString("es", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
-}
-
-export async function montarMovimientos(contenedor, { rango, modo, tipo }) {
+export async function montarMovimientos(contenedor, { rango, modo, tipo, categoriaInicial = null }) {
   limpiar(contenedor);
 
   const error = el("p", { class: "error", role: "alert" });
@@ -95,22 +80,17 @@ export async function montarMovimientos(contenedor, { rango, modo, tipo }) {
       selCategoria.append(el("option", { value: c.id, text: c.nombre }));
     }
   } catch (e) {
-    // Se seguirá intentando al abrir el modal; el alta permite "Sin categoría".
+    // Se seguirá intentando al abrir el modal.
+  }
+
+  if (categoriaInicial) {
+    selCategoria.value = String(categoriaInicial);
+    panelFiltros.hidden = false;
+    btnFiltros.classList.add("activo");
   }
 
   function abrirModalNuevo() {
-    const errorModal = el("p", { class: "error", role: "alert" });
-    const { cerrar } = montarModal({
-      titulo: "Agregar movimiento",
-      contenido: formularioNuevo({
-        recargar,
-        error: errorModal,
-        modo,
-        categorias,
-        onGuardado: () => cerrar(),
-        onCancelar: () => cerrar(),
-      }),
-    });
+    abrirMovimientoForm({ modo, categorias, onGuardado: recargar });
   }
 
   buscador.addEventListener("input", pintarLista);
@@ -124,7 +104,15 @@ export async function montarMovimientos(contenedor, { rango, modo, tipo }) {
     try {
       todos = await listarMovimientos({ ...rango, modo });
       pintarLista();
-      montarPanelResumen(aside, todos, { tipo });
+      const paraTotales = filtrarParaCalculos(todos, {
+        modo,
+        incluirInactivos: prefs.get("incluirInactivos"),
+      });
+      montarPanelResumen(aside, todos, paraTotales, {
+        tipo,
+        onCategoria: (catId) =>
+          montarMovimientos(contenedor, { rango, modo, tipo, categoriaInicial: catId }),
+      });
     } catch (e) {
       todos = [];
       limpiar(lista);
@@ -153,144 +141,29 @@ export async function montarMovimientos(contenedor, { rango, modo, tipo }) {
     } else if (filtrados.length === 0) {
       lista.append(el("p", { class: "vacio", text: "Ningún movimiento coincide con la búsqueda." }));
     } else {
-      for (const m of filtrados) lista.append(fila(m, recargar, error, modo));
+      for (const m of filtrados) lista.append(fila(m, recargar, error, modo, categorias));
     }
     contador.textContent = `Mostrando ${filtrados.length} de ${todos.length} movimientos`;
   }
 }
 
-function opcionesCategoria(categorias, tipo) {
-  return categorias
-    .filter((c) => c.tipo === tipo)
-    .map((c) => el("option", { value: c.id, text: c.nombre }));
-}
-
-function formularioNuevo({ recargar, error, modo, categorias = [], onGuardado, onCancelar }) {
-  const nombre = el("input", { id: "campo-nombre", placeholder: "Ej: Bencina", required: "true" });
-  const monto = el("input", {
-    id: "campo-monto",
-    type: "number",
-    step: "0.01",
-    min: "0",
-    placeholder: "0",
-    required: "true",
-  });
-  const tipo = el("select", { id: "campo-tipo" }, [
-    el("option", { value: "gasto", text: "Gasto" }),
-    el("option", { value: "ingreso", text: "Ingreso" }),
-  ]);
-  const categoria = el("select", { id: "campo-categoria" }, [
-    el("option", { value: "", text: "Sin categoría" }),
-    ...opcionesCategoria(categorias, "gasto"),
-  ]);
-  tipo.addEventListener("change", () => {
-    limpiar(categoria);
-    categoria.append(
-      el("option", { value: "", text: "Sin categoría" }),
-      ...opcionesCategoria(categorias, tipo.value)
-    );
-  });
-  const fecha = el("input", { id: "campo-fecha", type: "date", value: hoyISO() });
-  const detalle = el("input", { id: "campo-detalle", placeholder: "Detalle…" });
-  const botonGuardar = el("button", {
-    type: "submit",
-    class: "boton--primario",
-    text: "Agregar movimiento",
-  });
-  const botonCancelar = el("button", {
-    type: "button",
-    text: "Cancelar",
-    onClick: () => onCancelar?.(),
-  });
-
-  function campo(etiqueta, input) {
-    return el("label", { class: "campo", for: input.id, text: etiqueta }, [input]);
-  }
-
-  function campoMonto(etiqueta, input) {
-    return el("label", { class: "campo", for: input.id, text: etiqueta }, [
-      el("div", { class: "input-monto" }, [
-        input,
-        el("span", { class: "input-monto-simbolo", text: "$" }),
-      ]),
-    ]);
-  }
-
-  return el(
-    "form",
-    {
-      class: "form-mov",
-      onSubmit: async (ev) => {
-        ev.preventDefault();
-        error.textContent = "";
-        const montoNum = Number(monto.value);
-        if (!nombre.value.trim() || !Number.isFinite(montoNum) || montoNum < 0) {
-          error.textContent = "Completa el nombre y un monto válido (0 o mayor).";
-          return;
-        }
-        botonGuardar.disabled = true;
-        botonGuardar.textContent = "Guardando…";
-        try {
-          await crearMovimiento({
-            nombre: nombre.value.trim(),
-            monto: montoNum,
-            tipo: tipo.value,
-            modo,
-            pagado: false,
-            categoria_id: categoria.value || null,
-            fecha: fecha.value || hoyISO(),
-            detalle: detalle.value.trim() || null,
-          });
-          await recargar();
-          onGuardado?.();
-        } catch (e) {
-          error.textContent = "No se pudo guardar. Intenta de nuevo.";
-          botonGuardar.disabled = false;
-          botonGuardar.textContent = "Agregar movimiento";
-        }
-      },
-    },
-    [
-      el("div", { class: "form-grid" }, [
-        campo("Nombre", nombre),
-        campoMonto("Monto", monto),
-        campo("Tipo", tipo),
-        campo("Categoría", categoria),
-        campo("Fecha", fecha),
-        campo("Detalle (opcional)", detalle),
-      ]),
-      error,
-      el("div", { class: "modal-acciones" }, [botonCancelar, botonGuardar]),
-    ]
-  );
-}
-
-function fila(m, recargar, error, modo) {
+function fila(m, recargar, error, modo, categorias) {
   const signo = m.tipo === "ingreso" ? "+" : "−";
   const cat = m.categoria ? m.categoria.nombre : "Sin categoría";
   const color = colorMovimiento(m);
+  const inactivo = m.activo === false;
 
-  const iconoFila = el("span", { class: "fila-icono" }, [iconoMovimiento(m)]);
+  const iconoFila = el("span", { class: "fila-icono" }, [nodoIconoCategoria(m.categoria, m.nombre)]);
   iconoFila.style.color = color;
   iconoFila.style.background = `color-mix(in srgb, ${color} 16%, transparent)`;
 
-  const editarMonto = el(
+  const editar = el(
     "button",
     {
       class: "boton--icono",
-      "aria-label": "Editar monto",
-      title: "Editar monto",
-      onClick: async () => {
-        const nuevo = prompt("Nuevo monto", m.monto);
-        const num = Number(nuevo);
-        if (nuevo === null || !Number.isFinite(num) || num < 0) return;
-        try {
-          await actualizarMovimiento(m.id, { monto: num });
-          await recargar();
-        } catch (e) {
-          error.textContent = "No se pudo actualizar el movimiento.";
-        }
-      },
+      "aria-label": "Editar",
+      title: "Editar",
+      onClick: () => abrirMovimientoForm({ modo, categorias, movimiento: m, onGuardado: recargar }),
     },
     [lapiz()]
   );
@@ -314,7 +187,25 @@ function fila(m, recargar, error, modo) {
     [basura()]
   );
 
-  const controles = [editarMonto, borrar];
+  const toggleActivo = el(
+    "button",
+    {
+      class: inactivo ? "boton--icono estado-off" : "boton--icono estado-on",
+      title: inactivo ? "Activar" : "Desactivar",
+      "aria-label": inactivo ? "Activar" : "Desactivar",
+      onClick: async () => {
+        try {
+          await actualizarMovimiento(m.id, { activo: inactivo });
+          await recargar();
+        } catch (e) {
+          error.textContent = "No se pudo cambiar el estado.";
+        }
+      },
+    },
+    [check()]
+  );
+
+  const controles = [toggleActivo, editar, borrar];
   if (modo === "estimado") {
     const togglePagado = el(
       "button",
@@ -336,18 +227,21 @@ function fila(m, recargar, error, modo) {
   }
 
   const claseFila =
-    modo === "estimado" && m.pagado ? `fila tipo-${m.tipo} fila-pagada` : `fila tipo-${m.tipo}`;
+    `fila tipo-${m.tipo}` +
+    (modo === "estimado" && m.pagado ? " fila-pagada" : "") +
+    (inactivo ? " fila--inactiva" : "");
 
   return el("div", { class: claseFila }, [
     iconoFila,
     el("div", { class: "fila-principal" }, [
       el("span", { class: "nombre", text: m.nombre }),
+      inactivo ? el("span", { class: "badge-inactivo", text: "Inactivo" }) : null,
       el("span", { class: "fila-meta" }, [
         el("span", { class: "cat", text: cat }),
-        el("span", { class: "fecha", text: m.fecha }),
+        el("span", { class: "fecha", text: (m.fecha || "").slice(0, 10) }),
       ]),
     ]),
-    el("span", { class: "monto", text: `${signo} $${fmt(m.monto)}` }),
+    el("span", { class: "monto", text: `${signo} ${formatoCLP(m.monto)}` }),
     el("div", { class: "acciones" }, controles),
   ]);
 }
