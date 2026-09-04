@@ -19,10 +19,12 @@ import {
   solIcono,
   lunaIcono,
   chevronAbajo,
+  lupaIcono,
 } from "./iconos.js";
 import { montarMovimientos } from "./movimientosView.js";
 import { montarResumen } from "./resumenView.js";
 import { montarCategorias } from "./categoriasView.js";
+import { montarBuscador } from "./buscadorView.js";
 import { montarReportes } from "./reportesView.js";
 import { montarPlaceholder } from "./placeholderView.js";
 
@@ -30,6 +32,7 @@ const VISTAS = [
   { clave: "movimientos", titulo: "Movimientos", icono: listaIcono, montar: montarMovimientos },
   { clave: "resumen", titulo: "Resumen", icono: relojIcono, montar: montarResumen },
   { clave: "categorias", titulo: "Categorías", icono: etiquetaIcono, montar: montarCategorias },
+  { clave: "buscar", titulo: "Buscar", icono: lupaIcono, montar: montarBuscador },
   { clave: "reportes", titulo: "Reportes", icono: graficoIcono, montar: montarReportes },
   {
     clave: "configuracion",

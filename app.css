@@ -933,6 +933,42 @@
     transition: background-color 0.12s ease, border-color 0.12s ease;
   }
 
+  button.fila--resultado {
+    width: 100%;
+    text-align: left;
+    font: inherit;
+    color: inherit;
+    cursor: pointer;
+  }
+
+  /* --- Buscador global --- */
+  .buscador-cabecera {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--esp-3);
+    margin-bottom: var(--esp-4);
+  }
+
+  .buscador-cabecera .campo-busqueda {
+    flex: 1;
+    min-width: 180px;
+  }
+
+  .buscador-cabecera .campo-busqueda input {
+    width: 100%;
+  }
+
+  .buscador-vacio {
+    text-align: center;
+    padding: var(--esp-6) 0;
+  }
+
+  .buscador-cargar-mas {
+    display: block;
+    margin: var(--esp-4) auto 0;
+  }
+
   .fila:hover {
     background: var(--bg-sutil);
     border-color: color-mix(in srgb, var(--fg) 12%, var(--borde));
