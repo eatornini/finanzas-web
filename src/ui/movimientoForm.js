@@ -5,6 +5,12 @@ import { usoCategorias, sugerenciasComercio } from "../data/rpc.js";
 import { abrirCategoriaForm } from "./categoriaForm.js";
 import { formatoCLP, parseCLP } from "../logic/dinero.js";
 import { nodoIconoCategoria } from "./iconoCategoria.js";
+import { camaraIcono, cerrarIcono } from "./iconos.js";
+import { subirComprobante, urlComprobante, eliminarComprobante } from "../data/storage.js";
+import { reconocerImagen } from "../ocr/tesseractWorker.js";
+import { construirBloques } from "../ocr/construirBloques.js";
+import { analizarComprobante } from "../ocr/ocrManager.js";
+import { sesionActual } from "../auth.js";
 
 const FRECUENCIAS = [
   ["mensual", "Mensual"],
@@ -22,9 +28,18 @@ function isoAInputLocal(iso) {
   )}`;
 }
 
-export function abrirMovimientoForm({ modo, categorias, movimiento = null, onGuardado }) {
+export function abrirMovimientoForm({
+  modo,
+  categorias,
+  movimiento = null,
+  valoresIniciales = null,
+  archivoInicial = null,
+  onGuardado,
+}) {
   const edicion = Boolean(movimiento);
   const esEstimado = modo === "estimado";
+  // valoresIniciales (de un OCR previo) solo prellena en alta, nunca pisa una edición.
+  const inicial = edicion ? null : valoresIniciales;
 
   let tipoActual = movimiento?.tipo || "gasto";
   let categoriaId = movimiento?.categoria_id || null;
@@ -35,7 +50,7 @@ export function abrirMovimientoForm({ modo, categorias, movimiento = null, onGua
     id: "mov-nombre",
     required: "true",
     autocomplete: "off",
-    value: movimiento?.nombre || "",
+    value: movimiento?.nombre || inicial?.comercio || "",
   });
   const sugerencias = el("datalist", { id: "mov-nombre-sugerencias" });
   nombre.setAttribute("list", "mov-nombre-sugerencias");
@@ -43,7 +58,11 @@ export function abrirMovimientoForm({ modo, categorias, movimiento = null, onGua
   const monto = el("input", {
     id: "mov-monto",
     inputmode: "numeric",
-    value: movimiento ? formatoCLP(movimiento.monto) : "",
+    value: movimiento
+      ? formatoCLP(movimiento.monto)
+      : inicial?.monto
+      ? formatoCLP(inicial.monto)
+      : "",
   });
   monto.addEventListener("input", () => {
     const n = parseCLP(monto.value);
@@ -67,9 +86,102 @@ export function abrirMovimientoForm({ modo, categorias, movimiento = null, onGua
   const fecha = el("input", {
     id: "mov-fecha",
     type: "datetime-local",
-    value: isoAInputLocal(movimiento?.fecha),
+    value: isoAInputLocal(movimiento?.fecha || inicial?.fecha?.toISOString()),
   });
-  const detalle = el("input", { id: "mov-detalle", value: movimiento?.detalle || "" });
+  const detalle = el("input", { id: "mov-detalle", value: movimiento?.detalle || inicial?.detalle || "" });
+
+  // --- Comprobante (imagen + OCR) ---
+  let archivoComprobante = archivoInicial;
+  let imagenEliminada = false;
+  let fechaTocada = false;
+  const imagenExistente = movimiento?.imagen || null;
+
+  fecha.addEventListener("input", () => {
+    fechaTocada = true;
+  });
+
+  const previewImg = el("img", { class: "comprobante-preview", alt: "Comprobante", hidden: "true" });
+  const estadoOcr = el("p", { class: "comprobante-estado" });
+  const inputArchivo = el("input", {
+    type: "file",
+    accept: "image/*",
+    capture: "environment",
+    hidden: "true",
+  });
+  const btnCargarComprobante = el("button", { type: "button" });
+  btnCargarComprobante.addEventListener("click", () => inputArchivo.click());
+  const btnQuitarComprobante = el(
+    "button",
+    { type: "button", class: "boton--icono", "aria-label": "Quitar comprobante", hidden: "true" },
+    [cerrarIcono()]
+  );
+  btnQuitarComprobante.addEventListener("click", () => {
+    archivoComprobante = null;
+    imagenEliminada = true;
+    inputArchivo.value = "";
+    pintarComprobante();
+    actualizarBotones();
+  });
+
+  async function pintarComprobante() {
+    limpiar(btnCargarComprobante);
+    if (archivoComprobante) {
+      previewImg.src = URL.createObjectURL(archivoComprobante);
+      previewImg.hidden = false;
+      btnCargarComprobante.append(camaraIcono(), " Reemplazar");
+      btnQuitarComprobante.hidden = false;
+    } else if (imagenExistente && !imagenEliminada) {
+      btnCargarComprobante.append(camaraIcono(), " Reemplazar");
+      btnQuitarComprobante.hidden = false;
+      try {
+        previewImg.src = await urlComprobante(imagenExistente);
+        previewImg.hidden = false;
+      } catch {
+        previewImg.hidden = true;
+      }
+    } else {
+      previewImg.hidden = true;
+      btnCargarComprobante.append(camaraIcono(), " Cargar comprobante");
+      btnQuitarComprobante.hidden = true;
+    }
+  }
+
+  function aplicarValoresOcr(resultado) {
+    if (!nombre.value.trim() && resultado.comercio) nombre.value = resultado.comercio;
+    if (!parseCLP(monto.value) && resultado.monto) {
+      monto.value = formatoCLP(resultado.monto);
+    }
+    if (!fechaTocada && resultado.fecha) {
+      fecha.value = isoAInputLocal(resultado.fecha.toISOString());
+    }
+    if (!detalle.value.trim() && resultado.detalle) detalle.value = resultado.detalle;
+    actualizarBotones();
+  }
+
+  inputArchivo.addEventListener("change", async () => {
+    const file = inputArchivo.files[0];
+    if (!file) return;
+    archivoComprobante = file;
+    imagenEliminada = false;
+    await pintarComprobante();
+    actualizarBotones();
+
+    estadoOcr.textContent = "Leyendo comprobante…";
+    try {
+      const bloquesTesseract = await reconocerImagen(file);
+      const { lineas, bloques } = construirBloques(bloquesTesseract);
+      aplicarValoresOcr(analizarComprobante({ lineas, bloques }));
+      estadoOcr.textContent = "";
+    } catch {
+      estadoOcr.textContent = "No se pudo leer el comprobante. Completá los datos a mano.";
+    }
+  });
+
+  const comprobante = el("div", { class: "campo comprobante-campo" }, [
+    el("span", { class: "campo-etiqueta", text: "Comprobante" }),
+    el("div", { class: "comprobante-caja" }, [previewImg, btnCargarComprobante, btnQuitarComprobante, inputArchivo]),
+    estadoOcr,
+  ]);
 
   const activo = el("input", { id: "mov-activo", type: "checkbox" });
   activo.checked = movimiento ? movimiento.activo !== false : true;
@@ -224,7 +336,9 @@ export function abrirMovimientoForm({ modo, categorias, movimiento = null, onGua
       (esEstimado && recurrente.checked !== Boolean(movimiento.recurrente)) ||
       (esEstimado &&
         recurrente.checked &&
-        frecuencia.value !== (movimiento.frecuencia || "mensual"))
+        frecuencia.value !== (movimiento.frecuencia || "mensual")) ||
+      archivoComprobante !== null ||
+      imagenEliminada
     );
   }
   function actualizarBotones() {
@@ -236,6 +350,7 @@ export function abrirMovimientoForm({ modo, categorias, movimiento = null, onGua
   }
 
   const filas = [
+    comprobante,
     campo("Nombre", nombre),
     sugerencias,
     campo("Monto", monto),
@@ -282,8 +397,20 @@ export function abrirMovimientoForm({ modo, categorias, movimiento = null, onGua
           frecuencia: esEstimado && recurrente.checked ? frecuencia.value : null,
         };
         try {
+          if (archivoComprobante) {
+            const sesion = await sesionActual();
+            datos.imagen = await subirComprobante(sesion.user.id, archivoComprobante);
+          } else if (imagenEliminada) {
+            datos.imagen = null;
+          }
+
           if (edicion) await actualizarMovimiento(movimiento.id, datos);
           else await crearMovimiento(datos);
+
+          if (imagenExistente && (archivoComprobante || imagenEliminada)) {
+            eliminarComprobante(imagenExistente); // best-effort, no bloquea el guardado
+          }
+
           cerrar();
           onGuardado?.();
         } catch (e) {
@@ -311,5 +438,6 @@ export function abrirMovimientoForm({ modo, categorias, movimiento = null, onGua
 
   cargarUso();
   pintarChips();
+  pintarComprobante();
   actualizarBotones();
 }

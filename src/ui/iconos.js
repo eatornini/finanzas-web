@@ -77,6 +77,11 @@ export const lupaIcono = () => svg(["M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16z", "M2
 export const embudoIcono = () => svg("M22 3H2l8 9.46V19l4 2v-8.54L22 3z");
 export const chevronAbajo = () => svg("M6 9l6 6 6-6");
 export const puntosIcono = () => svg(["M12 6h.01", "M12 12h.01", "M12 18h.01"]);
+export const camaraIcono = () =>
+  svg([
+    "M3 9a2 2 0 0 1 2-2h1.5l1-1.5h9l1 1.5H19a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z",
+    "M12 17a4 4 0 1 0 0-8 4 4 0 0 0 0 8z",
+  ]);
 export const flechaArribaCirculo = () => svg("M12 19V5M5 12l7-7 7 7");
 export const flechaAbajoCirculo = () => svg("M12 5v14M5 12l7 7 7-7");
 export const billeteraIcono = () =>
