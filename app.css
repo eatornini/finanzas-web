@@ -1630,7 +1630,56 @@
   .resumen-cabecera {
     display: flex;
     justify-content: flex-end;
+    align-items: center;
+    gap: var(--esp-2);
     margin-bottom: var(--esp-2);
+  }
+  .aviso {
+    color: var(--fg-tenue);
+    font-size: var(--txt-sm);
+    margin: 0 0 var(--esp-3);
+  }
+  .menu-mes-wrap {
+    position: relative;
+  }
+  .menu-mes {
+    position: absolute;
+    top: calc(100% + var(--esp-2));
+    right: 0;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-1);
+    width: 220px;
+    padding: var(--esp-2);
+    border: 1px solid var(--borde);
+    border-radius: var(--r-md);
+    background: var(--bg-elevado);
+    box-shadow: var(--sombra-popover);
+  }
+  .menu-mes[hidden] {
+    display: none;
+  }
+  .menu-mes-item {
+    width: 100%;
+    text-align: left;
+    padding: var(--esp-2) var(--esp-3);
+    border: 0;
+    border-radius: var(--r-sm);
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    font: inherit;
+  }
+  .menu-mes-item:hover {
+    background: var(--bg-sutil);
+  }
+  .menu-mes-item:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+  .menu-mes-item--peligro {
+    color: var(--gasto);
   }
   .dona-item {
     display: flex;

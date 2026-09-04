@@ -76,6 +76,7 @@ export const lunaIcono = () => svg("M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.
 export const lupaIcono = () => svg(["M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16z", "M21 21l-4.35-4.35"]);
 export const embudoIcono = () => svg("M22 3H2l8 9.46V19l4 2v-8.54L22 3z");
 export const chevronAbajo = () => svg("M6 9l6 6 6-6");
+export const puntosIcono = () => svg(["M12 6h.01", "M12 12h.01", "M12 18h.01"]);
 export const flechaArribaCirculo = () => svg("M12 19V5M5 12l7-7 7 7");
 export const flechaAbajoCirculo = () => svg("M12 5v14M5 12l7 7 7-7");
 export const billeteraIcono = () =>

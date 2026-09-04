@@ -11,6 +11,12 @@ export function filtrarParaCalculos(movimientos, { modo, incluirInactivos }) {
   });
 }
 
+// true si ningún movimiento está marcado inactivo (lista vacía => true):
+// determina si "activar/desactivar todos" debe activar o desactivar.
+export function todosActivos(movimientos) {
+  return movimientos.every((m) => m.activo !== false);
+}
+
 export function calcularTotales(movimientos) {
   let ingresos = 0;
   let gastos = 0;

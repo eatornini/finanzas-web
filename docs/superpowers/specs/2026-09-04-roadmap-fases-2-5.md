@@ -148,7 +148,7 @@ Funciones de la APK que estas fases cubren:
 
 - [ ] Fecha con hora (Fase 0+1 ✔)
 - [ ] Activo/inactivo + "incluir inactivos" (Fase 0+1 ✔)
-- [ ] Recurrente/frecuencia como campo (Fase 0+1 ✔); autogeneración → Fase 2 (regla simple)
+- [ ] Recurrente/frecuencia como campo (Fase 0+1 ✔); autogeneración vía "copiar mes" (Fase 2 ✔, regla simple)
 - [ ] Iconos/emoji por categoría (Fase 0+1 ✔)
 - [ ] Categorías por tipo y modo (Fase 0+1 ✔)
 - [ ] Chips rápidos por uso (Fase 0+1 ✔)
@@ -156,7 +156,7 @@ Funciones de la APK que estas fases cubren:
 - [ ] Ocultar total (Fase 0+1 ✔)
 - [ ] Drill-down por categoría (Fase 0+1 ✔)
 - [ ] Persistencia de período (Fase 0+1 ✔)
-- [ ] Copiar mes / borrar mes / activar-desactivar todos → Fase 2
+- [ ] Copiar mes / borrar mes / activar-desactivar todos (Fase 2 ✔)
 - [ ] Torta interactiva → Fase 3
 - [ ] Reportes / comparativas → Fase 3
 - [ ] Buscador global → Fase 3
