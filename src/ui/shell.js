@@ -1,5 +1,6 @@
 import { el, limpiar } from "./dom.js";
 import { cerrarSesion } from "../auth.js";
+import { prefs } from "../prefs.js";
 import {
   rangoPeriodo,
   periodoAnterior,
@@ -56,6 +57,12 @@ function aplicarTema(tema) {
   document.documentElement.dataset.tema = tema;
 }
 
+function ymdLocal(d) {
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${mm}-${dd}`;
+}
+
 function nombreDesdeEmail(email) {
   if (!email) return "Cuenta";
   const local = email.split("@")[0];
@@ -71,12 +78,12 @@ function inicialesDesdeNombre(nombre) {
 export function montarShell(contenedor, sesion) {
   limpiar(contenedor);
 
-  let fechaRef = new Date();
-  let tipo = "mes";
+  let tipo = prefs.get("periodoTipo");
+  const fechaGuardada = prefs.get("fechaRef");
+  let fechaRef = fechaGuardada ? new Date(`${fechaGuardada}T12:00:00`) : new Date();
   let activa = "movimientos";
-  let modo =
-    localStorage.getItem("finanzas.modo") === "estimado" ? "estimado" : "real";
-  let tema = localStorage.getItem("finanzas.tema") || "auto";
+  let modo = prefs.get("modo");
+  let tema = prefs.get("tema");
   aplicarTema(tema);
 
   const cuerpo = el("main", { class: "cuerpo" });
@@ -95,6 +102,7 @@ export function montarShell(contenedor, sesion) {
       text: t[0].toUpperCase() + t.slice(1),
       onClick: () => {
         tipo = t;
+        prefs.set("periodoTipo", t);
         sincronizarTipo();
         pintarVista();
       },
@@ -112,7 +120,7 @@ export function montarShell(contenedor, sesion) {
       text: m === "real" ? "Real" : "Estimado",
       onClick: () => {
         modo = m;
-        localStorage.setItem("finanzas.modo", modo);
+        prefs.set("modo", modo);
         sincronizarModo();
         pintarVista();
       },
@@ -122,11 +130,29 @@ export function montarShell(contenedor, sesion) {
     for (const m of ["real", "estimado"]) {
       btnModo[m].classList.toggle("activo", modo === m);
     }
+    sincronizarInactivosVisible();
   }
   const selectorModo = el("div", { class: "selector-modo" }, [
     btnModo.real,
     btnModo.estimado,
   ]);
+
+  const btnInactivos = el("button", {
+    class: "boton--chip",
+    text: "Incluir inactivos",
+    "aria-pressed": String(prefs.get("incluirInactivos")),
+    onClick: () => {
+      const on = !prefs.get("incluirInactivos");
+      prefs.set("incluirInactivos", on);
+      btnInactivos.setAttribute("aria-pressed", String(on));
+      btnInactivos.classList.toggle("activo", on);
+      pintarVista();
+    },
+  });
+  btnInactivos.classList.toggle("activo", prefs.get("incluirInactivos"));
+  function sincronizarInactivosVisible() {
+    btnInactivos.hidden = modo !== "estimado";
+  }
 
   const iconoTema = el("span", { class: "icono-tema" }, [tema === "oscuro" ? lunaIcono() : solIcono()]);
   const btnTema = el(
@@ -137,7 +163,7 @@ export function montarShell(contenedor, sesion) {
       title: "Cambiar tema",
       onClick: () => {
         tema = tema === "oscuro" ? "claro" : "oscuro";
-        localStorage.setItem("finanzas.tema", tema);
+        prefs.set("tema", tema);
         aplicarTema(tema);
         limpiar(iconoTema);
         iconoTema.append(tema === "oscuro" ? lunaIcono() : solIcono());
@@ -156,6 +182,7 @@ export function montarShell(contenedor, sesion) {
           "aria-label": "Período anterior",
           onClick: () => {
             fechaRef = periodoAnterior(fechaRef, tipo);
+            prefs.set("fechaRef", ymdLocal(fechaRef));
             pintarVista();
           },
         },
@@ -169,6 +196,7 @@ export function montarShell(contenedor, sesion) {
           "aria-label": "Período siguiente",
           onClick: () => {
             fechaRef = periodoSiguiente(fechaRef, tipo);
+            prefs.set("fechaRef", ymdLocal(fechaRef));
             pintarVista();
           },
         },
@@ -232,7 +260,7 @@ export function montarShell(contenedor, sesion) {
   const topbar = el("header", { class: "topbar" }, [
     el("div", { class: "marca-movil", text: "Finanzas" }),
     selectorPeriodo,
-    el("div", { class: "topbar-derecha" }, [selectorModo, btnTema]),
+    el("div", { class: "topbar-derecha" }, [selectorModo, btnInactivos, btnTema]),
   ]);
 
   const piePagina = el("footer", { class: "pie-app" }, [
