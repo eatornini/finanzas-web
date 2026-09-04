@@ -1,7 +1,7 @@
 import { supabase } from "../supabaseClient.js";
 import { verificar } from "./_helpers.js";
 
-const SELECT =
+export const SELECT =
   "id, nombre, monto, tipo, modo, pagado, activo, recurrente, frecuencia, " +
   "categoria_id, fecha, detalle, " +
   "categoria:categorias(nombre, color, icono, emoji)";
