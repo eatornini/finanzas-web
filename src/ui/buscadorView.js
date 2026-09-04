@@ -112,7 +112,7 @@ export async function montarBuscador(contenedor, { modo }) {
       desde += pagina.length;
       btnCargarMas.hidden = !hayMas;
     } catch (e) {
-      limpiar(lista);
+      if (!continuar) limpiar(lista);
       error.textContent = "No se pudo buscar. ";
       error.append(el("button", { text: "Reintentar", onClick: () => buscar({ continuar }) }));
     } finally {
