@@ -1254,6 +1254,29 @@
     border-radius: 50%;
   }
 
+  .dona-svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .dona-segmento {
+    cursor: pointer;
+    transition: opacity 0.15s, stroke-width 0.15s;
+  }
+
+  .dona-segmento:focus-visible {
+    outline: 2px solid var(--acento);
+    outline-offset: 2px;
+  }
+
+  .dona-segmento--atenuado {
+    opacity: 0.35;
+  }
+
+  .dona-segmento--activo {
+    stroke-width: 24;
+  }
+
   .dona-centro {
     position: absolute;
     inset: 18%;
@@ -1696,6 +1719,10 @@
   }
   .dona-item:hover {
     color: var(--acento);
+  }
+  .dona-item--activo {
+    color: var(--acento);
+    font-weight: var(--peso-semibold);
   }
 
   /* --- Shell: toggle "incluir inactivos" --- */
