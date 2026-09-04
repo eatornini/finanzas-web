@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { calcularTotales, desglosarPorPago, filtrarParaCalculos } from "../src/logic/totales.js";
+import {
+  calcularTotales,
+  desglosarPorPago,
+  filtrarParaCalculos,
+  todosActivos,
+} from "../src/logic/totales.js";
 
 describe("calcularTotales", () => {
   it("lista vacía da todo en cero", () => {
@@ -112,5 +117,23 @@ describe("filtrarParaCalculos", () => {
   it("trata un movimiento sin campo activo como activo", () => {
     const movs = [{ ...base }];
     expect(filtrarParaCalculos(movs, { modo: "real", incluirInactivos: false })).toHaveLength(1);
+  });
+});
+
+describe("todosActivos", () => {
+  it("true si la lista está vacía", () => {
+    expect(todosActivos([])).toBe(true);
+  });
+
+  it("true si todos están activos", () => {
+    expect(todosActivos([{ activo: true }, { activo: true }])).toBe(true);
+  });
+
+  it("false si al menos uno está inactivo", () => {
+    expect(todosActivos([{ activo: true }, { activo: false }])).toBe(false);
+  });
+
+  it("un movimiento sin campo activo cuenta como activo", () => {
+    expect(todosActivos([{}])).toBe(true);
   });
 });
