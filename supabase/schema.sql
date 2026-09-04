@@ -176,3 +176,18 @@ end;
 $$;
 
 grant execute on function copiar_mes_estimado(date) to anon, authenticated;
+
+-- Bucket de Storage para imágenes de comprobantes (Fase 4b). Cada usuario
+-- solo ve/escribe archivos bajo su propia carpeta ({user_id}/...).
+insert into storage.buckets (id, name, public)
+values ('comprobantes', 'comprobantes', false)
+on conflict (id) do nothing;
+
+create policy "comprobantes_select_propio" on storage.objects for select
+  using (bucket_id = 'comprobantes' and (storage.foldername(name))[1] = auth.uid()::text);
+create policy "comprobantes_insert_propio" on storage.objects for insert
+  with check (bucket_id = 'comprobantes' and (storage.foldername(name))[1] = auth.uid()::text);
+create policy "comprobantes_update_propio" on storage.objects for update
+  using (bucket_id = 'comprobantes' and (storage.foldername(name))[1] = auth.uid()::text);
+create policy "comprobantes_delete_propio" on storage.objects for delete
+  using (bucket_id = 'comprobantes' and (storage.foldername(name))[1] = auth.uid()::text);
