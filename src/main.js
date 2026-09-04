@@ -8,3 +8,11 @@ window.addEventListener("unhandledrejection", (e) => {
 });
 
 iniciarRouter();
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js").catch(() => {
+      /* PWA es progresiva: si falla el registro, la app igual funciona online */
+    });
+  });
+}
