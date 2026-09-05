@@ -29,6 +29,12 @@ App web de finanzas personales. Frontend estático + Supabase (Postgres + Auth).
 un proyecto que ya está en uso, en orden:
 
 - `001-modo-estimado.sql` — agrega `modo` y `pagado` a `movimientos`.
+- `002-paridad-app.sql` — timestamps, categorías (tipo/modo/icono), tracking
+  de inactivos, funciones RPC de agregación.
+- `003-copiar-mes-estimado.sql` — funciones de copiar/borrar mes y
+  activar-desactivar todos los movimientos del período.
+- `004-storage-comprobantes.sql` — bucket de Supabase Storage `comprobantes`
+  (con RLS por usuario) para las imágenes adjuntas a los movimientos.
 
 Cada migración se corre una sola vez en el SQL Editor de Supabase.
 
@@ -47,12 +53,21 @@ Cada migración se corre una sola vez en el SQL Editor de Supabase.
 
 ## Funcionalidades
 
-- Registro de ingresos/gastos y categorías, con filtro por período (semana/mes/año).
-- Resumen con totales del período.
+- Registro de ingresos/gastos con categorías (icono Material Symbols o
+  emoji), filtro por período (semana/mes/año) y buscador global.
+- Resumen con totales del período, drill-down por categoría y torta interactiva.
+- Vista Reportes: tendencias por período y comparativa entre períodos.
 - Modo **Real** / **Estimado** (interruptor global). En modo estimado cada
-  movimiento tiene estado pagado/pendiente y el resumen muestra el desglose.
+  movimiento tiene estado pagado/pendiente; herramientas de mes para copiar,
+  borrar o activar/desactivar todos los movimientos del período visible.
+- Movimientos recurrentes (frecuencia configurable) y autocompletado de
+  comercio por uso previo.
+- Adjuntar foto del comprobante (Supabase Storage) con **lectura automática
+  por OCR** (Tesseract.js, offline, autohospedado) que prellena nombre,
+  monto y fecha del movimiento.
+- **PWA instalable**: manifest + service worker con cache-first para el app
+  shell, funciona offline una vez instalada.
 
 ## Fuera de alcance por ahora
 
-Presupuestos, gráficos, autocompletado de comercios, movimientos recurrentes,
-OCR, soporte offline, importador desde la app Android, multiusuario.
+Multiusuario, presupuestos, exportar backup a JSON.

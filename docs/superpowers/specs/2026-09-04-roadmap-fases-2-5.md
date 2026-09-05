@@ -167,21 +167,26 @@ volumen lo pide). Tests de la lógica de duplicado/filtrado por mes.
 
 Funciones de la APK que estas fases cubren:
 
-- [ ] Fecha con hora (Fase 0+1 ✔)
-- [ ] Activo/inactivo + "incluir inactivos" (Fase 0+1 ✔)
-- [ ] Recurrente/frecuencia como campo (Fase 0+1 ✔); autogeneración vía "copiar mes" (Fase 2 ✔, regla simple)
-- [ ] Iconos/emoji por categoría (Fase 0+1 ✔)
-- [ ] Categorías por tipo y modo (Fase 0+1 ✔)
-- [ ] Chips rápidos por uso (Fase 0+1 ✔)
-- [ ] Autocompletado de comercio (Fase 0+1 ✔)
-- [ ] Ocultar total (Fase 0+1 ✔)
-- [ ] Drill-down por categoría (Fase 0+1 ✔)
-- [ ] Persistencia de período (Fase 0+1 ✔)
-- [ ] Copiar mes / borrar mes / activar-desactivar todos (Fase 2 ✔)
-- [ ] Torta interactiva (Fase 3 ✔)
-- [ ] Reportes / comparativas (Fase 3 ✔)
-- [ ] Buscador global (Fase 3 ✔)
-- [ ] Adjuntar imagen → Fase 4b
-- [ ] OCR de comprobante → Fase 4c
-- [ ] Instalable / offline (PWA) → Fase 4a
+- [x] Fecha con hora (Fase 0+1 ✔)
+- [x] Activo/inactivo + "incluir inactivos" (Fase 0+1 ✔)
+- [x] Recurrente/frecuencia como campo (Fase 0+1 ✔); autogeneración vía "copiar mes" (Fase 2 ✔, regla simple)
+- [x] Iconos/emoji por categoría (Fase 0+1 ✔)
+- [x] Categorías por tipo y modo (Fase 0+1 ✔)
+- [x] Chips rápidos por uso (Fase 0+1 ✔)
+- [x] Autocompletado de comercio (Fase 0+1 ✔)
+- [x] Ocultar total (Fase 0+1 ✔)
+- [x] Drill-down por categoría (Fase 0+1 ✔)
+- [x] Persistencia de período (Fase 0+1 ✔)
+- [x] Copiar mes / borrar mes / activar-desactivar todos (Fase 2 ✔)
+- [x] Torta interactiva (Fase 3 ✔)
+- [x] Reportes / comparativas (Fase 3 ✔)
+- [x] Buscador global (Fase 3 ✔)
+- [x] Adjuntar imagen (Fase 4b ✔)
+- [x] OCR de comprobante (Fase 4c ✔, verificado 2026-09-04 con recibo real)
+- [x] Instalable / offline (PWA) (Fase 4a ✔, verificado 2026-09-04)
 - [ ] Exportar backup JSON → opcional, sin fase asignada (bajo esfuerzo: descargar JSON)
+
+**Fase 5 (2026-09-04):** paridad funcional completa confirmada. No hay datos
+que existan solo en la APK Android — la web viene siendo la fuente de verdad.
+Se decidió no tocar el repo de la APK (queda como está, sin archivar). Único
+pendiente: el export de backup JSON, sin fase asignada.
