@@ -24,6 +24,7 @@
     --ingreso: #17994f;
     --gasto: #d0342c;
     --estimado: #6b46c1;
+    --estimado-fg: #ffffff;
     --pendiente: #a56a12;
 
     --esp-1: 4px;
@@ -75,6 +76,7 @@
       --ingreso: #46c98a;
       --gasto: #f27a72;
       --estimado: #a78bfa;
+      --estimado-fg: #0b0b0c;
       --pendiente: #e0a44a;
 
       --sombra-1: 0 1px 2px rgba(0, 0, 0, 0.28);
@@ -97,6 +99,7 @@
     --ingreso: #46c98a;
     --gasto: #f27a72;
     --estimado: #a78bfa;
+    --estimado-fg: #0b0b0c;
     --pendiente: #e0a44a;
 
     --sombra-1: 0 1px 2px rgba(0, 0, 0, 0.28);
@@ -570,10 +573,17 @@
 
   .selector-tipo button {
     border: none;
-    background: transparent;
     border-radius: var(--r-pill);
     padding: var(--esp-1) var(--esp-3);
     font-size: var(--txt-sm);
+  }
+
+  /* Sin :not(.activo) acá, ".selector-tipo button" (misma especificidad que
+     "button.activo" pero declarada después) le ganaba el fondo al estado
+     activo y dejaba el texto (bien temeado) flotando sobre fondo
+     transparente — invisible en ambos temas. */
+  .selector-tipo button:not(.activo) {
+    background: transparent;
   }
 
   .navegador-periodo {
@@ -610,19 +620,20 @@
 
   .selector-modo button {
     border: none;
-    background: transparent;
     border-radius: var(--r-pill);
     padding: var(--esp-1) var(--esp-4);
     font-size: var(--txt-sm);
   }
 
-  .selector-modo button:hover:not(.activo) {
+  /* Mismo motivo que en .selector-tipo button: sin :not(.activo) esto le
+     ganaba el fondo al estado activo por orden de declaración. */
+  .selector-modo button:not(.activo) {
     background: transparent;
   }
 
   .selector-modo button.activo {
     background: var(--estimado);
-    color: #fff;
+    color: var(--estimado-fg);
   }
 
   .selector-modo button:first-child.activo {
@@ -1696,6 +1707,7 @@
   .cat-icono-op.activo {
     border-color: var(--acento);
     background: var(--acento-tenue);
+    color: var(--acento);
   }
   .cat-icono-busqueda {
     margin: var(--esp-2) 0;
@@ -1759,6 +1771,7 @@
   .mov-chip.activo {
     border-color: var(--chip-color, var(--acento));
     background: color-mix(in srgb, var(--chip-color, var(--acento)) 15%, transparent);
+    color: var(--fg);
   }
   .mov-chip--mas,
   .mov-chip--nueva {
@@ -1890,5 +1903,6 @@
   .boton--chip.activo {
     background: var(--acento-tenue);
     border-color: var(--acento);
+    color: var(--acento);
   }
 }
