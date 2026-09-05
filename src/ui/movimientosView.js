@@ -7,6 +7,8 @@ import { nodoIconoCategoria } from "./iconoCategoria.js";
 import { montarPanelResumen } from "./panelResumenView.js";
 import { abrirMovimientoForm } from "./movimientoForm.js";
 import { filtrarParaCalculos } from "../logic/totales.js";
+import { agruparPorFecha, agruparPorCategoria } from "../logic/agrupacionMovimientos.js";
+import { etiquetaDia } from "../logic/periodos.js";
 import { formatoCLP } from "../logic/dinero.js";
 import { prefs } from "../prefs.js";
 import { reconocerImagen } from "../ocr/tesseractWorker.js";
@@ -197,8 +199,16 @@ export async function montarMovimientos(contenedor, { rango, modo, tipo, categor
       lista.append(el("p", { class: "vacio", text: "No hay movimientos en este período." }));
     } else if (filtrados.length === 0) {
       lista.append(el("p", { class: "vacio", text: "Ningún movimiento coincide con la búsqueda." }));
+    } else if (modo === "estimado") {
+      for (const grupo of agruparPorCategoria(filtrados)) {
+        lista.append(el("h4", { class: "lista-grupo-titulo", text: grupo.nombre }));
+        for (const m of grupo.movimientos) lista.append(fila(m, recargar, error, modo, categorias));
+      }
     } else {
-      for (const m of filtrados) lista.append(fila(m, recargar, error, modo, categorias));
+      for (const grupo of agruparPorFecha(filtrados)) {
+        lista.append(el("h4", { class: "lista-grupo-titulo", text: etiquetaDia(grupo.clave) }));
+        for (const m of grupo.movimientos) lista.append(fila(m, recargar, error, modo, categorias));
+      }
     }
     contador.textContent = `Mostrando ${filtrados.length} de ${todos.length} movimientos`;
   }
@@ -293,10 +303,13 @@ function fila(m, recargar, error, modo, categorias) {
     el("div", { class: "fila-principal" }, [
       el("span", { class: "nombre", text: m.nombre }),
       inactivo ? el("span", { class: "badge-inactivo", text: "Inactivo" }) : null,
-      el("span", { class: "fila-meta" }, [
-        el("span", { class: "cat", text: cat }),
-        el("span", { class: "fecha", text: (m.fecha || "").slice(0, 10) }),
-      ]),
+      el(
+        "span",
+        { class: "fila-meta" },
+        modo === "estimado"
+          ? [el("span", { class: "fecha", text: (m.fecha || "").slice(0, 10) })]
+          : [el("span", { class: "cat", text: cat })]
+      ),
     ]),
     el("span", { class: "monto", text: `${signo} ${formatoCLP(m.monto)}` }),
     el("div", { class: "acciones" }, controles),

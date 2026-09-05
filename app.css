@@ -941,6 +941,18 @@
     gap: var(--esp-2);
   }
 
+  .lista-grupo-titulo {
+    margin: var(--esp-2) 0 0;
+    padding: 0 var(--esp-1);
+    font-size: var(--txt-sm);
+    font-weight: var(--peso-semibold);
+    color: var(--fg-tenue);
+  }
+
+  .lista-grupo-titulo:first-child {
+    margin-top: 0;
+  }
+
   .fila {
     display: flex;
     align-items: center;

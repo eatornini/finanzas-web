@@ -5,6 +5,7 @@ import {
   periodoSiguiente,
   etiquetaPeriodo,
   etiquetaCorta,
+  etiquetaDia,
 } from "../src/logic/periodos.js";
 
 // Nota: los meses de Date() son base 0 (7 = agosto).
@@ -122,5 +123,15 @@ describe("etiquetaCorta", () => {
   it("semana: dd/mm del lunes de esa semana", () => {
     // 2026-09-04 es viernes; el lunes de esa semana es 2026-08-31.
     expect(etiquetaCorta(new Date(2026, 8, 4), "semana")).toBe("31/08");
+  });
+});
+
+describe("etiquetaDia", () => {
+  it("día de la semana, día y mes en español", () => {
+    // 2026-09-04 es viernes.
+    expect(etiquetaDia("2026-09-04")).toBe("viernes 4 de septiembre");
+  });
+  it("ignora la parte de hora si viene con timestamp completo", () => {
+    expect(etiquetaDia("2026-09-04T15:30:00")).toBe("viernes 4 de septiembre");
   });
 });

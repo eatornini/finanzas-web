@@ -6,6 +6,7 @@ const MESES_ABBR = [
   "ene", "feb", "mar", "abr", "may", "jun",
   "jul", "ago", "sep", "oct", "nov", "dic",
 ];
+const DIAS = ["domingo", "lunes", "martes", "miércoles", "jueves", "viernes", "sábado"];
 
 function ymd(d) {
   const mm = String(d.getMonth() + 1).padStart(2, "0");
@@ -69,6 +70,13 @@ export function etiquetaCorta(fecha, tipo) {
     return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}`;
   }
   throw new Error(`tipo de período inválido: ${tipo}`);
+}
+
+// Etiqueta para agrupar movimientos por día ("lunes 4 de septiembre"), a
+// partir de una fecha "YYYY-MM-DD" (o con hora, se ignora todo después).
+export function etiquetaDia(fechaYmd) {
+  const d = new Date(`${fechaYmd.slice(0, 10)}T12:00:00`);
+  return `${DIAS[d.getDay()]} ${d.getDate()} de ${MESES[d.getMonth()]}`;
 }
 
 export function etiquetaPeriodo(fechaRef, tipo) {
