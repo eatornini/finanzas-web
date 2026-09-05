@@ -45,7 +45,7 @@ export function montarModal({ titulo, contenido, onCerrar }) {
 
   document.addEventListener("keydown", alTeclear);
   document.body.append(overlay);
-  panel.querySelector("input, select, textarea")?.focus();
+  panel.querySelector("input:not([hidden]), select, textarea")?.focus();
 
   return { cerrar };
 }

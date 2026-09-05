@@ -1616,6 +1616,30 @@
     color: var(--fg-tenue);
     margin-bottom: var(--esp-1);
   }
+  .comprobante-campo {
+    grid-column: 1 / -1;
+  }
+  .comprobante-caja {
+    display: flex;
+    align-items: center;
+    gap: var(--esp-3);
+  }
+  .comprobante-preview {
+    width: 64px;
+    height: 64px;
+    border-radius: var(--r-md);
+    object-fit: cover;
+    border: 1px solid var(--borde);
+    flex: none;
+  }
+  .comprobante-preview[hidden] {
+    display: none;
+  }
+  .comprobante-estado {
+    font-size: var(--txt-sm);
+    color: var(--fg-tenue);
+    margin: var(--esp-1) 0 0;
+  }
   .cat-iconos-grilla {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));

@@ -12,15 +12,36 @@ otra máquina.
 
 ## Cómo retomar
 
-1. `git pull` en `main`.
+Estado (2026-09-04): Fases 0+1, 2 y 3 mergeadas a `main`. Fase 4 (PWA +
+Storage + OCR) está implementada completa en la rama remota
+`feat/fase-4-pwa-storage-ocr` (pusheada a GitHub, no mergeada — falta
+verificación manual, ver abajo).
+
+1. `git fetch origin` y `git checkout feat/fase-4-pwa-storage-ocr` (o
+   `git pull` en `main` si la Fase 4 ya se mergeó y solo vas a seguir con
+   la Fase 5).
 2. `npm install` (por si cambió algo).
-3. La migración `supabase/migrations/002-paridad-app.sql` ya se aplicó en el
-   proyecto Supabase compartido — no hace falta re-correrla.
-4. Abrir Claude Code en el repo y pedir: "leé
-   `docs/superpowers/specs/2026-09-04-roadmap-fases-2-5.md` y el spec de Fase 0+1,
-   y arranquemos la Fase 2 con el skill de brainstorming".
-5. Cada fase sigue el mismo flujo: brainstorming → writing-plans → executing-plans
-   → finishing-a-development-branch. Una rama por fase (`feat/fase-2-...`).
+3. Migraciones de Supabase ya aplicadas en el proyecto compartido: 001 a
+   003. **Falta correr `supabase/migrations/004-storage-comprobantes.sql`**
+   (crea el bucket de Storage `comprobantes` con sus políticas) — se
+   necesita antes de poder probar Fase 4b/4c.
+4. Verificación manual pendiente de Fase 4 (con `npx serve .`, migración
+   004 corrida):
+   - PWA: manifest/service worker sin errores en DevTools, "Instalar app",
+     que abra offline.
+   - Cargar comprobante (botón en Movimientos) con una foto real de
+     boleta/transferencia → formulario prellenado + miniatura; editar,
+     reemplazar y quitar la imagen.
+   - Detalle completo del spec/plan de Fase 4:
+     `docs/superpowers/specs/2026-09-04-fase-4-pwa-storage-ocr-design.md`.
+5. Abrir Claude Code en el repo (rama `feat/fase-4-pwa-storage-ocr`) y
+   contarle qué probaste y si funcionó. Si todo OK, pedile que mergee la
+   Fase 4 a `main` y siga con la Fase 5 (retiro de la APK). Si algo falla,
+   describí qué viste (mensaje de error, captura, etc.) para que lo
+   arregle antes de mergear.
+6. El plugin `superpowers` está deshabilitado en esta cuenta — cada fase se
+   trabajó con brainstorming → spec → plan → ejecución manual (sin el
+   skill), igual criterio a seguir en la Fase 5.
 
 ## Referencia para el port del OCR
 
