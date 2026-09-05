@@ -170,10 +170,17 @@ export function abrirMovimientoForm({
     try {
       const bloquesTesseract = await reconocerImagen(file);
       const { lineas, bloques } = construirBloques(bloquesTesseract);
-      aplicarValoresOcr(analizarComprobante({ lineas, bloques }));
-      estadoOcr.textContent = "";
-    } catch {
-      estadoOcr.textContent = "No se pudo leer el comprobante. Completá los datos a mano.";
+      const resultado = analizarComprobante({ lineas, bloques });
+      aplicarValoresOcr(resultado);
+      // Diagnóstico temporal (Fase 4c en verificación): se muestra siempre,
+      // éxito o no, para poder ajustar el parser viendo el texto crudo real
+      // en vez de adivinar qué leyó Tesseract.
+      const textoLeido = lineas.map((l) => l.text).join(" | ") || "(sin texto)";
+      estadoOcr.textContent =
+        `[debug] tipo=${resultado.tipo} comercio=${resultado.comercio} monto=${resultado.monto} ` +
+        `fecha=${resultado.fecha} | texto: ${textoLeido}`;
+    } catch (error) {
+      estadoOcr.textContent = `No se pudo leer el comprobante: ${error instanceof Error ? error.message : String(error)}`;
     }
   });
 

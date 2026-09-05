@@ -1,7 +1,9 @@
 // Service worker de la app shell. Sin build: no hay lista de bundles con
 // hash para precachear, así que los assets de src/** se van cacheando solos
 // a medida que se piden (cache-first, con red de respaldo).
-const CACHE_NAME = "finanzas-v1";
+// Atado a la versión mostrada en el pie de página (src/ui/shell.js) — bumpear
+// juntos en cada cambio para forzar refresco de caché sin limpiar a mano.
+const CACHE_NAME = "finanzas-v2.3";
 const PRECACHE = [
   "./",
   "index.html",

@@ -74,31 +74,45 @@ function limpiarMonto(raw) {
   return aDecimalONull(raw);
 }
 
+function buscarMontoEnTexto(text) {
+  const clpMatch = CLP_REGEX.exec(text);
+  if (clpMatch) {
+    const parsed = limpiarMonto(clpMatch[1].trim());
+    if (parsed !== null && parsed > 0) return parsed;
+  }
+
+  const dollarMatch = DOLLAR_REGEX.exec(text);
+  if (dollarMatch) {
+    const parsed = limpiarMonto(dollarMatch[1].trim());
+    if (parsed !== null && parsed > 0) return parsed;
+  }
+
+  const labelMatch = LABEL_MONTO_REGEX.exec(text);
+  if (labelMatch) {
+    const parsed = limpiarMonto(labelMatch[1].trim());
+    if (parsed !== null && parsed > 0) return parsed;
+  }
+
+  return null;
+}
+
 function extractMonto(blocks) {
   for (const block of blocks) {
     for (const line of block.lines) {
-      const text = line.text.trim();
-      if (!text) continue;
-
-      const clpMatch = CLP_REGEX.exec(text);
-      if (clpMatch) {
-        const parsed = limpiarMonto(clpMatch[1].trim());
-        if (parsed !== null && parsed > 0) return [parsed, block];
-      }
-
-      const dollarMatch = DOLLAR_REGEX.exec(text);
-      if (dollarMatch) {
-        const parsed = limpiarMonto(dollarMatch[1].trim());
-        if (parsed !== null && parsed > 0) return [parsed, block];
-      }
-
-      const labelMatch = LABEL_MONTO_REGEX.exec(text);
-      if (labelMatch) {
-        const parsed = limpiarMonto(labelMatch[1].trim());
-        if (parsed !== null && parsed > 0) return [parsed, block];
-      }
+      const parsed = buscarMontoEnTexto(line.text.trim());
+      if (parsed !== null) return [parsed, block];
     }
   }
+
+  // Fallback: montos grandes (ej. "CLP1,350") a veces quedan en líneas
+  // separadas dentro del mismo bloque por la diferencia de tamaño de fuente
+  // entre el prefijo de moneda y el número — se reintenta uniendo todo el
+  // texto del bloque.
+  for (const block of blocks) {
+    const parsed = buscarMontoEnTexto(block.lines.map((l) => l.text.trim()).join(" "));
+    if (parsed !== null) return [parsed, block];
+  }
+
   return [null, null];
 }
 
@@ -107,7 +121,11 @@ function extractFechaHora(lines) {
     const match = FECHA_TEXTO_REGEX.exec(line.text.trim());
     if (match) {
       const day = aEnteroONull(match[1]);
-      const month = MESES_ES[match[2].toLowerCase()];
+      const mesTexto = match[2].toLowerCase();
+      // Google Wallet abrevia "septiembre" como "sept" (4 letras); el resto
+      // de las abreviaturas chilenas usan 3 — se acepta el prefijo de 3 como
+      // fallback en vez de listar cada variante posible.
+      const month = MESES_ES[mesTexto] ?? MESES_ES[mesTexto.slice(0, 3)];
       const hour = aEnteroONull(match[3]);
       const minute = aEnteroONull(match[4]);
       if (day === null || month === undefined || hour === null || minute === null) continue;

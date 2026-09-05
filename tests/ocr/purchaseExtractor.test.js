@@ -5,6 +5,21 @@ function bloque(texto, top, bottom, height = 22) {
   return { lines: [{ text: texto, top, bottom, height, left: 0, right: 300 }], top, bottom, left: 0, right: 300 };
 }
 
+// Simula un bloque de Tesseract donde el párrafo agrupó dos líneas de
+// tamaño de fuente muy distinto (ej. prefijo "CLP" chico + número enorme).
+function bloqueMultilinea(textos, top, bottom) {
+  const paso = (bottom - top) / textos.length;
+  const lines = textos.map((text, i) => ({
+    text,
+    top: top + i * paso,
+    bottom: top + (i + 1) * paso,
+    height: paso,
+    left: 0,
+    right: 300,
+  }));
+  return { lines, top, bottom, left: 0, right: 300 };
+}
+
 describe("parsearCompra", () => {
   it("extrae comercio, monto y fecha de una boleta típica", () => {
     const bloques = [
@@ -52,6 +67,22 @@ describe("parsearCompra", () => {
     const lineas = bloques.flatMap((b) => b.lines);
     const r = parsearCompra(lineas, bloques);
     expect(r.comercio).toBe("Comercio Real");
+  });
+
+  it("recibo estilo Google Wallet: 'sept' abreviado y monto partido en dos líneas del mismo bloque", () => {
+    const bloques = [
+      bloque("JOEL VEGA PEREIRA", 5, 40),
+      bloqueMultilinea(["CLP", "1,350"], 60, 160),
+      bloque("jueves, 3 de sept a las 21:24", 180, 200),
+    ];
+    const lineas = bloques.flatMap((b) => b.lines);
+    const r = parsearCompra(lineas, bloques);
+    expect(r.monto).toBe(1350);
+    expect(r.fecha).toBeInstanceOf(Date);
+    expect(r.fecha.getDate()).toBe(3);
+    expect(r.fecha.getMonth()).toBe(8); // septiembre
+    expect(r.fecha.getHours()).toBe(21);
+    expect(r.fecha.getMinutes()).toBe(24);
   });
 
   it("sin ningún bloque de monto: comercio null", () => {
