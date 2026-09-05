@@ -29,20 +29,41 @@ export async function montarMovimientos(contenedor, { rango, modo, tipo, categor
     chevronAbajo(),
   ]);
   const panelFiltros = el("div", { class: "panel-filtros", hidden: "true" });
-  const selTipo = el("select", {}, [
-    el("option", { value: "", text: "Todos los tipos" }),
-    el("option", { value: "ingreso", text: "Ingreso" }),
-    el("option", { value: "gasto", text: "Gasto" }),
-  ]);
   const selCategoria = el("select", {}, [el("option", { value: "", text: "Todas las categorías" })]);
-  panelFiltros.append(
-    el("label", { text: "Tipo" }, [selTipo]),
-    el("label", { text: "Categoría" }, [selCategoria])
-  );
+  panelFiltros.append(el("label", { text: "Categoría" }, [selCategoria]));
   btnFiltros.addEventListener("click", () => {
     panelFiltros.hidden = !panelFiltros.hidden;
     btnFiltros.classList.toggle("activo", !panelFiltros.hidden);
   });
+
+  const opcionesVista =
+    modo === "estimado"
+      ? [
+          { valor: "gasto", texto: "Gastos estimados" },
+          { valor: "ingreso", texto: "Ingresos estimados" },
+        ]
+      : [
+          { valor: "todos", texto: "Todos" },
+          { valor: "gasto", texto: "Gastos" },
+          { valor: "ingreso", texto: "Ingresos" },
+        ];
+  let vista = opcionesVista[0].valor === "todos" ? "todos" : "gasto";
+  const botonesVista = opcionesVista.map((op) =>
+    el("button", {
+      type: "button",
+      text: op.texto,
+      onClick: () => {
+        vista = op.valor;
+        sincronizarVista();
+        pintarLista();
+      },
+    })
+  );
+  function sincronizarVista() {
+    botonesVista.forEach((b, i) => b.classList.toggle("activo", opcionesVista[i].valor === vista));
+  }
+  sincronizarVista();
+  const tabsVista = el("div", { class: "selector-tipo tabs-vista" }, botonesVista);
 
   const btnAgregar = el(
     "button",
@@ -54,7 +75,6 @@ export async function montarMovimientos(contenedor, { rango, modo, tipo, categor
   const inputComprobante = el("input", {
     type: "file",
     accept: "image/*",
-    capture: "environment",
     hidden: "true",
   });
   const btnComprobante = el(
@@ -98,6 +118,7 @@ export async function montarMovimientos(contenedor, { rango, modo, tipo, categor
         btnFiltros,
       ]),
     ]),
+    tabsVista,
     panelFiltros,
     error,
     lista,
@@ -131,7 +152,6 @@ export async function montarMovimientos(contenedor, { rango, modo, tipo, categor
   }
 
   buscador.addEventListener("input", pintarLista);
-  selTipo.addEventListener("change", pintarLista);
   selCategoria.addEventListener("change", pintarLista);
 
   await recargar();
@@ -163,7 +183,7 @@ export async function montarMovimientos(contenedor, { rango, modo, tipo, categor
     limpiar(lista);
     const texto = buscador.value.trim().toLowerCase();
     const filtrados = todos.filter((m) => {
-      if (selTipo.value && m.tipo !== selTipo.value) return false;
+      if (vista !== "todos" && m.tipo !== vista) return false;
       if (selCategoria.value && String(m.categoria_id || "") !== selCategoria.value) return false;
       if (texto) {
         const hay = `${m.nombre} ${m.detalle || ""}`.toLowerCase();

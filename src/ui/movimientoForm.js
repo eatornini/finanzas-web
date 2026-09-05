@@ -105,7 +105,6 @@ export function abrirMovimientoForm({
   const inputArchivo = el("input", {
     type: "file",
     accept: "image/*",
-    capture: "environment",
     hidden: "true",
   });
   const btnCargarComprobante = el("button", { type: "button" });

@@ -800,6 +800,25 @@
     flex-direction: column;
   }
 
+  .tabs-vista {
+    margin-bottom: var(--esp-4);
+  }
+
+  .tabs-vista button {
+    white-space: nowrap;
+  }
+
+  @media (max-width: 560px) {
+    .tabs-vista {
+      display: flex;
+      width: 100%;
+    }
+
+    .tabs-vista button {
+      flex: 1;
+    }
+  }
+
   .lista-cabecera {
     position: relative;
     display: flex;
@@ -1665,6 +1684,17 @@
   .cat-icono-op.activo {
     border-color: var(--acento);
     background: var(--acento-tenue);
+  }
+  .cat-icono-busqueda {
+    margin: var(--esp-2) 0;
+  }
+  .cat-icono-busqueda-estado {
+    font-size: var(--txt-sm);
+    color: var(--fg-tenue);
+    margin: 0 0 var(--esp-1);
+  }
+  .ms-icono--completo {
+    font-family: "Material Symbols Full", "Material Symbols";
   }
 
   /* --- Vista Categorías --- */

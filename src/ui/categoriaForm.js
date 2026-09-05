@@ -1,7 +1,8 @@
 import { el, limpiar } from "./dom.js";
 import { montarModal } from "./modal.js";
 import { crearCategoria, actualizarCategoria } from "../data/categorias.js";
-import { LISTA_ICONOS, spanIcono } from "./iconoCategoria.js";
+import { LISTA_ICONOS, spanIcono, spanIconoConCarga, cargarIconosCompletos } from "./iconoCategoria.js";
+import { buscarIconos } from "../logic/busquedaIconos.js";
 
 const PALETA = [
   "#c0392b", "#e67e22", "#f1c40f", "#2ecc71", "#1abc9c", "#3498db",
@@ -41,7 +42,7 @@ export function abrirCategoriaForm({
     if (estado.emoji) {
       preview.append(el("span", { class: "cat-emoji", text: estado.emoji }));
     } else {
-      preview.append(spanIcono(estado.icono || "category") || el("span", { text: "?" }));
+      preview.append(spanIconoConCarga(estado.icono || "category"));
     }
   }
 
@@ -78,6 +79,14 @@ export function abrirCategoriaForm({
     sincronizarGrilla();
   });
 
+  function elegirIcono(nombreIcono) {
+    estado.icono = nombreIcono;
+    estado.emoji = "";
+    emojiInput.value = "";
+    pintarPreview();
+    sincronizarGrilla();
+  }
+
   const grilla = el(
     "div",
     { class: "cat-iconos-grilla" },
@@ -86,21 +95,60 @@ export function abrirCategoriaForm({
         spanIcono(nombreIcono),
       ]);
       b.dataset.icono = nombreIcono;
-      b.addEventListener("click", () => {
-        estado.icono = nombreIcono;
-        estado.emoji = "";
-        emojiInput.value = "";
-        pintarPreview();
-        sincronizarGrilla();
-      });
+      b.addEventListener("click", () => elegirIcono(nombreIcono));
       return b;
     })
   );
   function sincronizarGrilla() {
-    for (const b of grilla.children) {
+    for (const b of [...grilla.children, ...grillaBusqueda.children]) {
       b.classList.toggle("activo", !estado.emoji && b.dataset.icono === estado.icono);
     }
   }
+
+  const busquedaIcono = el("input", {
+    type: "search",
+    class: "cat-icono-busqueda",
+    placeholder: "Buscar entre todos los íconos…",
+  });
+  const estadoBusqueda = el("p", { class: "cat-icono-busqueda-estado" });
+  const grillaBusqueda = el("div", { class: "cat-iconos-grilla", hidden: "true" });
+
+  let mapaCompletos = null;
+  busquedaIcono.addEventListener("input", async () => {
+    const consulta = busquedaIcono.value;
+    limpiar(grillaBusqueda);
+    grillaBusqueda.hidden = true;
+    estadoBusqueda.textContent = "";
+    if (!consulta.trim()) return;
+
+    if (!mapaCompletos) {
+      estadoBusqueda.textContent = "Cargando…";
+      try {
+        mapaCompletos = await cargarIconosCompletos();
+      } catch (e) {
+        estadoBusqueda.textContent = "Necesitás conexión para buscar más íconos.";
+        return;
+      }
+      if (busquedaIcono.value !== consulta) return; // el usuario ya escribió otra cosa
+      estadoBusqueda.textContent = "";
+    }
+
+    const resultados = buscarIconos(mapaCompletos, consulta);
+    if (resultados.length === 0) {
+      estadoBusqueda.textContent = "Sin resultados.";
+      return;
+    }
+    for (const { nombre, caracter } of resultados) {
+      const b = el("button", { type: "button", class: "cat-icono-op", title: nombre }, [
+        el("span", { class: "ms-icono ms-icono--completo", text: caracter }),
+      ]);
+      b.dataset.icono = nombre;
+      b.addEventListener("click", () => elegirIcono(nombre));
+      grillaBusqueda.append(b);
+    }
+    grillaBusqueda.hidden = false;
+    sincronizarGrilla();
+  });
 
   const btnGuardar = el("button", {
     type: "submit",
@@ -154,6 +202,9 @@ export function abrirCategoriaForm({
           el("span", { class: "campo-etiqueta", text: "Icono o emoji" }),
           el("div", { class: "cat-icono-fila" }, [preview, emojiInput]),
           grilla,
+          busquedaIcono,
+          estadoBusqueda,
+          grillaBusqueda,
         ]),
       ]),
       error,
