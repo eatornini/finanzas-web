@@ -3,7 +3,7 @@
 import { el } from "./dom.js";
 import { cerrarIcono } from "./iconos.js";
 
-export function montarModal({ titulo, contenido, onCerrar }) {
+export function montarModal({ titulo, contenido, onCerrar, accionesCabecera = [] }) {
   const btnCerrar = el(
     "button",
     { class: "boton--icono modal-cerrar", "aria-label": "Cerrar", onClick: () => cerrar() },
@@ -14,7 +14,10 @@ export function montarModal({ titulo, contenido, onCerrar }) {
     "div",
     { class: "modal-panel", role: "dialog", "aria-modal": "true", "aria-label": titulo },
     [
-      el("div", { class: "modal-cabecera" }, [el("h3", { text: titulo }), btnCerrar]),
+      el("div", { class: "modal-cabecera" }, [
+        el("h3", { text: titulo }),
+        el("div", { class: "modal-cabecera-acciones" }, [...accionesCabecera, btnCerrar]),
+      ]),
       el("div", { class: "modal-cuerpo" }, [contenido]),
     ]
   );

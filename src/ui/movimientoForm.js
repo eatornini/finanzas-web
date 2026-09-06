@@ -356,12 +356,16 @@ export function abrirMovimientoForm({
     }, 250);
   });
 
+  // Vive en la cabecera del modal (fuera del <form> en el DOM), asociado
+  // por el atributo form= — así el clic sigue disparando el mismo submit
+  // de siempre aunque el botón ya no esté anidado adentro. Sin botón
+  // Cancelar: la "X" de la cabecera ya cierra el modal.
   const btnGuardar = el("button", {
     type: "submit",
+    form: "form-movimiento",
     class: "boton--primario",
-    text: edicion ? "Guardar" : "Agregar movimiento",
+    text: "Guardar",
   });
-  const btnCancelar = el("button", { type: "button", text: "Cancelar", onClick: () => cerrar() });
 
   function formValido() {
     return Boolean(nombre.value.trim()) && parseCLP(monto.value) > 0 && Boolean(categoriaId);
@@ -432,6 +436,7 @@ export function abrirMovimientoForm({
   const form = el(
     "form",
     {
+      id: "form-movimiento",
       class: "form-mov",
       onSubmit: async (ev) => {
         ev.preventDefault();
@@ -477,16 +482,13 @@ export function abrirMovimientoForm({
         }
       },
     },
-    [
-      el("div", { class: "form-mov-secciones" }, filas),
-      error,
-      el("div", { class: "modal-acciones modal-acciones--mov" }, [btnCancelar, btnGuardar]),
-    ]
+    [el("div", { class: "form-mov-secciones" }, filas), error]
   );
 
   const { cerrar } = montarModal({
     titulo: edicion ? "Editar movimiento" : "Agregar movimiento",
     contenido: form,
+    accionesCabecera: [btnGuardar],
   });
 
   function cargarUso() {

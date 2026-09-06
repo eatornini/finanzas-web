@@ -801,24 +801,6 @@
     gap: var(--esp-3);
   }
 
-  .modal-acciones--mov {
-    flex-direction: column;
-  }
-
-  .modal-acciones--mov .boton--primario {
-    width: 100%;
-    padding: var(--esp-4);
-    font-size: var(--txt-base);
-  }
-
-  .modal-acciones--mov .boton--icono,
-  .modal-acciones--mov button:not(.boton--primario) {
-    align-self: center;
-    border: none;
-    background: transparent;
-    color: var(--fg-tenue);
-  }
-
   /* --- Modal genérico (overlay + panel) --- */
   .modal-overlay {
     position: fixed;
@@ -859,6 +841,22 @@
   .modal-cabecera h3 {
     font-size: var(--txt-lg);
     font-weight: var(--peso-bold);
+  }
+
+  /* Envuelve la(s) acción(es) extra de la cabecera (ej. Guardar) + la "X" —
+     ambas quedan en la misma fila sticky de arriba, siempre visible incluso
+     con el teclado abierto (a diferencia de una barra de acciones pegada
+     abajo, que el teclado puede tapar). */
+  .modal-cabecera-acciones {
+    display: flex;
+    align-items: center;
+    gap: var(--esp-2);
+    flex: none;
+  }
+
+  .modal-cabecera .boton--primario {
+    padding: var(--esp-2) var(--esp-4);
+    font-size: var(--txt-sm);
   }
 
   .modal-cuerpo {
