@@ -1252,7 +1252,17 @@
 
     .fila-principal {
       order: 2;
-      width: 100%;
+      /* flex-basis (no width: .fila-principal ya trae flex:1 -> basis 0%,
+         y "width" se ignora en un ítem flex cuando su basis no es "auto" —
+         sin esto competía con monto/acciones y el nombre quedaba truncado
+         a 1 letra en pantallas angostas. */
+      flex: 1 1 100%;
+    }
+
+    .fila .nombre {
+      white-space: normal;
+      overflow: visible;
+      text-overflow: clip;
     }
 
     .fila .monto {
