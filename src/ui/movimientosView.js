@@ -303,13 +303,7 @@ function fila(m, recargar, error, modo, categorias) {
     el("div", { class: "fila-principal" }, [
       el("span", { class: "nombre", text: m.nombre }),
       inactivo ? el("span", { class: "badge-inactivo", text: "Inactivo" }) : null,
-      el(
-        "span",
-        { class: "fila-meta" },
-        modo === "estimado"
-          ? [el("span", { class: "fecha", text: (m.fecha || "").slice(0, 10) })]
-          : [el("span", { class: "cat", text: cat })]
-      ),
+      el("span", { class: "fila-meta" }, [el("span", { class: "cat", text: cat })]),
     ]),
     el("span", { class: "monto", text: `${signo} ${formatoCLP(m.monto)}` }),
     el("div", { class: "acciones" }, controles),
