@@ -1,7 +1,7 @@
 import { el, limpiar } from "./dom.js";
 import { listarMovimientos, actualizarMovimiento, eliminarMovimiento } from "../data/movimientos.js";
 import { listarCategorias } from "../data/categorias.js";
-import { lapiz, basura, lupaIcono, embudoIcono, chevronAbajo, check, camaraIcono } from "./iconos.js";
+import { lapiz, basura, lupaIcono, embudoIcono, chevronAbajo, check, mas } from "./iconos.js";
 import { colorMovimiento } from "./iconosCategoria.js";
 import { nodoIconoCategoria } from "./iconoCategoria.js";
 import { montarPanelResumen } from "./panelResumenView.js";
@@ -11,9 +11,6 @@ import { agruparPorFecha, agruparPorCategoria } from "../logic/agrupacionMovimie
 import { etiquetaDia } from "../logic/periodos.js";
 import { formatoCLP } from "../logic/dinero.js";
 import { prefs } from "../prefs.js";
-import { reconocerImagen } from "../ocr/tesseractWorker.js";
-import { construirBloques } from "../ocr/construirBloques.js";
-import { analizarComprobante } from "../ocr/ocrManager.js";
 
 export async function montarMovimientos(contenedor, { rango, modo, tipo, categoriaInicial = null }) {
   limpiar(contenedor);
@@ -67,54 +64,20 @@ export async function montarMovimientos(contenedor, { rango, modo, tipo, categor
   sincronizarVista();
   const tabsVista = el("div", { class: "selector-tipo tabs-vista" }, botonesVista);
 
+  // Flotante y siempre visible; "Cargar comprobante" (con OCR) vive ahora
+  // solo dentro del propio modal de alta (movimientoForm.js ya lo trae).
   const btnAgregar = el(
     "button",
-    { class: "boton--primario", type: "button", onClick: () => abrirModalNuevo() },
-    ["+ Agregar movimiento"]
+    { class: "fab-agregar", type: "button", "aria-label": "Agregar movimiento", onClick: () => abrirModalNuevo() },
+    [mas(), el("span", { text: "Agregar" })]
   );
-
-  const estadoOcrLista = el("span", { class: "comprobante-estado" });
-  const inputComprobante = el("input", {
-    type: "file",
-    accept: "image/*",
-    hidden: "true",
-  });
-  const btnComprobante = el(
-    "button",
-    { type: "button", onClick: () => inputComprobante.click() },
-    [camaraIcono(), " Cargar comprobante"]
-  );
-  inputComprobante.addEventListener("change", async () => {
-    const file = inputComprobante.files[0];
-    inputComprobante.value = "";
-    if (!file) return;
-    btnComprobante.disabled = true;
-    estadoOcrLista.textContent = "Leyendo comprobante…";
-    let valoresIniciales = null;
-    try {
-      const bloquesTesseract = await reconocerImagen(file);
-      const { lineas, bloques } = construirBloques(bloquesTesseract);
-      valoresIniciales = analizarComprobante({ lineas, bloques });
-    } catch {
-      // Se abre el form igual, sin prellenar — el usuario completa a mano.
-    }
-    estadoOcrLista.textContent = "";
-    btnComprobante.disabled = false;
-    abrirMovimientoForm({ modo, categorias, valoresIniciales, archivoInicial: file, onGuardado: recargar });
-  });
 
   const lista = el("div", { class: "lista" });
   const contador = el("p", { class: "contador-lista" });
 
   const tarjetaLista = el("section", { class: "panel-tarjeta lista-movimientos" }, [
     el("div", { class: "lista-cabecera" }, [
-      el("div", { class: "lista-titulo" }, [
-        el("h3", {}, ["Movimientos ", badge]),
-        btnAgregar,
-        btnComprobante,
-        inputComprobante,
-        estadoOcrLista,
-      ]),
+      el("div", { class: "lista-titulo" }, [el("h3", {}, ["Movimientos ", badge])]),
       el("div", { class: "lista-acciones" }, [
         el("div", { class: "campo-busqueda" }, [lupaIcono(), buscador]),
         btnFiltros,
@@ -129,7 +92,7 @@ export async function montarMovimientos(contenedor, { rango, modo, tipo, categor
 
   const principal = el("div", { class: "movimientos-principal" }, [tarjetaLista]);
   const aside = el("aside", { class: "panel-lateral" });
-  contenedor.append(el("div", { class: "vista-movimientos" }, [principal, aside]));
+  contenedor.append(el("div", { class: "vista-movimientos" }, [principal, aside]), btnAgregar);
 
   let categorias = [];
   let todos = [];

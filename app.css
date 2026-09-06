@@ -911,6 +911,46 @@
     gap: var(--esp-3);
   }
 
+  /* --- Botón flotante "Agregar movimiento" --- */
+  .fab-agregar {
+    position: fixed;
+    right: var(--esp-5);
+    bottom: var(--esp-5);
+    z-index: 30;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--esp-2);
+    padding: var(--esp-3) var(--esp-5);
+    border: none;
+    border-radius: var(--r-pill);
+    background: var(--acento);
+    color: var(--acento-fg);
+    font-size: var(--txt-base);
+    font-weight: var(--peso-semibold);
+    box-shadow: var(--sombra-popover);
+  }
+
+  .fab-agregar:hover {
+    filter: brightness(1.08);
+  }
+
+  .fab-agregar:active {
+    filter: brightness(0.95);
+    transform: translateY(1px);
+  }
+
+  .fab-agregar svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  @media (max-width: 720px) {
+    .fab-agregar {
+      right: var(--esp-4);
+      bottom: calc(60px + env(safe-area-inset-bottom, 0px) + var(--esp-3));
+    }
+  }
+
   .lista-cabecera h3 {
     display: flex;
     align-items: center;
