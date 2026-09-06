@@ -1295,6 +1295,15 @@
     transform: rotate(-90deg);
   }
 
+  /* Total del grupo, al extremo derecho — mismo tamaño/peso que el
+     título (hereda font-size y font-weight del botón), solo cambia el
+     color según si el neto del grupo es positivo o negativo. */
+  .lista-grupo-total {
+    margin-left: auto;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
   /* Grid con áreas nombradas compartido por desktop y mobile: icono/
      acciones/monto ocupan las dos filas (quedan centrados junto al bloque
      nombre+meta de dos líneas); cada breakpoint solo reacomoda las áreas

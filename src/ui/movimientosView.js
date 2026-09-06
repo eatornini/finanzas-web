@@ -6,7 +6,7 @@ import { colorMovimiento } from "./iconosCategoria.js";
 import { nodoIconoCategoria } from "./iconoCategoria.js";
 import { montarPanelResumen } from "./panelResumenView.js";
 import { abrirMovimientoForm } from "./movimientoForm.js";
-import { filtrarParaCalculos } from "../logic/totales.js";
+import { filtrarParaCalculos, calcularTotales } from "../logic/totales.js";
 import { agruparPorFecha, agruparPorCategoria } from "../logic/agrupacionMovimientos.js";
 import { etiquetaDia } from "../logic/periodos.js";
 import { formatoCLP } from "../logic/dinero.js";
@@ -98,8 +98,10 @@ export async function montarMovimientos(contenedor, { rango, modo, tipo, categor
   let todos = [];
   const colapsados = new Set(prefs.get("gruposColapsados"));
 
-  function grupoHeader(claveGrupo, etiqueta) {
+  function grupoHeader(claveGrupo, etiqueta, movimientosGrupo) {
     const colapsado = colapsados.has(claveGrupo);
+    const { balance } = calcularTotales(movimientosGrupo);
+    const signo = balance >= 0 ? "+" : "−";
     const btn = el(
       "button",
       {
@@ -107,7 +109,14 @@ export async function montarMovimientos(contenedor, { rango, modo, tipo, categor
         class: "lista-grupo-titulo" + (colapsado ? " colapsado" : ""),
         "aria-expanded": String(!colapsado),
       },
-      [chevronAbajo(), el("span", { text: etiqueta })]
+      [
+        chevronAbajo(),
+        el("span", { text: etiqueta }),
+        el("span", {
+          class: "lista-grupo-total " + (balance >= 0 ? "valor-ingreso" : "valor-gasto"),
+          text: `${signo} ${formatoCLP(Math.abs(balance))}`,
+        }),
+      ]
     );
     btn.addEventListener("click", () => {
       if (colapsados.has(claveGrupo)) colapsados.delete(claveGrupo);
@@ -185,13 +194,13 @@ export async function montarMovimientos(contenedor, { rango, modo, tipo, categor
       lista.append(el("p", { class: "vacio", text: "Ningún movimiento coincide con la búsqueda." }));
     } else if (modo === "estimado") {
       for (const grupo of agruparPorCategoria(filtrados)) {
-        const { btn, colapsado } = grupoHeader(`estimado:${grupo.clave}`, grupo.nombre);
+        const { btn, colapsado } = grupoHeader(`estimado:${grupo.clave}`, grupo.nombre, grupo.movimientos);
         lista.append(btn);
         if (!colapsado) for (const m of grupo.movimientos) lista.append(fila(m, recargar, error, modo, categorias));
       }
     } else {
       for (const grupo of agruparPorFecha(filtrados)) {
-        const { btn, colapsado } = grupoHeader(`real:${grupo.clave}`, etiquetaDia(grupo.clave));
+        const { btn, colapsado } = grupoHeader(`real:${grupo.clave}`, etiquetaDia(grupo.clave), grupo.movimientos);
         lista.append(btn);
         if (!colapsado) for (const m of grupo.movimientos) lista.append(fila(m, recargar, error, modo, categorias));
       }
