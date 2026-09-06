@@ -393,14 +393,19 @@ export function abrirMovimientoForm({
     return el("label", { class: "campo", for: input.id, text: etiqueta }, [input]);
   }
 
-  const opciones = [el("label", { class: "campo campo--check", for: "mov-activo" }, [activo, "Activo"])];
-  if (esEstimado) {
-    opciones.push(
-      el("label", { class: "campo campo--check", for: "mov-pagado" }, [pagado, "Pagado"]),
-      el("label", { class: "campo campo--check", for: "mov-recurrente" }, [recurrente, "Recurrente"]),
-      campo("Frecuencia", frecuencia)
-    );
+  function opcionCheck(input, etiqueta) {
+    return el("label", { class: "campo campo--check", for: input.id }, [input, etiqueta]);
   }
+
+  const checksOpciones = [opcionCheck(activo, "Activo")];
+  if (esEstimado) {
+    checksOpciones.push(opcionCheck(pagado, "Pagado"), opcionCheck(recurrente, "Recurrente"));
+  }
+  const seccionOpciones = el("div", { class: "campo mov-opciones" }, [
+    el("span", { class: "campo-etiqueta", text: "Opciones" }),
+    el("div", { class: "mov-opciones-checks" }, checksOpciones),
+    ...(esEstimado ? [campo("Frecuencia", frecuencia)] : []),
+  ]);
 
   const filas = [
     selectorTipoMov,
@@ -421,7 +426,7 @@ export function abrirMovimientoForm({
       ]),
     ]),
     campo("Fecha y hora", fecha),
-    el("div", { class: "mov-opciones" }, opciones),
+    seccionOpciones,
   ];
 
   const form = el(

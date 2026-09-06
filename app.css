@@ -1038,14 +1038,34 @@
   .mov-opciones {
     display: flex;
     flex-direction: column;
-    gap: var(--esp-3);
+    gap: var(--esp-2);
     padding: var(--esp-3) var(--esp-4);
     border-radius: var(--r-md);
     background: var(--bg-sutil);
   }
 
+  .mov-opciones > .campo-etiqueta {
+    font-size: var(--txt-sm);
+    font-weight: var(--peso-semibold);
+    color: var(--fg);
+  }
+
   .mov-opciones .campo {
     font-size: var(--txt-xs);
+  }
+
+  /* Fila de checks: cada uno es una unidad compacta (check + etiqueta) que
+     fluye y envuelve según el ancho disponible — nunca separa el check de
+     su texto en columnas distintas. */
+  .mov-opciones-checks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--esp-2) var(--esp-5);
+    margin: var(--esp-1) 0;
+  }
+
+  .mov-opciones-checks .campo--check {
+    flex: none;
   }
 
   /* --- Comprobante como acción secundaria bajo "Comercio" --- */
@@ -2120,6 +2140,18 @@
     flex-direction: row;
     align-items: center;
     gap: var(--esp-2);
+    /* Área táctil más generosa sin agrandar el check visualmente. */
+    padding: var(--esp-1) 0;
+  }
+
+  /* La regla general "input, select { width:100% }" estira los checkbox
+     hasta ocupar todo el ancho de la fila, separando visualmente el check
+     de su etiqueta (que queda empujada al final). Un checkbox nunca debe
+     ocupar el 100% del ancho. */
+  .campo--check input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    flex: none;
   }
 
   /* --- Lista de movimientos: inactivos --- */
