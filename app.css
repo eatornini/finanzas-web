@@ -283,22 +283,43 @@
       pointer-events: auto;
     }
 
-    .topbar-marca-movil {
+    /* Fila 1 (a la altura del título): ☰ + "Finanzas" a la izquierda,
+       Real/Estimado al extremo derecho. Fila 2: selector de período.
+       .topbar-marca-movil y .topbar-derecha se aplanan (display:contents)
+       para que sus hijos entren directo al flex-wrap de .topbar y se
+       puedan repartir en la fila 1 junto al título — el período se fuerza
+       a su propia fila con flex-basis:100%. */
+    .topbar {
       display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--esp-2) var(--esp-3);
+      padding: var(--esp-3) var(--esp-4);
+    }
+
+    .topbar-marca-movil,
+    .topbar-derecha {
+      display: contents;
     }
 
     .boton-menu {
       display: inline-flex;
+      order: 1;
     }
 
-    .topbar {
-      flex-direction: column;
-      align-items: stretch;
-      padding: var(--esp-3) var(--esp-4);
+    .marca-movil {
+      order: 2;
     }
 
-    .selector-periodo,
-    .topbar-derecha {
+    .selector-modo {
+      order: 3;
+      margin-left: auto;
+    }
+
+    .selector-periodo {
+      order: 4;
+      flex-basis: 100%;
       width: 100%;
       justify-content: space-between;
       margin-left: 0;
@@ -1675,6 +1696,16 @@
     display: flex;
     flex-direction: column;
     gap: var(--esp-5);
+  }
+
+  .config-vista {
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-4);
+  }
+
+  .config-vista h3 {
+    margin-bottom: var(--esp-3);
   }
 
   .comparativa-tarjetas {

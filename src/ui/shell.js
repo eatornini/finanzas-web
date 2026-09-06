@@ -27,7 +27,7 @@ import { montarResumen } from "./resumenView.js";
 import { montarCategorias } from "./categoriasView.js";
 import { montarBuscador } from "./buscadorView.js";
 import { montarReportes } from "./reportesView.js";
-import { montarPlaceholder } from "./placeholderView.js";
+import { montarConfiguracion } from "./configuracionView.js";
 
 const VISTAS = [
   { clave: "movimientos", titulo: "Movimientos", icono: listaIcono, montar: montarMovimientos },
@@ -35,17 +35,7 @@ const VISTAS = [
   { clave: "categorias", titulo: "Categorías", icono: etiquetaIcono, montar: montarCategorias },
   { clave: "buscar", titulo: "Buscar", icono: lupaIcono, montar: montarBuscador },
   { clave: "reportes", titulo: "Reportes", icono: graficoIcono, montar: montarReportes },
-  {
-    clave: "configuracion",
-    titulo: "Configuración",
-    icono: engranajeIcono,
-    montar: (c) =>
-      montarPlaceholder(c, {
-        icono: engranajeIcono,
-        titulo: "Configuración",
-        descripcion: "Próximamente: preferencias de la cuenta y la aplicación.",
-      }),
-  },
+  { clave: "configuracion", titulo: "Configuración", icono: engranajeIcono, montar: montarConfiguracion },
 ];
 
 function aplicarTema(tema) {
@@ -125,29 +115,11 @@ export function montarShell(contenedor, sesion) {
     for (const m of ["real", "estimado"]) {
       btnModo[m].classList.toggle("activo", modo === m);
     }
-    sincronizarInactivosVisible();
   }
   const selectorModo = el("div", { class: "selector-modo" }, [
     btnModo.real,
     btnModo.estimado,
   ]);
-
-  const btnInactivos = el("button", {
-    class: "boton--chip",
-    text: "Incluir inactivos",
-    "aria-pressed": String(prefs.get("incluirInactivos")),
-    onClick: () => {
-      const on = !prefs.get("incluirInactivos");
-      prefs.set("incluirInactivos", on);
-      btnInactivos.setAttribute("aria-pressed", String(on));
-      btnInactivos.classList.toggle("activo", on);
-      pintarVista();
-    },
-  });
-  btnInactivos.classList.toggle("activo", prefs.get("incluirInactivos"));
-  function sincronizarInactivosVisible() {
-    btnInactivos.hidden = modo !== "estimado";
-  }
 
   const iconoTema = el("span", { class: "icono-tema" }, [tema === "oscuro" ? lunaIcono() : solIcono()]);
   const btnTema = el(
@@ -282,11 +254,11 @@ export function montarShell(contenedor, sesion) {
   const topbar = el("header", { class: "topbar" }, [
     el("div", { class: "topbar-marca-movil" }, [btnMenu, el("span", { class: "marca-movil", text: "Finanzas" })]),
     selectorPeriodo,
-    el("div", { class: "topbar-derecha" }, [selectorModo, btnInactivos]),
+    el("div", { class: "topbar-derecha" }, [selectorModo]),
   ]);
 
   const piePagina = el("footer", { class: "pie-app" }, [
-    el("span", { text: "Finanzas v2.36" }),
+    el("span", { text: "Finanzas v2.37" }),
     el("span", { class: "pie-punto", text: "·" }),
     el("span", { text: "Tus datos están seguros" }),
   ]);
