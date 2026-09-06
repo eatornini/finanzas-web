@@ -1607,9 +1607,15 @@
       white-space: normal;
       overflow: visible;
       text-overflow: clip;
+      align-self: end;
     }
 
+    /* La causa real del hueco: acá "acciones" (botones de 30px) vive solo
+       en esta fila (en desktop ocupa las dos filas), así que la fila crece
+       a 30px y el align-items:center de .fila deja la categoría flotando
+       en el medio. Se la ancla arriba, pegada al nombre. */
     .fila-meta {
+      align-self: start;
       line-height: 1.2;
     }
 

@@ -29,7 +29,21 @@ export async function montarMovimientos(contenedor, { rango, modo, tipo, categor
   ]);
   const panelFiltros = el("div", { class: "panel-filtros", hidden: "true" });
   const selCategoria = el("select", {}, [el("option", { value: "", text: "Todas las categorías" })]);
-  panelFiltros.append(el("label", { text: "Categoría" }, [selCategoria]));
+  const ORDENES = [
+    ["fecha_desc", "Más recientes primero"],
+    ["fecha_asc", "Más antiguos primero"],
+    ["monto_desc", "Monto: mayor a menor"],
+    ["monto_asc", "Monto: menor a mayor"],
+  ];
+  const selOrden = el(
+    "select",
+    {},
+    ORDENES.map(([v, t]) => el("option", { value: v, text: t }))
+  );
+  panelFiltros.append(
+    el("label", { text: "Categoría" }, [selCategoria]),
+    el("label", { text: "Ordenar por" }, [selOrden])
+  );
   btnFiltros.addEventListener("click", () => {
     panelFiltros.hidden = !panelFiltros.hidden;
     btnFiltros.classList.toggle("activo", !panelFiltros.hidden);
@@ -156,6 +170,7 @@ export async function montarMovimientos(contenedor, { rango, modo, tipo, categor
 
   buscador.addEventListener("input", pintarLista);
   selCategoria.addEventListener("change", pintarLista);
+  selOrden.addEventListener("change", pintarLista);
 
   await recargar();
 
@@ -196,6 +211,14 @@ export async function montarMovimientos(contenedor, { rango, modo, tipo, categor
       }
       return true;
     });
+
+    const comparadores = {
+      fecha_desc: (a, b) => (b.fecha || "").localeCompare(a.fecha || ""),
+      fecha_asc: (a, b) => (a.fecha || "").localeCompare(b.fecha || ""),
+      monto_desc: (a, b) => Number(b.monto) - Number(a.monto),
+      monto_asc: (a, b) => Number(a.monto) - Number(b.monto),
+    };
+    filtrados.sort(comparadores[selOrden.value] || comparadores.fecha_desc);
 
     badge.textContent = String(todos.length);
     if (todos.length === 0) {
