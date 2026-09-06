@@ -1116,6 +1116,20 @@
     .fab-agregar {
       right: var(--esp-4);
       bottom: calc(var(--esp-4) + env(safe-area-inset-bottom, 0px));
+      width: 56px;
+      height: 56px;
+      padding: 0;
+      border-radius: 50%;
+      justify-content: center;
+    }
+
+    .fab-agregar-texto {
+      display: none;
+    }
+
+    .fab-agregar svg {
+      width: 24px;
+      height: 24px;
     }
   }
 

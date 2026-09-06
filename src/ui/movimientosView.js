@@ -69,7 +69,7 @@ export async function montarMovimientos(contenedor, { rango, modo, tipo, categor
   const btnAgregar = el(
     "button",
     { class: "fab-agregar", type: "button", "aria-label": "Agregar movimiento", onClick: () => abrirModalNuevo() },
-    [mas(), el("span", { text: "Agregar" })]
+    [mas(), el("span", { class: "fab-agregar-texto", text: "Agregar" })]
   );
 
   const lista = el("div", { class: "lista" });
