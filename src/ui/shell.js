@@ -21,6 +21,7 @@ import {
   chevronAbajo,
   lupaIcono,
   menuIcono,
+  logoAppIcono,
 } from "./iconos.js";
 import { montarMovimientos } from "./movimientosView.js";
 import { montarResumen } from "./resumenView.js";
@@ -241,7 +242,7 @@ export function montarShell(contenedor, sesion) {
 
   const sidebar = el("aside", { class: "sidebar" }, [
     el("div", { class: "marca" }, [
-      el("span", { class: "marca-logo", text: "$" }),
+      el("span", { class: "marca-logo" }, [logoAppIcono()]),
       el("div", { class: "marca-texto" }, [
         el("span", { class: "marca-nombre", text: "Finanzas" }),
         el("span", { class: "marca-lema", text: "Controla tu dinero" }),
@@ -259,7 +260,7 @@ export function montarShell(contenedor, sesion) {
   ]);
 
   const piePagina = el("footer", { class: "pie-app" }, [
-    el("span", { text: "Finanzas v2.41" }),
+    el("span", { text: "Finanzas v2.42" }),
     el("span", { class: "pie-punto", text: "·" }),
     el("span", { text: "Tus datos están seguros" }),
   ]);
