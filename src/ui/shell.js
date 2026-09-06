@@ -21,7 +21,6 @@ import {
   chevronAbajo,
   lupaIcono,
   menuIcono,
-  puntosIcono,
 } from "./iconos.js";
 import { montarMovimientos } from "./movimientosView.js";
 import { montarResumen } from "./resumenView.js";
@@ -48,11 +47,6 @@ const VISTAS = [
       }),
   },
 ];
-
-// Accesos directos de la barra de navegación inferior (mobile). El resto de
-// VISTAS (buscar, reportes, configuracion) más la sesión quedan detrás de
-// "Más", que abre el mismo drawer que el botón ☰.
-const CLAVES_NAV_INFERIOR = ["movimientos", "resumen", "categorias"];
 
 function aplicarTema(tema) {
   document.documentElement.dataset.tema = tema;
@@ -222,16 +216,11 @@ export function montarShell(contenedor, sesion) {
   );
   function sincronizarNav() {
     botonesNav.forEach((b, i) => b.classList.toggle("activo", VISTAS[i].clave === activa));
-    botonesNavInferior.forEach((b, i) =>
-      b.classList.toggle("activo", CLAVES_NAV_INFERIOR[i] === activa)
-    );
-    btnMas.classList.toggle("activo", !CLAVES_NAV_INFERIOR.includes(activa));
   }
   const nav = el("nav", { class: "nav" }, botonesNav);
 
   // --- Drawer (mobile): reutiliza el mismo `sidebar` de siempre, mostrado
-  // como panel off-canvas en vez de fijo. Un solo menú, dos disparadores
-  // (☰ y "Más" de la barra inferior).
+  // como panel off-canvas en vez de fijo, disparado por el botón ☰.
   let drawerAbierto = false;
   const drawerFondo = el("div", { class: "drawer-fondo", onClick: () => cerrarDrawer() });
   function abrirDrawer() {
@@ -257,21 +246,6 @@ export function montarShell(contenedor, sesion) {
     { class: "boton--icono boton-menu", "aria-label": "Abrir menú", onClick: () => abrirDrawer() },
     [menuIcono()]
   );
-
-  const botonesNavInferior = CLAVES_NAV_INFERIOR.map((clave) => {
-    const v = VISTAS.find((v2) => v2.clave === clave);
-    return el(
-      "button",
-      { class: "nav-inferior-boton", onClick: () => irA(clave) },
-      [el("span", { class: "nav-icono" }, [v.icono()]), v.titulo]
-    );
-  });
-  const btnMas = el(
-    "button",
-    { class: "nav-inferior-boton", onClick: () => abrirDrawer() },
-    [el("span", { class: "nav-icono" }, [puntosIcono()]), "Más"]
-  );
-  const navInferior = el("nav", { class: "nav-inferior" }, [...botonesNavInferior, btnMas]);
 
   const email = sesion?.user?.email || "";
   const nombre = nombreDesdeEmail(email);
@@ -311,12 +285,12 @@ export function montarShell(contenedor, sesion) {
   ]);
 
   const piePagina = el("footer", { class: "pie-app" }, [
-    el("span", { text: "Finanzas v2.26" }),
+    el("span", { text: "Finanzas v2.27" }),
     el("span", { class: "pie-punto", text: "·" }),
     el("span", { text: "Tus datos están seguros" }),
   ]);
 
-  const principal = el("div", { class: "principal" }, [topbar, cuerpo, piePagina, navInferior]);
+  const principal = el("div", { class: "principal" }, [topbar, cuerpo, piePagina]);
   const app = el("div", { class: "app" }, [sidebar, drawerFondo, principal]);
 
   contenedor.append(app);

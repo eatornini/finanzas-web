@@ -206,10 +206,6 @@
     display: none;
   }
 
-  .nav-inferior {
-    display: none;
-  }
-
   .cuerpo {
     width: 100%;
     max-width: var(--ancho-cuerpo);
@@ -310,43 +306,8 @@
       display: none;
     }
 
-    /* --- Navegación inferior fija --- */
     .principal {
-      padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
-    }
-
-    .nav-inferior {
-      display: flex;
-      position: fixed;
-      inset: auto 0 0 0;
-      z-index: 20;
-      background: var(--bg-elevado);
-      border-top: 1px solid var(--borde);
       padding-bottom: env(safe-area-inset-bottom, 0px);
-    }
-
-    .nav-inferior-boton {
-      flex: 1;
-      flex-direction: column;
-      justify-content: center;
-      gap: 2px;
-      min-height: 56px;
-      border: none;
-      border-radius: 0;
-      background: transparent;
-      color: var(--fg-tenue);
-      font-size: var(--txt-xs);
-      padding: var(--esp-1);
-    }
-
-    .nav-inferior-boton.activo {
-      color: var(--acento);
-      background: transparent;
-    }
-
-    .nav-inferior-boton .nav-icono svg {
-      width: 22px;
-      height: 22px;
     }
 
     /* --- Táctil: targets más cómodos --- */
@@ -1154,7 +1115,7 @@
   @media (max-width: 720px) {
     .fab-agregar {
       right: var(--esp-4);
-      bottom: calc(60px + env(safe-area-inset-bottom, 0px) + var(--esp-3));
+      bottom: calc(var(--esp-4) + env(safe-area-inset-bottom, 0px));
     }
   }
 
@@ -1684,6 +1645,13 @@
   .panel-lateral .panel-tarjeta {
     padding: var(--esp-4);
     box-shadow: none;
+  }
+
+  @media (max-width: 720px) {
+    .panel-tarjeta,
+    .panel-lateral .panel-tarjeta {
+      padding: 10px;
+    }
   }
 
   .panel-lateral .panel-tarjeta h3 {
