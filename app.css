@@ -511,7 +511,9 @@
     flex: none;
     border-radius: var(--r-md);
     background: var(--acento);
-    color: var(--acento-fg);
+    /* Fijo en blanco (no var(--acento-fg)): ese token es casi negro en modo
+       oscuro, pensado para botones de acento, no para este ícono. */
+    color: #fff;
     font-weight: var(--peso-bold);
     font-size: var(--txt-lg);
   }
@@ -964,7 +966,7 @@
   }
 
   .mov-cat-selector {
-    display: flex;
+    display: none;
     align-items: center;
     gap: var(--esp-3);
     width: 100%;
