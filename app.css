@@ -75,7 +75,7 @@
 
       --ingreso: #46c98a;
       --gasto: #f27a72;
-      --estimado: #a78bfa;
+      --estimado: #5b9bd8;
       --estimado-fg: #0b0b0c;
       --pendiente: #e0a44a;
 
@@ -98,7 +98,7 @@
 
     --ingreso: #46c98a;
     --gasto: #f27a72;
-    --estimado: #a78bfa;
+    --estimado: #5b9bd8;
     --estimado-fg: #0b0b0c;
     --pendiente: #e0a44a;
 
@@ -298,8 +298,12 @@
       padding: var(--esp-3) var(--esp-4);
     }
 
-    .topbar-marca-movil,
-    .topbar-derecha {
+    /* .topbar-derecha NO se aplana: su regla base (display:flex) vive en
+       @layer componentes, declarada después de @layer layout, y por
+       precedencia de capas le gana a un display:contents puesto acá aunque
+       esté en un media query — quedaría como caja real con order:0 (por
+       delante de ☰/título). Se deja como caja real y se ordena ella misma. */
+    .topbar-marca-movil {
       display: contents;
     }
 
@@ -312,9 +316,8 @@
       order: 2;
     }
 
-    .selector-modo {
+    .topbar-derecha {
       order: 3;
-      margin-left: auto;
     }
 
     .selector-periodo {
