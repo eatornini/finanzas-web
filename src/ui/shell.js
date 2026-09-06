@@ -285,7 +285,7 @@ export function montarShell(contenedor, sesion) {
   ]);
 
   const piePagina = el("footer", { class: "pie-app" }, [
-    el("span", { text: "Finanzas v2.31" }),
+    el("span", { text: "Finanzas v2.32" }),
     el("span", { class: "pie-punto", text: "·" }),
     el("span", { text: "Tus datos están seguros" }),
   ]);

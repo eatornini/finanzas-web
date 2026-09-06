@@ -1589,7 +1589,7 @@
         "icono nombre monto"
         "icono meta   acciones";
       column-gap: var(--esp-3);
-      row-gap: 4px;
+      row-gap: 1px;
       padding: var(--esp-2) var(--esp-3);
     }
 
@@ -1598,11 +1598,19 @@
       height: 34px;
     }
 
+    /* Nombre y categoría quedaban con mucho espacio vertical entre sí por
+       el line-height heredado del body (1.5) — se ajusta acá, no en
+       desktop, donde ese aire no molesta. */
     .fila .nombre {
       font-size: var(--txt-sm);
+      line-height: 1.2;
       white-space: normal;
       overflow: visible;
       text-overflow: clip;
+    }
+
+    .fila-meta {
+      line-height: 1.2;
     }
 
     .fila .acciones {
