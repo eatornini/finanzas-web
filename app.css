@@ -1490,17 +1490,28 @@
       grid-template-columns: 1fr;
     }
 
+    /* Fila compacta de 2 renglones (ícono+nombre+monto arriba, acciones
+       abajo) en vez de las 4-5 líneas apiladas del wrap+order anterior —
+       mismo DOM, solo se reubica por área de grid. */
     .fila {
-      flex-wrap: wrap;
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      grid-template-areas:
+        "icono principal monto"
+        "acciones acciones acciones";
+      column-gap: var(--esp-3);
+      row-gap: var(--esp-2);
+      align-items: center;
+      padding: var(--esp-2) var(--esp-3);
+    }
+
+    .fila-icono {
+      grid-area: icono;
     }
 
     .fila-principal {
-      order: 2;
-      /* flex-basis (no width: .fila-principal ya trae flex:1 -> basis 0%,
-         y "width" se ignora en un ítem flex cuando su basis no es "auto" —
-         sin esto competía con monto/acciones y el nombre quedaba truncado
-         a 1 letra en pantallas angostas. */
-      flex: 1 1 100%;
+      grid-area: principal;
+      min-width: 0;
     }
 
     .fila .nombre {
@@ -1510,13 +1521,12 @@
     }
 
     .fila .monto {
-      order: 3;
-      margin-left: auto;
+      grid-area: monto;
     }
 
     .fila .acciones {
-      order: 4;
-      margin-left: auto;
+      grid-area: acciones;
+      justify-content: flex-end;
     }
 
     .campo-busqueda input {
