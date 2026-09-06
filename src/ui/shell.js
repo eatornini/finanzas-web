@@ -81,10 +81,11 @@ export function montarShell(contenedor, sesion) {
     vista.montar(cuerpo, { rango, tipo, fechaRef, modo });
   }
 
+  const ETIQUETAS_TIPO = { semana: "Sem", mes: "Mes", año: "Año" };
   const btnTipo = {};
   for (const t of ["semana", "mes", "año"]) {
     btnTipo[t] = el("button", {
-      text: t[0].toUpperCase() + t.slice(1),
+      text: ETIQUETAS_TIPO[t],
       onClick: () => {
         tipo = t;
         prefs.set("periodoTipo", t);
@@ -258,7 +259,7 @@ export function montarShell(contenedor, sesion) {
   ]);
 
   const piePagina = el("footer", { class: "pie-app" }, [
-    el("span", { text: "Finanzas v2.38" }),
+    el("span", { text: "Finanzas v2.39" }),
     el("span", { class: "pie-punto", text: "·" }),
     el("span", { text: "Tus datos están seguros" }),
   ]);
