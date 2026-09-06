@@ -1607,13 +1607,18 @@
       white-space: normal;
       overflow: visible;
       text-overflow: clip;
+    }
+
+    /* .fila-principal (nombre, fila 1) y .fila-meta (categoría, fila 2) son
+       los ítems de grid reales acá — se anclan cada uno contra el borde que
+       comparten (abajo/arriba) para que queden pegados entre sí, en vez de
+       centrados cada uno en su fila (que "acciones", de 30px, agranda). El
+       <span class="nombre"> de adentro no es ítem de grid — no tocarlo con
+       align-self, ahí controla el eje horizontal (bug ya visto). */
+    .fila-principal {
       align-self: end;
     }
 
-    /* La causa real del hueco: acá "acciones" (botones de 30px) vive solo
-       en esta fila (en desktop ocupa las dos filas), así que la fila crece
-       a 30px y el align-items:center de .fila deja la categoría flotando
-       en el medio. Se la ancla arriba, pegada al nombre. */
     .fila-meta {
       align-self: start;
       line-height: 1.2;
