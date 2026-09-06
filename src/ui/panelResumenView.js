@@ -205,7 +205,7 @@ function tarjetaActividad(movimientos) {
     })
   );
 
-  return el("section", { class: "panel-tarjeta" }, [
+  return el("section", { class: "panel-tarjeta panel-tarjeta--actividad" }, [
     el("h3", { text: "Actividad reciente" }),
     recientes.length
       ? lista

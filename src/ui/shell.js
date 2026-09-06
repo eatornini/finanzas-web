@@ -20,6 +20,8 @@ import {
   lunaIcono,
   chevronAbajo,
   lupaIcono,
+  menuIcono,
+  puntosIcono,
 } from "./iconos.js";
 import { montarMovimientos } from "./movimientosView.js";
 import { montarResumen } from "./resumenView.js";
@@ -46,6 +48,11 @@ const VISTAS = [
       }),
   },
 ];
+
+// Accesos directos de la barra de navegación inferior (mobile). El resto de
+// VISTAS (buscar, reportes, configuracion) más la sesión quedan detrás de
+// "Más", que abre el mismo drawer que el botón ☰.
+const CLAVES_NAV_INFERIOR = ["movimientos", "resumen", "categorias"];
 
 function aplicarTema(tema) {
   document.documentElement.dataset.tema = tema;
@@ -199,26 +206,72 @@ export function montarShell(contenedor, sesion) {
     ]),
   ]);
 
+  function irA(clave) {
+    activa = clave;
+    sincronizarNav();
+    pintarVista();
+    cerrarDrawer();
+  }
+
   const botonesNav = VISTAS.map((v) =>
     el(
       "button",
-      {
-        class: "nav-boton",
-        onClick: () => {
-          activa = v.clave;
-          sincronizarNav();
-          pintarVista();
-        },
-      },
+      { class: "nav-boton", onClick: () => irA(v.clave) },
       [el("span", { class: "nav-icono" }, [v.icono()]), v.titulo]
     )
   );
   function sincronizarNav() {
-    botonesNav.forEach((b, i) =>
-      b.classList.toggle("activo", VISTAS[i].clave === activa)
+    botonesNav.forEach((b, i) => b.classList.toggle("activo", VISTAS[i].clave === activa));
+    botonesNavInferior.forEach((b, i) =>
+      b.classList.toggle("activo", CLAVES_NAV_INFERIOR[i] === activa)
     );
+    btnMas.classList.toggle("activo", !CLAVES_NAV_INFERIOR.includes(activa));
   }
   const nav = el("nav", { class: "nav" }, botonesNav);
+
+  // --- Drawer (mobile): reutiliza el mismo `sidebar` de siempre, mostrado
+  // como panel off-canvas en vez de fijo. Un solo menú, dos disparadores
+  // (☰ y "Más" de la barra inferior).
+  let drawerAbierto = false;
+  const drawerFondo = el("div", { class: "drawer-fondo", onClick: () => cerrarDrawer() });
+  function abrirDrawer() {
+    if (drawerAbierto) return;
+    drawerAbierto = true;
+    sidebar.classList.add("abierto");
+    drawerFondo.classList.add("visible");
+    document.addEventListener("keydown", alTeclearDrawer);
+  }
+  function cerrarDrawer() {
+    if (!drawerAbierto) return;
+    drawerAbierto = false;
+    sidebar.classList.remove("abierto");
+    drawerFondo.classList.remove("visible");
+    document.removeEventListener("keydown", alTeclearDrawer);
+  }
+  function alTeclearDrawer(ev) {
+    if (ev.key === "Escape") cerrarDrawer();
+  }
+
+  const btnMenu = el(
+    "button",
+    { class: "boton--icono boton-menu", "aria-label": "Abrir menú", onClick: () => abrirDrawer() },
+    [menuIcono()]
+  );
+
+  const botonesNavInferior = CLAVES_NAV_INFERIOR.map((clave) => {
+    const v = VISTAS.find((v2) => v2.clave === clave);
+    return el(
+      "button",
+      { class: "nav-inferior-boton", onClick: () => irA(clave) },
+      [el("span", { class: "nav-icono" }, [v.icono()]), v.titulo]
+    );
+  });
+  const btnMas = el(
+    "button",
+    { class: "nav-inferior-boton", onClick: () => abrirDrawer() },
+    [el("span", { class: "nav-icono" }, [puntosIcono()]), "Más"]
+  );
+  const navInferior = el("nav", { class: "nav-inferior" }, [...botonesNavInferior, btnMas]);
 
   const email = sesion?.user?.email || "";
   const nombre = nombreDesdeEmail(email);
@@ -252,19 +305,19 @@ export function montarShell(contenedor, sesion) {
   ]);
 
   const topbar = el("header", { class: "topbar" }, [
-    el("div", { class: "marca-movil", text: "Finanzas" }),
+    el("div", { class: "topbar-marca-movil" }, [btnMenu, el("span", { class: "marca-movil", text: "Finanzas" })]),
     selectorPeriodo,
     el("div", { class: "topbar-derecha" }, [selectorModo, btnInactivos, btnTema]),
   ]);
 
   const piePagina = el("footer", { class: "pie-app" }, [
-    el("span", { text: "Finanzas v2.10" }),
+    el("span", { text: "Finanzas v2.11" }),
     el("span", { class: "pie-punto", text: "·" }),
     el("span", { text: "Tus datos están seguros" }),
   ]);
 
-  const principal = el("div", { class: "principal" }, [topbar, cuerpo, piePagina]);
-  const app = el("div", { class: "app" }, [sidebar, principal]);
+  const principal = el("div", { class: "principal" }, [topbar, cuerpo, piePagina, navInferior]);
+  const app = el("div", { class: "app" }, [sidebar, drawerFondo, principal]);
 
   contenedor.append(app);
   sincronizarTipo();

@@ -187,10 +187,27 @@
     border-bottom: 1px solid var(--borde);
   }
 
-  .marca-movil {
+  .topbar-marca-movil {
     display: none;
+    align-items: center;
+    gap: var(--esp-2);
+  }
+
+  .marca-movil {
     font-weight: var(--peso-bold);
     font-size: var(--txt-lg);
+  }
+
+  .boton-menu {
+    display: none;
+  }
+
+  .drawer-fondo {
+    display: none;
+  }
+
+  .nav-inferior {
+    display: none;
   }
 
   .cuerpo {
@@ -229,59 +246,61 @@
 
   @media (max-width: 720px) {
     .app {
-      grid-template-columns: 1fr;
-    }
-
-    .sidebar {
-      position: fixed;
-      inset: auto 0 0 0;
-      z-index: 10;
-      flex-direction: row;
-      align-items: center;
-      gap: var(--esp-2);
-      padding: var(--esp-2);
-      border-right: 0;
-      border-top: 1px solid var(--borde);
-    }
-
-    .sidebar .marca,
-    .sidebar-pie .perfil {
-      display: none;
-    }
-
-    .sidebar .nav {
-      flex: 1;
-      flex-direction: row;
-    }
-
-    .nav-boton {
-      flex-direction: column;
-      justify-content: center;
-      gap: 2px;
-      font-size: var(--txt-xs);
-      padding: var(--esp-1);
-    }
-
-    .sidebar-pie {
-      margin-top: 0;
-      padding-top: 0;
-      border-top: 0;
-    }
-
-    .boton-salir span {
-      display: none;
-    }
-
-    .principal {
-      padding-bottom: 64px;
-    }
-
-    .marca-movil {
       display: block;
     }
 
+    /* El sidebar deja de ser una columna fija y pasa a ser el contenido
+       del drawer: mismo <aside>, mismo <nav>, mismos botones — solo cambia
+       cómo se posiciona y se muestra. */
+    .sidebar {
+      position: fixed;
+      inset: 0 auto 0 0;
+      z-index: 200;
+      width: min(280px, 85vw);
+      transform: translateX(-100%);
+      transition: transform 0.22s ease;
+      box-shadow: var(--sombra-popover);
+    }
+
+    .sidebar.abierto {
+      transform: translateX(0);
+    }
+
+    .drawer-fondo {
+      display: block;
+      position: fixed;
+      inset: 0;
+      z-index: 199;
+      background: color-mix(in srgb, #0b0b0c 45%, transparent);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.22s ease;
+    }
+
+    .drawer-fondo.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .topbar-marca-movil {
+      display: flex;
+    }
+
+    .boton-menu {
+      display: inline-flex;
+    }
+
     .topbar {
+      flex-direction: column;
+      align-items: stretch;
       padding: var(--esp-3) var(--esp-4);
+    }
+
+    .selector-periodo,
+    .topbar-derecha {
+      width: 100%;
+      justify-content: space-between;
+      margin-left: 0;
     }
 
     .cuerpo {
@@ -290,6 +309,51 @@
 
     .pie-app {
       display: none;
+    }
+
+    /* --- Navegación inferior fija --- */
+    .principal {
+      padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+    }
+
+    .nav-inferior {
+      display: flex;
+      position: fixed;
+      inset: auto 0 0 0;
+      z-index: 20;
+      background: var(--bg-elevado);
+      border-top: 1px solid var(--borde);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    .nav-inferior-boton {
+      flex: 1;
+      flex-direction: column;
+      justify-content: center;
+      gap: 2px;
+      min-height: 56px;
+      border: none;
+      border-radius: 0;
+      background: transparent;
+      color: var(--fg-tenue);
+      font-size: var(--txt-xs);
+      padding: var(--esp-1);
+    }
+
+    .nav-inferior-boton.activo {
+      color: var(--acento);
+      background: transparent;
+    }
+
+    .nav-inferior-boton .nav-icono svg {
+      width: 22px;
+      height: 22px;
+    }
+
+    /* --- Táctil: targets más cómodos --- */
+    .boton--icono {
+      width: 40px;
+      height: 40px;
     }
   }
 }
@@ -1290,6 +1354,14 @@
     text-transform: uppercase;
     letter-spacing: 0.04em;
     color: var(--fg-tenue);
+  }
+
+  @media (max-width: 720px) {
+    /* La actividad reciente repite lo que ya se ve en la lista de arriba
+       — en mobile, sin espacio de sobra, no aporta y sí duplica. */
+    .panel-tarjeta--actividad {
+      display: none;
+    }
   }
 
   .resumen-lista {
