@@ -149,14 +149,32 @@ export async function montarMovimientos(contenedor, { rango, modo, tipo, categor
     return { btn, colapsado };
   }
 
-  try {
-    categorias = await listarCategorias();
-    for (const c of categorias) {
-      selCategoria.append(el("option", { value: c.id, text: c.nombre }));
-    }
-  } catch (e) {
-    // Se seguirá intentando al abrir el modal.
+  function actualizarOpcionesCategoria() {
+    const valorPrevio = selCategoria.value;
+    limpiar(selCategoria);
+    selCategoria.append(el("option", { value: "", text: "Todas las categorías" }));
+    for (const c of categorias) selCategoria.append(el("option", { value: c.id, text: c.nombre }));
+    selCategoria.value = valorPrevio;
   }
+
+  async function cargarCategorias() {
+    try {
+      categorias = await listarCategorias();
+    } catch (e) {
+      categorias = [];
+    }
+    actualizarOpcionesCategoria();
+  }
+
+  // Reintenta si la carga inicial falló (ej. corte de red momentáneo): sin
+  // esto, categorias quedaba vacío para siempre y el formulario no dejaba
+  // elegir ninguna categoría hasta cerrar y volver a abrir la pantalla.
+  async function asegurarCategorias() {
+    if (categorias.length === 0) await cargarCategorias();
+    return categorias;
+  }
+
+  await cargarCategorias();
 
   if (categoriaInicial) {
     selCategoria.value = String(categoriaInicial);
@@ -164,8 +182,23 @@ export async function montarMovimientos(contenedor, { rango, modo, tipo, categor
     btnFiltros.classList.add("activo");
   }
 
-  function abrirModalNuevo() {
-    abrirMovimientoForm({ modo, categorias, onGuardado: recargar });
+  // Al agregar (no al editar) se limpian los filtros que podrían esconder
+  // el movimiento recién creado — de lo contrario parece que "no se guardó"
+  // hasta recargar la página, cuando en realidad quedó afuera de la pestaña
+  // o el filtro de categoría activos.
+  function alAgregarMovimiento() {
+    buscador.value = "";
+    selCategoria.value = "";
+    if (vista !== "todos" && opcionesVista.some((o) => o.valor === "todos")) {
+      vista = "todos";
+      sincronizarVista();
+    }
+    return recargar();
+  }
+
+  async function abrirModalNuevo() {
+    const cats = await asegurarCategorias();
+    abrirMovimientoForm({ modo, categorias: cats, onGuardado: alAgregarMovimiento });
   }
 
   buscador.addEventListener("input", pintarLista);
@@ -229,20 +262,20 @@ export async function montarMovimientos(contenedor, { rango, modo, tipo, categor
       for (const grupo of agruparPorCategoria(filtrados)) {
         const { btn, colapsado } = grupoHeader(`estimado:${grupo.clave}`, grupo.nombre, grupo.movimientos);
         lista.append(btn);
-        if (!colapsado) for (const m of grupo.movimientos) lista.append(fila(m, recargar, error, modo, categorias));
+        if (!colapsado) for (const m of grupo.movimientos) lista.append(fila(m, recargar, error, modo, asegurarCategorias));
       }
     } else {
       for (const grupo of agruparPorFecha(filtrados)) {
         const { btn, colapsado } = grupoHeader(`real:${grupo.clave}`, etiquetaDia(grupo.clave), grupo.movimientos);
         lista.append(btn);
-        if (!colapsado) for (const m of grupo.movimientos) lista.append(fila(m, recargar, error, modo, categorias));
+        if (!colapsado) for (const m of grupo.movimientos) lista.append(fila(m, recargar, error, modo, asegurarCategorias));
       }
     }
     contador.textContent = `Mostrando ${filtrados.length} de ${todos.length} movimientos`;
   }
 }
 
-function fila(m, recargar, error, modo, categorias) {
+function fila(m, recargar, error, modo, asegurarCategorias) {
   const signo = m.tipo === "ingreso" ? "+" : "−";
   const cat = m.categoria ? m.categoria.nombre : "Sin categoría";
   const color = colorMovimiento(m);
@@ -252,7 +285,8 @@ function fila(m, recargar, error, modo, categorias) {
   iconoFila.style.background = color;
   iconoFila.style.color = "#fff";
 
-  function abrirEdicion() {
+  async function abrirEdicion() {
+    const categorias = await asegurarCategorias();
     abrirMovimientoForm({ modo, categorias, movimiento: m, onGuardado: recargar });
   }
 
