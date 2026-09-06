@@ -417,7 +417,6 @@ export function abrirMovimientoForm({
     campo("Comercio", nombre),
     sugerencias,
     comprobante,
-    campo("Detalle (opcional)", detalle),
     el("div", { class: "campo campo-monto" }, [
       el("span", { class: "campo-etiqueta", text: "Monto" }),
       el("div", { class: "input-monto input-monto--grande" }, [
@@ -425,6 +424,7 @@ export function abrirMovimientoForm({
         monto,
       ]),
     ]),
+    campo("Detalle (opcional)", detalle),
     campo("Fecha y hora", fecha),
     seccionOpciones,
   ];
