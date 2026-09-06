@@ -43,7 +43,7 @@ function tarjetaResumen(titulo, movimientos, onToggleOcultar) {
     },
     [oculto ? ojoTachadoIcono() : ojoIcono()]
   );
-  return el("section", { class: "panel-tarjeta panel-tarjeta--resumen" }, [
+  return el("section", { class: "panel-tarjeta" }, [
     el("div", { class: "panel-tarjeta-cabecera" }, [el("h3", { text: titulo }), btnOjo]),
     el("div", { class: "resumen-lista" }, [
       filaResumen(flechaArribaCirculo, "resumen-icono--ingreso", "Ingresos", ingresos, "valor-ingreso"),

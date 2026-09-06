@@ -75,6 +75,14 @@ export async function montarMovimientos(contenedor, { rango, modo, tipo, categor
   const lista = el("div", { class: "lista" });
   const contador = el("p", { class: "contador-lista" });
 
+  // Solo mobile (CSS): balance del período arriba de todo, además del panel
+  // de resumen completo que ya se ve más abajo (aside) — no lo reemplaza.
+  const balanceMovilValor = el("span", { class: "balance-movil-valor valor-balance" });
+  const balanceMovil = el("div", { class: "balance-movil" }, [
+    el("span", { class: "balance-movil-etiqueta", text: "Balance actual" }),
+    balanceMovilValor,
+  ]);
+
   const tarjetaLista = el("section", { class: "panel-tarjeta lista-movimientos" }, [
     el("div", { class: "lista-cabecera" }, [
       el("div", { class: "lista-titulo" }, [el("h3", {}, ["Movimientos ", badge])]),
@@ -90,7 +98,7 @@ export async function montarMovimientos(contenedor, { rango, modo, tipo, categor
     contador,
   ]);
 
-  const principal = el("div", { class: "movimientos-principal" }, [tarjetaLista]);
+  const principal = el("div", { class: "movimientos-principal" }, [balanceMovil, tarjetaLista]);
   const aside = el("aside", { class: "panel-lateral" });
   contenedor.append(el("div", { class: "vista-movimientos" }, [principal, aside]), btnAgregar);
 
@@ -160,6 +168,8 @@ export async function montarMovimientos(contenedor, { rango, modo, tipo, categor
         modo,
         incluirInactivos: prefs.get("incluirInactivos"),
       });
+      const { balance } = calcularTotales(paraTotales);
+      balanceMovilValor.textContent = prefs.get("ocultarTotal") ? "*****" : formatoCLP(balance);
       montarPanelResumen(aside, todos, paraTotales, {
         tipo,
         onCategoria: (catId) =>
