@@ -724,8 +724,11 @@
 
   .error {
     color: var(--gasto);
-    min-height: 1.2em;
     margin: var(--esp-3) 0;
+  }
+
+  .error:empty {
+    display: none;
   }
 
   .vacio {
