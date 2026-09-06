@@ -17,7 +17,7 @@
     --fg: #17181c;
     --fg-tenue: #6b6f76;
     --borde: #e6e7eb;
-    --acento: #2563eb;
+    --acento: #1564C0;
     --acento-fg: #ffffff;
     --acento-tenue: #e8f0fe;
 
@@ -27,7 +27,7 @@
     --estimado-fg: #ffffff;
     --pendiente: #a56a12;
 
-    --esp-1: 4px;
+    --esp-1: 2px;
     --esp-2: 8px;
     --esp-3: 12px;
     --esp-4: 10px;
@@ -69,7 +69,7 @@
       --fg: #ececee;
       --fg-tenue: #9a9aa2;
       --borde: #2e2e33;
-      --acento: #5b9bd8;
+      --acento: #1564C0;
       --acento-fg: #0b0b0c;
       --acento-tenue: color-mix(in srgb, #5b9bd8 18%, transparent);
 
@@ -92,7 +92,7 @@
     --fg: #ececee;
     --fg-tenue: #9a9aa2;
     --borde: #2e2e33;
-    --acento: #5b9bd8;
+    --acento: #1564C0;
     --acento-fg: #0b0b0c;
     --acento-tenue: color-mix(in srgb, #5b9bd8 18%, transparent);
 
@@ -1488,7 +1488,7 @@
   .fila .monto {
     grid-area: monto;
     font-variant-numeric: tabular-nums;
-    font-size: 1.0625rem;
+    font-size: 15px;
     font-weight: var(--peso-bold);
     text-align: right;
     white-space: nowrap;
