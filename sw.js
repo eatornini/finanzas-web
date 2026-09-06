@@ -3,7 +3,7 @@
 // a medida que se piden (cache-first, con red de respaldo).
 // Atado a la versión mostrada en el pie de página (src/ui/shell.js) — bumpear
 // juntos en cada cambio para forzar refresco de caché sin limpiar a mano.
-const CACHE_NAME = "finanzas-v2.39";
+const CACHE_NAME = "finanzas-v2.40";
 const PRECACHE = [
   "./",
   "index.html",

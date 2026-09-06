@@ -39,6 +39,19 @@ describe("analizarComprobante", () => {
     expect(r.detalle).toBeNull();
   });
 
+  it("saca el prefijo TUU* del comercio en una compra", () => {
+    const bloques = [
+      bloque("TUU*Café Central", 100, 130),
+      bloque("Total $3.500", 200, 230),
+      bloque("Gracias por tu compra", 240, 260),
+    ];
+    const lineas = bloques.flatMap((b) => b.lines);
+
+    const r = analizarComprobante({ lineas, bloques });
+
+    expect(r.comercio).toBe("Café Central");
+  });
+
   it("degrada a compra si el clasificador dice transferencia pero el parser específico no encuentra suficientes keywords", () => {
     // Menos de 2 keywords del set (más chico) de transferenciaParser, pero
     // >= 2 del set (más amplio) de documentTypeDetector.
