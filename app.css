@@ -213,7 +213,6 @@
   .cuerpo {
     width: 100%;
     max-width: var(--ancho-cuerpo);
-    margin: 0 auto;
     padding: var(--esp-5);
     flex: 1;
   }
