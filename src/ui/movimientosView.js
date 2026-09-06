@@ -1,7 +1,7 @@
 import { el, limpiar } from "./dom.js";
 import { listarMovimientos, actualizarMovimiento, eliminarMovimiento } from "../data/movimientos.js";
 import { listarCategorias } from "../data/categorias.js";
-import { lapiz, basura, lupaIcono, embudoIcono, chevronAbajo, check, mas } from "./iconos.js";
+import { basura, lupaIcono, embudoIcono, chevronAbajo, check, mas } from "./iconos.js";
 import { colorMovimiento } from "./iconosCategoria.js";
 import { nodoIconoCategoria } from "./iconoCategoria.js";
 import { montarPanelResumen } from "./panelResumenView.js";
@@ -219,16 +219,9 @@ function fila(m, recargar, error, modo, categorias) {
   iconoFila.style.background = color;
   iconoFila.style.color = "#fff";
 
-  const editar = el(
-    "button",
-    {
-      class: "boton--icono",
-      "aria-label": "Editar",
-      title: "Editar",
-      onClick: () => abrirMovimientoForm({ modo, categorias, movimiento: m, onGuardado: recargar }),
-    },
-    [lapiz()]
-  );
+  function abrirEdicion() {
+    abrirMovimientoForm({ modo, categorias, movimiento: m, onGuardado: recargar });
+  }
 
   const borrar = el(
     "button",
@@ -267,7 +260,7 @@ function fila(m, recargar, error, modo, categorias) {
     [check()]
   );
 
-  const controles = [toggleActivo, editar, borrar];
+  const controles = [toggleActivo, borrar];
 
   const metaHijos = [el("span", { class: "cat", text: cat })];
   if (modo === "estimado") {
@@ -298,7 +291,20 @@ function fila(m, recargar, error, modo, categorias) {
   return el("div", { class: claseFila }, [
     iconoFila,
     el("div", { class: "fila-principal" }, [
-      el("span", { class: "nombre", text: m.nombre }),
+      el("span", {
+        class: "nombre",
+        text: m.nombre,
+        role: "button",
+        tabindex: "0",
+        "aria-label": `Editar ${m.nombre}`,
+        onClick: abrirEdicion,
+        onKeydown: (ev) => {
+          if (ev.key === "Enter" || ev.key === " ") {
+            ev.preventDefault();
+            abrirEdicion();
+          }
+        },
+      }),
       inactivo ? el("span", { class: "badge-inactivo", text: "Inactivo" }) : null,
     ]),
     el("span", { class: "fila-meta" }, metaHijos),
