@@ -118,8 +118,8 @@ export async function montarMovimientos(contenedor, { rango, modo, tipo, categor
       el("div", { class: "lista-acciones" }, [
         el("div", { class: "campo-busqueda" }, [lupaIcono(), buscador]),
         btnFiltros,
+        panelFiltros,
       ]),
-      panelFiltros,
     ]),
     tabsVista,
     error,

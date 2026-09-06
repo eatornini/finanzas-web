@@ -869,6 +869,7 @@
   }
 
   .lista-acciones {
+    position: relative;
     display: flex;
     align-items: center;
     gap: var(--esp-2);
