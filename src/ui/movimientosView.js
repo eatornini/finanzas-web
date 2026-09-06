@@ -207,8 +207,8 @@ function fila(m, recargar, error, modo, categorias) {
   const inactivo = m.activo === false;
 
   const iconoFila = el("span", { class: "fila-icono" }, [nodoIconoCategoria(m.categoria, m.nombre)]);
-  iconoFila.style.color = color;
-  iconoFila.style.background = `color-mix(in srgb, ${color} 16%, transparent)`;
+  iconoFila.style.background = color;
+  iconoFila.style.color = "#fff";
 
   const editar = el(
     "button",

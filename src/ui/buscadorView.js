@@ -127,8 +127,8 @@ export async function montarBuscador(contenedor, { modo }) {
     const inactivo = m.activo === false;
 
     const iconoFila = el("span", { class: "fila-icono" }, [nodoIconoCategoria(m.categoria, m.nombre)]);
-    iconoFila.style.color = color;
-    iconoFila.style.background = `color-mix(in srgb, ${color} 16%, transparent)`;
+    iconoFila.style.background = color;
+    iconoFila.style.color = "#fff";
 
     return el(
       "button",

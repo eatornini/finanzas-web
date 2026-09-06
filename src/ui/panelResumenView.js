@@ -188,8 +188,8 @@ function tarjetaActividad(movimientos) {
     recientes.map((m) => {
       const color = colorMovimiento(m);
       const icono = el("span", { class: "actividad-icono" }, [iconoMovimiento(m)]);
-      icono.style.color = color;
-      icono.style.background = `color-mix(in srgb, ${color} 16%, transparent)`;
+      icono.style.background = color;
+      icono.style.color = "#fff";
       const signo = m.tipo === "ingreso" ? "+" : "−";
       return el("li", {}, [
         icono,
