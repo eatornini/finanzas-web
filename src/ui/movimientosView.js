@@ -113,7 +113,7 @@ export async function montarMovimientos(contenedor, { rango, modo, tipo, categor
         chevronAbajo(),
         el("span", { text: etiqueta }),
         el("span", {
-          class: "lista-grupo-total " + (balance >= 0 ? "valor-ingreso" : "valor-gasto"),
+          class: "lista-grupo-total" + (balance >= 0 ? " valor-ingreso" : ""),
           text: `${signo} ${formatoCLP(Math.abs(balance))}`,
         }),
       ]

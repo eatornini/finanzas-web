@@ -1296,10 +1296,12 @@
   }
 
   /* Total del grupo, al extremo derecho — mismo tamaño/peso que el
-     título (hereda font-size y font-weight del botón), solo cambia el
-     color según si el neto del grupo es positivo o negativo. */
+     título (hereda font-size y font-weight del botón). Blanco/alto
+     contraste por defecto (neto negativo); si es positivo se pinta
+     verde con .valor-ingreso. */
   .lista-grupo-total {
     margin-left: auto;
+    color: var(--fg);
     font-variant-numeric: tabular-nums;
     white-space: nowrap;
   }
