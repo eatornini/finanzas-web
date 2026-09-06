@@ -30,8 +30,8 @@
     --esp-1: 4px;
     --esp-2: 8px;
     --esp-3: 12px;
-    --esp-4: 16px;
-    --esp-5: 24px;
+    --esp-4: 10px;
+    --esp-5: 15px;
     --esp-6: 32px;
 
     --r-sm: 6px;
@@ -472,6 +472,10 @@
     align-items: center;
     gap: var(--esp-3);
     padding: 0 var(--esp-2) var(--esp-5);
+  }
+
+  .marca .boton-tema {
+    margin-left: auto;
   }
 
   .marca-logo {
@@ -1433,6 +1437,7 @@
     color: var(--fg-tenue);
     font-size: var(--txt-xs);
     font-weight: var(--peso-normal);
+    line-height: 2;
   }
 
   .fila-meta-sep {
@@ -1603,7 +1608,7 @@
        desktop, donde ese aire no molesta. */
     .fila .nombre {
       font-size: var(--txt-sm);
-      line-height: 1.2;
+      line-height: 1;
       white-space: normal;
       overflow: visible;
       text-overflow: clip;

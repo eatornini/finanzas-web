@@ -273,6 +273,7 @@ export function montarShell(contenedor, sesion) {
         el("span", { class: "marca-nombre", text: "Finanzas" }),
         el("span", { class: "marca-lema", text: "Controla tu dinero" }),
       ]),
+      btnTema,
     ]),
     nav,
     el("div", { class: "sidebar-pie" }, [perfil, btnSalir]),
@@ -281,11 +282,11 @@ export function montarShell(contenedor, sesion) {
   const topbar = el("header", { class: "topbar" }, [
     el("div", { class: "topbar-marca-movil" }, [btnMenu, el("span", { class: "marca-movil", text: "Finanzas" })]),
     selectorPeriodo,
-    el("div", { class: "topbar-derecha" }, [selectorModo, btnInactivos, btnTema]),
+    el("div", { class: "topbar-derecha" }, [selectorModo, btnInactivos]),
   ]);
 
   const piePagina = el("footer", { class: "pie-app" }, [
-    el("span", { text: "Finanzas v2.35" }),
+    el("span", { text: "Finanzas v2.36" }),
     el("span", { class: "pie-punto", text: "·" }),
     el("span", { text: "Tus datos están seguros" }),
   ]);
