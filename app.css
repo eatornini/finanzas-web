@@ -1295,10 +1295,19 @@
     transform: rotate(-90deg);
   }
 
+  /* Grid con áreas nombradas compartido por desktop y mobile: icono/
+     acciones/monto ocupan las dos filas (quedan centrados junto al bloque
+     nombre+meta de dos líneas); cada breakpoint solo reacomoda las áreas
+     en grid-template-areas/columns, sin tocar el DOM. */
   .fila {
-    display: flex;
+    display: grid;
+    grid-template-columns: auto 1fr auto auto;
+    grid-template-areas:
+      "icono nombre acciones monto"
+      "icono meta   acciones monto";
     align-items: center;
-    gap: var(--esp-3);
+    column-gap: var(--esp-3);
+    row-gap: 2px;
     padding: var(--esp-3);
     border: 1px solid var(--borde);
     border-radius: var(--r-md);
@@ -1307,6 +1316,8 @@
   }
 
   button.fila--resultado {
+    grid-template-columns: auto 1fr auto;
+    grid-template-areas: none;
     width: 100%;
     text-align: left;
     font: inherit;
@@ -1348,6 +1359,7 @@
   }
 
   .fila-icono {
+    grid-area: icono;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1363,10 +1375,10 @@
   }
 
   .fila-principal {
+    grid-area: nombre;
     display: flex;
     flex-direction: column;
     gap: 2px;
-    flex: 1;
     min-width: 0;
   }
 
@@ -1379,17 +1391,24 @@
   }
 
   .fila-meta {
+    grid-area: meta;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: var(--esp-2);
+    gap: var(--esp-1);
+    min-width: 0;
   }
 
   .fila .cat,
-  .fila .fecha {
+  .fila .fecha,
+  .fila-meta-sep {
     color: var(--fg-tenue);
     font-size: var(--txt-xs);
     font-weight: var(--peso-normal);
+  }
+
+  .fila-meta-sep {
+    opacity: 0.5;
   }
 
   .fila .fecha::before {
@@ -1399,7 +1418,18 @@
     opacity: 0.5;
   }
 
+  /* Badge compacto de Pendiente/Pagado (antes un botón de tamaño normal
+     mezclado con las acciones): mismas clases pagado/pendiente para el
+     color, solo se achica para vivir junto a la categoría. */
+  .mov-badge-estado {
+    padding: 1px var(--esp-2);
+    font-size: var(--txt-xs);
+    line-height: 1.5;
+    border-radius: var(--r-pill);
+  }
+
   .fila .monto {
+    grid-area: monto;
     font-variant-numeric: tabular-nums;
     font-size: 1.0625rem;
     font-weight: var(--peso-bold);
@@ -1408,6 +1438,7 @@
   }
 
   .fila .acciones {
+    grid-area: acciones;
     display: flex;
     gap: var(--esp-1);
     align-items: center;
@@ -1434,9 +1465,17 @@
     flex: none;
   }
 
-  .fila--categoria {
+  /* Especificidad ".fila.fila--categoria" (no solo ".fila--categoria") a
+     propósito: tiene que ganarle a ".fila" también dentro del media query
+     mobile, donde compite en igualdad de especificidad y perdería por
+     orden de declaración. */
+  .fila.fila--categoria {
     display: grid;
     grid-template-columns: auto 1fr auto auto;
+    /* Sin áreas propias: se desacopla de las grid-template-areas de .fila
+       (pensadas para la fila de movimiento) y usa ubicación automática,
+       como antes. */
+    grid-template-areas: none;
     gap: var(--esp-2) var(--esp-3);
   }
 
@@ -1512,28 +1551,23 @@
       grid-template-columns: 1fr;
     }
 
-    /* Fila compacta de 2 renglones (ícono+nombre+monto arriba, acciones
-       abajo) en vez de las 4-5 líneas apiladas del wrap+order anterior —
-       mismo DOM, solo se reubica por área de grid. */
+    /* Fila compacta de 2 renglones — icono/nombre/monto arriba, categoría
+       (+ estado) y acciones abajo — ~80-95px de alto. Mismas grid-area que
+       desktop (definidas más arriba); acá solo se reacomodan filas y
+       columnas para que nombre/monto y meta/acciones queden apareados. */
     .fila {
-      display: grid;
       grid-template-columns: auto 1fr auto;
       grid-template-areas:
-        "icono principal monto"
-        "acciones acciones acciones";
+        "icono nombre monto"
+        "icono meta   acciones";
       column-gap: var(--esp-3);
-      row-gap: var(--esp-2);
-      align-items: center;
+      row-gap: 4px;
       padding: var(--esp-2) var(--esp-3);
     }
 
     .fila-icono {
-      grid-area: icono;
-    }
-
-    .fila-principal {
-      grid-area: principal;
-      min-width: 0;
+      width: 34px;
+      height: 34px;
     }
 
     .fila .nombre {
@@ -1542,13 +1576,21 @@
       text-overflow: clip;
     }
 
-    .fila .monto {
-      grid-area: monto;
+    .fila .acciones {
+      justify-content: flex-end;
     }
 
-    .fila .acciones {
-      grid-area: acciones;
-      justify-content: flex-end;
+    /* Botones de acción más chicos en la fila de movimiento (no en
+       Categorías): la fila ya es angosta y son tres juntos — igual quedan
+       cómodos para tocar (30px). */
+    .fila:not(.fila--categoria) .acciones .boton--icono {
+      width: 30px;
+      height: 30px;
+    }
+
+    .fila:not(.fila--categoria) .acciones .boton--icono svg {
+      width: 15px;
+      height: 15px;
     }
 
     .campo-busqueda input {

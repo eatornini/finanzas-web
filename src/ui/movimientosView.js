@@ -259,11 +259,13 @@ function fila(m, recargar, error, modo, categorias) {
   );
 
   const controles = [toggleActivo, editar, borrar];
+
+  const metaHijos = [el("span", { class: "cat", text: cat })];
   if (modo === "estimado") {
     const togglePagado = el(
       "button",
       {
-        class: m.pagado ? "pagado" : "pendiente",
+        class: (m.pagado ? "pagado" : "pendiente") + " mov-badge-estado",
         text: m.pagado ? "Pagado" : "Pendiente",
         onClick: async () => {
           try {
@@ -276,7 +278,7 @@ function fila(m, recargar, error, modo, categorias) {
       },
       []
     );
-    controles.unshift(togglePagado);
+    metaHijos.push(el("span", { class: "fila-meta-sep", text: "·" }), togglePagado);
   }
 
   const claseFila =
@@ -289,8 +291,8 @@ function fila(m, recargar, error, modo, categorias) {
     el("div", { class: "fila-principal" }, [
       el("span", { class: "nombre", text: m.nombre }),
       inactivo ? el("span", { class: "badge-inactivo", text: "Inactivo" }) : null,
-      el("span", { class: "fila-meta" }, [el("span", { class: "cat", text: cat })]),
     ]),
+    el("span", { class: "fila-meta" }, metaHijos),
     el("div", { class: "acciones" }, controles),
     el("span", { class: "monto", text: `${signo} ${formatoCLP(m.monto)}` }),
   ]);
