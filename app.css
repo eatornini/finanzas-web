@@ -315,6 +315,20 @@
       width: 40px;
       height: 40px;
     }
+
+    /* Balance arriba de todo: .panel-lateral se "disuelve" (sus 3 tarjetas
+       pasan a ser ítems directos del grid de .vista-movimientos) para poder
+       reordenar solo la tarjeta de Resumen (Ingresos/Gastos/Balance) antes
+       de la lista de movimientos, sin duplicar el cálculo ni el markup —
+       la dona y la actividad reciente se quedan donde estaban, después de
+       la lista. */
+    .panel-lateral {
+      display: contents;
+    }
+
+    .panel-tarjeta--resumen {
+      order: -1;
+    }
   }
 }
 
@@ -1570,6 +1584,7 @@
     }
 
     .fila .nombre {
+      font-size: var(--txt-sm);
       white-space: normal;
       overflow: visible;
       text-overflow: clip;
