@@ -5,7 +5,7 @@ import { usoCategorias, sugerenciasComercio } from "../data/rpc.js";
 import { abrirCategoriaForm } from "./categoriaForm.js";
 import { formatoCLP, parseCLP } from "../logic/dinero.js";
 import { nodoIconoCategoria } from "./iconoCategoria.js";
-import { camaraIcono, cerrarIcono } from "./iconos.js";
+import { camaraIcono, cerrarIcono, chevronAbajo } from "./iconos.js";
 import { subirComprobante, urlComprobante, eliminarComprobante } from "../data/storage.js";
 import { reconocerImagen } from "../ocr/tesseractWorker.js";
 import { construirBloques } from "../ocr/construirBloques.js";
@@ -18,6 +18,12 @@ const FRECUENCIAS = [
   ["trimestral", "Trimestral"],
   ["anual", "Anual"],
 ];
+
+// Igual que formatoCLP pero sin el "$" — para el campo de monto rediseñado,
+// que muestra el símbolo aparte (.input-monto-simbolo).
+function formatoMontoCampo(n) {
+  return formatoCLP(n).replace("$", "");
+}
 
 // ISO (con hora) -> valor para <input type="datetime-local"> en hora local.
 function isoAInputLocal(iso) {
@@ -59,29 +65,43 @@ export function abrirMovimientoForm({
     id: "mov-monto",
     inputmode: "numeric",
     value: movimiento
-      ? formatoCLP(movimiento.monto)
+      ? formatoMontoCampo(movimiento.monto)
       : inicial?.monto
-      ? formatoCLP(inicial.monto)
+      ? formatoMontoCampo(inicial.monto)
       : "",
   });
   monto.addEventListener("input", () => {
     const n = parseCLP(monto.value);
-    monto.value = Number.isFinite(n) ? formatoCLP(n) : "";
+    monto.value = Number.isFinite(n) ? formatoMontoCampo(n) : "";
     actualizarBotones();
   });
 
-  const tipo = el("select", { id: "mov-tipo" }, [
-    el("option", { value: "gasto", text: "Gasto" }),
-    el("option", { value: "ingreso", text: "Ingreso" }),
-  ]);
-  tipo.value = tipoActual;
-  tipo.addEventListener("change", () => {
-    tipoActual = tipo.value;
+  // Toggle Gasto/Ingreso (antes <select id="mov-tipo">). tipoActual sigue
+  // siendo la única fuente de verdad; se conserva el mismo reseteo de
+  // categoría al cambiar de tipo.
+  const btnTipoGasto = el("button", { type: "button", text: "Gasto" });
+  const btnTipoIngreso = el("button", { type: "button", text: "Ingreso" });
+  function sincronizarTipo() {
+    btnTipoGasto.classList.toggle("activo", tipoActual === "gasto");
+    btnTipoIngreso.classList.toggle("activo", tipoActual === "ingreso");
+  }
+  function elegirTipo(t) {
+    if (tipoActual === t) return;
+    tipoActual = t;
     categoriaId = null;
+    sincronizarTipo();
     cargarUso();
     pintarChips();
+    actualizarSelectorCategoria();
     actualizarBotones();
-  });
+  }
+  btnTipoGasto.addEventListener("click", () => elegirTipo("gasto"));
+  btnTipoIngreso.addEventListener("click", () => elegirTipo("ingreso"));
+  sincronizarTipo();
+  const selectorTipoMov = el("div", { class: "selector-tipo mov-tipo-toggle" }, [
+    btnTipoGasto,
+    btnTipoIngreso,
+  ]);
 
   const fecha = el("input", {
     id: "mov-fecha",
@@ -107,7 +127,7 @@ export function abrirMovimientoForm({
     accept: "image/*",
     hidden: "true",
   });
-  const btnCargarComprobante = el("button", { type: "button" });
+  const btnCargarComprobante = el("button", { type: "button", class: "boton--secundario" });
   btnCargarComprobante.addEventListener("click", () => inputArchivo.click());
   const btnQuitarComprobante = el(
     "button",
@@ -148,7 +168,7 @@ export function abrirMovimientoForm({
   function aplicarValoresOcr(resultado) {
     if (!nombre.value.trim() && resultado.comercio) nombre.value = resultado.comercio;
     if (!parseCLP(monto.value) && resultado.monto) {
-      monto.value = formatoCLP(resultado.monto);
+      monto.value = formatoMontoCampo(resultado.monto);
     }
     if (!fechaTocada && resultado.fecha) {
       fecha.value = isoAInputLocal(resultado.fecha.toISOString());
@@ -176,8 +196,7 @@ export function abrirMovimientoForm({
     }
   });
 
-  const comprobante = el("div", { class: "campo comprobante-campo" }, [
-    el("span", { class: "campo-etiqueta", text: "Comprobante" }),
+  const comprobante = el("div", { class: "comprobante-campo comprobante-campo--secundario" }, [
     el("div", { class: "comprobante-caja" }, [previewImg, btnCargarComprobante, btnQuitarComprobante, inputArchivo]),
     estadoOcr,
   ]);
@@ -225,9 +244,33 @@ export function abrirMovimientoForm({
     b.addEventListener("click", () => {
       categoriaId = c.id;
       marcarChipActivo();
+      actualizarSelectorCategoria();
       actualizarBotones();
     });
     return b;
+  }
+
+  // --- Selector grande de categoría (arriba del todo) ---
+  const catSelectorIcono = el("span", { class: "mov-cat-selector-icono" });
+  const catSelectorNombre = el("span", { class: "mov-cat-selector-nombre" });
+  const catSelector = el(
+    "button",
+    { type: "button", class: "mov-cat-selector" },
+    [
+      catSelectorIcono,
+      el("div", { class: "mov-cat-selector-texto" }, [
+        el("span", { class: "mov-cat-selector-etiqueta", text: "Seleccionar categoría" }),
+        catSelectorNombre,
+      ]),
+      chevronAbajo(),
+    ]
+  );
+  catSelector.addEventListener("click", () => abrirListaCompleta(categoriasDelTipo()));
+  function actualizarSelectorCategoria() {
+    const cat = categorias.find((c) => c.id === categoriaId) || null;
+    limpiar(catSelectorIcono);
+    catSelectorIcono.append(nodoIconoCategoria(cat));
+    catSelectorNombre.textContent = cat ? cat.nombre : "Categoría";
   }
 
   function marcarChipActivo() {
@@ -266,6 +309,7 @@ export function abrirMovimientoForm({
         categoriaId = c.id;
         cerrarLista();
         pintarChips();
+        actualizarSelectorCategoria();
         actualizarBotones();
       });
       cont.append(b);
@@ -284,6 +328,7 @@ export function abrirMovimientoForm({
               categorias.push(nueva);
               categoriaId = nueva.id;
               pintarChips();
+              actualizarSelectorCategoria();
               actualizarBotones();
             },
           });
@@ -326,7 +371,7 @@ export function abrirMovimientoForm({
     return (
       nombre.value.trim() !== movimiento.nombre ||
       parseCLP(monto.value) !== Math.round(movimiento.monto) ||
-      tipo.value !== movimiento.tipo ||
+      tipoActual !== movimiento.tipo ||
       categoriaId !== (movimiento.categoria_id || null) ||
       new Date(fecha.value).toISOString() !== new Date(movimiento.fecha).toISOString() ||
       (detalle.value.trim() || null) !== (movimiento.detalle || null) ||
@@ -348,27 +393,36 @@ export function abrirMovimientoForm({
     return el("label", { class: "campo", for: input.id, text: etiqueta }, [input]);
   }
 
-  const filas = [
-    comprobante,
-    campo("Nombre", nombre),
-    sugerencias,
-    campo("Monto", monto),
-    campo("Tipo", tipo),
-    el("div", { class: "campo" }, [
-      el("span", { class: "campo-etiqueta", text: "Categoría" }),
-      chips,
-    ]),
-    campo("Fecha y hora", fecha),
-    campo("Detalle (opcional)", detalle),
-    el("label", { class: "campo campo--check", for: "mov-activo" }, [activo, "Activo"]),
-  ];
+  const opciones = [el("label", { class: "campo campo--check", for: "mov-activo" }, [activo, "Activo"])];
   if (esEstimado) {
-    filas.push(
+    opciones.push(
       el("label", { class: "campo campo--check", for: "mov-pagado" }, [pagado, "Pagado"]),
       el("label", { class: "campo campo--check", for: "mov-recurrente" }, [recurrente, "Recurrente"]),
       campo("Frecuencia", frecuencia)
     );
   }
+
+  const filas = [
+    selectorTipoMov,
+    catSelector,
+    el("div", { class: "campo mov-rapido-campo" }, [
+      el("span", { class: "campo-etiqueta", text: "Rápido" }),
+      chips,
+    ]),
+    campo("Comercio", nombre),
+    sugerencias,
+    comprobante,
+    campo("Detalle (opcional)", detalle),
+    el("div", { class: "campo campo-monto" }, [
+      el("span", { class: "campo-etiqueta", text: "Monto" }),
+      el("div", { class: "input-monto input-monto--grande" }, [
+        el("span", { class: "input-monto-simbolo", text: "$" }),
+        monto,
+      ]),
+    ]),
+    campo("Fecha y hora", fecha),
+    el("div", { class: "mov-opciones" }, opciones),
+  ];
 
   const form = el(
     "form",
@@ -385,7 +439,7 @@ export function abrirMovimientoForm({
         const datos = {
           nombre: nombre.value.trim(),
           monto: parseCLP(monto.value),
-          tipo: tipo.value,
+          tipo: tipoActual,
           modo,
           categoria_id: categoriaId,
           fecha: new Date(fecha.value).toISOString(),
@@ -418,7 +472,11 @@ export function abrirMovimientoForm({
         }
       },
     },
-    [el("div", { class: "form-grid" }, filas), error, el("div", { class: "modal-acciones" }, [btnCancelar, btnGuardar])]
+    [
+      el("div", { class: "form-mov-secciones" }, filas),
+      error,
+      el("div", { class: "modal-acciones modal-acciones--mov" }, [btnCancelar, btnGuardar]),
+    ]
   );
 
   const { cerrar } = montarModal({
@@ -437,6 +495,7 @@ export function abrirMovimientoForm({
 
   cargarUso();
   pintarChips();
+  actualizarSelectorCategoria();
   pintarComprobante();
   actualizarBotones();
 }
