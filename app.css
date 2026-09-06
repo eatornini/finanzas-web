@@ -1058,8 +1058,12 @@
   }
 
   .lista-grupo-titulo {
+    justify-content: flex-start;
+    width: 100%;
     margin: var(--esp-2) 0 0;
-    padding: 0 var(--esp-1);
+    padding: var(--esp-1);
+    border: none;
+    background: transparent;
     font-size: var(--txt-sm);
     font-weight: var(--peso-semibold);
     color: var(--fg-tenue);
@@ -1067,6 +1071,21 @@
 
   .lista-grupo-titulo:first-child {
     margin-top: 0;
+  }
+
+  .lista-grupo-titulo:hover {
+    color: var(--fg);
+  }
+
+  .lista-grupo-titulo svg {
+    width: 16px;
+    height: 16px;
+    flex: none;
+    transition: transform 0.15s ease;
+  }
+
+  .lista-grupo-titulo.colapsado svg {
+    transform: rotate(-90deg);
   }
 
   .fila {
@@ -1782,6 +1801,9 @@
     margin-bottom: var(--esp-1);
   }
   .comprobante-campo {
+    grid-column: 1 / -1;
+  }
+  .cat-icono-campo {
     grid-column: 1 / -1;
   }
   .comprobante-caja {

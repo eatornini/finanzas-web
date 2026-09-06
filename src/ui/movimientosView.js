@@ -96,6 +96,27 @@ export async function montarMovimientos(contenedor, { rango, modo, tipo, categor
 
   let categorias = [];
   let todos = [];
+  const colapsados = new Set(prefs.get("gruposColapsados"));
+
+  function grupoHeader(claveGrupo, etiqueta) {
+    const colapsado = colapsados.has(claveGrupo);
+    const btn = el(
+      "button",
+      {
+        type: "button",
+        class: "lista-grupo-titulo" + (colapsado ? " colapsado" : ""),
+        "aria-expanded": String(!colapsado),
+      },
+      [chevronAbajo(), el("span", { text: etiqueta })]
+    );
+    btn.addEventListener("click", () => {
+      if (colapsados.has(claveGrupo)) colapsados.delete(claveGrupo);
+      else colapsados.add(claveGrupo);
+      prefs.set("gruposColapsados", [...colapsados]);
+      pintarLista();
+    });
+    return { btn, colapsado };
+  }
 
   try {
     categorias = await listarCategorias();
@@ -164,13 +185,15 @@ export async function montarMovimientos(contenedor, { rango, modo, tipo, categor
       lista.append(el("p", { class: "vacio", text: "Ningún movimiento coincide con la búsqueda." }));
     } else if (modo === "estimado") {
       for (const grupo of agruparPorCategoria(filtrados)) {
-        lista.append(el("h4", { class: "lista-grupo-titulo", text: grupo.nombre }));
-        for (const m of grupo.movimientos) lista.append(fila(m, recargar, error, modo, categorias));
+        const { btn, colapsado } = grupoHeader(`estimado:${grupo.clave}`, grupo.nombre);
+        lista.append(btn);
+        if (!colapsado) for (const m of grupo.movimientos) lista.append(fila(m, recargar, error, modo, categorias));
       }
     } else {
       for (const grupo of agruparPorFecha(filtrados)) {
-        lista.append(el("h4", { class: "lista-grupo-titulo", text: etiquetaDia(grupo.clave) }));
-        for (const m of grupo.movimientos) lista.append(fila(m, recargar, error, modo, categorias));
+        const { btn, colapsado } = grupoHeader(`real:${grupo.clave}`, etiquetaDia(grupo.clave));
+        lista.append(btn);
+        if (!colapsado) for (const m of grupo.movimientos) lista.append(fila(m, recargar, error, modo, categorias));
       }
     }
     contador.textContent = `Mostrando ${filtrados.length} de ${todos.length} movimientos`;

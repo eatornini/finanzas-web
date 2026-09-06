@@ -198,7 +198,7 @@ export function abrirCategoriaForm({
           swatches,
           colorInput,
         ]),
-        el("div", { class: "campo" }, [
+        el("div", { class: "campo cat-icono-campo" }, [
           el("span", { class: "campo-etiqueta", text: "Icono o emoji" }),
           el("div", { class: "cat-icono-fila" }, [preview, emojiInput]),
           grilla,

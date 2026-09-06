@@ -8,7 +8,7 @@ function hoyISO() {
   return `${d.getFullYear()}-${mm}-${dd}`;
 }
 
-// tipo: "bool" | "str"; def puede ser función (se evalúa al leer).
+// tipo: "bool" | "str" | "json"; def puede ser función (se evalúa al leer).
 const DEFS = {
   modo: { tipo: "str", def: "real" },
   tema: { tipo: "str", def: "auto" },
@@ -16,6 +16,9 @@ const DEFS = {
   incluirInactivos: { tipo: "bool", def: false },
   periodoTipo: { tipo: "str", def: "mes" },
   fechaRef: { tipo: "str", def: hoyISO },
+  // Claves de grupos (fecha en modo real, categoría en estimado) colapsados
+  // en la lista de Movimientos, con el modo como prefijo para no mezclar.
+  gruposColapsados: { tipo: "json", def: () => [] },
 };
 
 function leerCrudo(clave) {
@@ -32,12 +35,21 @@ export const prefs = {
     if (!spec) throw new Error(`pref desconocida: ${clave}`);
     const crudo = leerCrudo(clave);
     if (crudo === null) return typeof spec.def === "function" ? spec.def() : spec.def;
-    return spec.tipo === "bool" ? crudo === "true" : crudo;
+    if (spec.tipo === "bool") return crudo === "true";
+    if (spec.tipo === "json") {
+      try {
+        return JSON.parse(crudo);
+      } catch {
+        return typeof spec.def === "function" ? spec.def() : spec.def;
+      }
+    }
+    return crudo;
   },
   set(clave, valor) {
-    if (!DEFS[clave]) throw new Error(`pref desconocida: ${clave}`);
+    const spec = DEFS[clave];
+    if (!spec) throw new Error(`pref desconocida: ${clave}`);
     try {
-      localStorage.setItem(PREFIJO + clave, String(valor));
+      localStorage.setItem(PREFIJO + clave, spec.tipo === "json" ? JSON.stringify(valor) : String(valor));
     } catch {
       /* almacenamiento no disponible: se ignora */
     }

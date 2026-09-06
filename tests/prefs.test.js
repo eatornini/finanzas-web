@@ -29,6 +29,19 @@ describe("prefs", () => {
     expect(prefs.get("ocultarTotal")).toBe(true);
   });
 
+  it("tipo json: default es función, persiste y relee arrays", async () => {
+    const prefs = await load();
+    expect(prefs.get("gruposColapsados")).toEqual([]);
+    prefs.set("gruposColapsados", ["real:2026-09-04", "estimado:cat1"]);
+    expect(prefs.get("gruposColapsados")).toEqual(["real:2026-09-04", "estimado:cat1"]);
+  });
+
+  it("tipo json: si el valor guardado no es JSON válido, vuelve al default", async () => {
+    localStorage.setItem("finanzas.gruposColapsados", "no es json{");
+    const prefs = await load();
+    expect(prefs.get("gruposColapsados")).toEqual([]);
+  });
+
   it("no rompe si localStorage lanza", async () => {
     vi.stubGlobal("localStorage", {
       getItem: () => {
