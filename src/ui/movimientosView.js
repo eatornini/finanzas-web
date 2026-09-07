@@ -135,7 +135,7 @@ export async function montarMovimientos(contenedor, { rango, modo, tipo, categor
         chevronAbajo(),
         el("span", { text: etiqueta }),
         el("span", {
-          class: "lista-grupo-total" + (balance >= 0 ? " valor-ingreso" : ""),
+          class: "lista-grupo-total",
           text: `${signo} ${formatoCLP(Math.abs(balance))}`,
         }),
       ]
@@ -282,8 +282,10 @@ function fila(m, recargar, error, modo, asegurarCategorias) {
   const inactivo = m.activo === false;
 
   const iconoFila = el("span", { class: "fila-icono" }, [nodoIconoCategoria(m.categoria, m.nombre)]);
-  iconoFila.style.background = color;
-  iconoFila.style.color = "#fff";
+  // Fondo pastel (tinte suave del color de la categoría) + icono en el
+  // color pleno de la categoría, para bajar el peso visual del círculo.
+  iconoFila.style.background = `color-mix(in srgb, ${color} 16%, transparent)`;
+  iconoFila.style.color = color;
 
   async function abrirEdicion() {
     const categorias = await asegurarCategorias();

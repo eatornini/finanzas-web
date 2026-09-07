@@ -1358,9 +1358,9 @@
   }
 
   /* Total del grupo, al extremo derecho — mismo tamaño/peso que el
-     título (hereda font-size y font-weight del botón). Blanco/alto
-     contraste por defecto (neto negativo); si es positivo se pinta
-     verde con .valor-ingreso. */
+     título (hereda font-size y font-weight del botón). Siempre en
+     color de alto contraste (var(--fg)), tanto para gastos como para
+     ingresos. */
   .lista-grupo-total {
     margin-left: auto;
     color: var(--fg);
@@ -2264,10 +2264,23 @@
   .categorias-grupo h3 {
     margin: 0 0 var(--esp-2);
   }
+  /* Círculo pastel igual que en la lista de Movimientos (.fila-icono).
+     34px = misma altura que los botones de acción de la fila, así el alto
+     de la tarjeta no cambia. La fila hereda `align-items: center` de
+     `.fila`, por lo que este círculo y el nombre quedan centrados como
+     grupo: el centro vertical del icono coincide con el del texto. */
   .fila--categoria .cat-fila-icono {
-    display: inline-flex;
-    width: 28px;
+    display: flex;
+    align-items: center;
     justify-content: center;
+    width: 34px;
+    height: 34px;
+    flex: none;
+    border-radius: 50%;
+  }
+  .fila--categoria .cat-fila-icono svg {
+    width: 18px;
+    height: 18px;
   }
   .fila--categoria .cat-fila-icono .cat-emoji {
     font-size: 18px;

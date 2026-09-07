@@ -97,8 +97,13 @@ export function montarCategorias(contenedor) {
   }
 
   function fila(c, grupo, indice) {
+    // Mismo estilo que la lista de Movimientos: círculo con fondo pastel
+    // (tinte suave del color de la categoría) + icono en el color pleno.
     const icono = el("span", { class: "cat-fila-icono" }, [nodoIconoCategoria(c)]);
-    if (c.color) icono.style.color = c.color;
+    if (c.color) {
+      icono.style.background = `color-mix(in srgb, ${c.color} 16%, transparent)`;
+      icono.style.color = c.color;
+    }
 
     const subir = botonIcono("Subir", flechaArribaCirculo, indice === 0, () =>
       intercambiarOrden(c, grupo[indice - 1])
