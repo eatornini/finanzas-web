@@ -440,6 +440,25 @@
     background: var(--acento-tenue);
   }
 
+  /* Botón "Cargar comprobante": solo ícono, al lado del campo Comercio en
+     vez de una fila propia abajo. */
+  .boton--secundario-icono {
+    flex: none;
+    width: 44px;
+    padding: 0;
+  }
+
+  .comercio-fila {
+    display: flex;
+    align-items: stretch;
+    gap: var(--esp-2);
+  }
+
+  .comercio-fila input {
+    flex: 1;
+    min-width: 0;
+  }
+
   .boton--icono {
     width: 34px;
     height: 34px;

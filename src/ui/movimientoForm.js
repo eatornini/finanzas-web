@@ -127,7 +127,7 @@ export function abrirMovimientoForm({
     accept: "image/*",
     hidden: "true",
   });
-  const btnCargarComprobante = el("button", { type: "button", class: "boton--secundario" });
+  const btnCargarComprobante = el("button", { type: "button", class: "boton--secundario boton--secundario-icono" });
   btnCargarComprobante.addEventListener("click", () => inputArchivo.click());
   const btnQuitarComprobante = el(
     "button",
@@ -144,13 +144,16 @@ export function abrirMovimientoForm({
 
   async function pintarComprobante() {
     limpiar(btnCargarComprobante);
+    btnCargarComprobante.append(camaraIcono());
     if (archivoComprobante) {
       previewImg.src = URL.createObjectURL(archivoComprobante);
       previewImg.hidden = false;
-      btnCargarComprobante.append(camaraIcono(), " Reemplazar");
+      btnCargarComprobante.title = "Reemplazar comprobante";
+      btnCargarComprobante.setAttribute("aria-label", "Reemplazar comprobante");
       btnQuitarComprobante.hidden = false;
     } else if (imagenExistente && !imagenEliminada) {
-      btnCargarComprobante.append(camaraIcono(), " Reemplazar");
+      btnCargarComprobante.title = "Reemplazar comprobante";
+      btnCargarComprobante.setAttribute("aria-label", "Reemplazar comprobante");
       btnQuitarComprobante.hidden = false;
       try {
         previewImg.src = await urlComprobante(imagenExistente);
@@ -160,7 +163,8 @@ export function abrirMovimientoForm({
       }
     } else {
       previewImg.hidden = true;
-      btnCargarComprobante.append(camaraIcono(), " Cargar comprobante");
+      btnCargarComprobante.title = "Cargar comprobante";
+      btnCargarComprobante.setAttribute("aria-label", "Cargar comprobante");
       btnQuitarComprobante.hidden = true;
     }
   }
@@ -197,7 +201,7 @@ export function abrirMovimientoForm({
   });
 
   const comprobante = el("div", { class: "comprobante-campo comprobante-campo--secundario" }, [
-    el("div", { class: "comprobante-caja" }, [previewImg, btnCargarComprobante, btnQuitarComprobante, inputArchivo]),
+    el("div", { class: "comprobante-caja" }, [previewImg, btnQuitarComprobante, inputArchivo]),
     estadoOcr,
   ]);
 
@@ -293,8 +297,8 @@ export function abrirMovimientoForm({
         onClick: () => abrirListaCompleta(lista),
       })
     );
-    for (const c of lista.slice(0, 5)) chips.append(chip(c));
-    if (categoriaId && !lista.slice(0, 5).some((c) => c.id === categoriaId)) {
+    for (const c of lista.slice(0, 4)) chips.append(chip(c));
+    if (categoriaId && !lista.slice(0, 4).some((c) => c.id === categoriaId)) {
       const sel = lista.find((c) => c.id === categoriaId);
       // Se inserta después de "Todas" (índice 1), no antes — "Todas" queda
       // siempre primero.
@@ -423,7 +427,10 @@ export function abrirMovimientoForm({
       el("span", { class: "campo-etiqueta", text: "Rápido" }),
       chips,
     ]),
-    campo("Comercio", nombre),
+    el("div", { class: "campo" }, [
+      el("label", { class: "campo-etiqueta", for: "mov-nombre", text: "Comercio" }),
+      el("div", { class: "comercio-fila" }, [nombre, btnCargarComprobante]),
+    ]),
     sugerencias,
     comprobante,
     el("div", { class: "campo campo-monto" }, [
