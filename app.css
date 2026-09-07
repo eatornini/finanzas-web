@@ -1103,6 +1103,14 @@
     touch-action: pan-x;
     overscroll-behavior-x: contain;
     scroll-snap-type: x proximity;
+    /* Scroll sí, barra no: se puede desplazar (dedo, rueda, trackpad) pero
+       la barra queda oculta. */
+    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none; /* Edge/IE viejo */
+  }
+
+  .mov-rapido-campo .mov-chips::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Edge Chromium */
   }
 
   .mov-rapido-campo .mov-chip {
