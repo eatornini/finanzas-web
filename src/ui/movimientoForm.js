@@ -235,8 +235,11 @@ export function abrirMovimientoForm({
   }
 
   function chip(c) {
+    const color = c.color || (tipoActual === "ingreso" ? "#1b7f4d" : "#c0392b");
+    const icono = el("span", { class: "mov-chip-icono" }, [nodoIconoCategoria(c)]);
+    icono.style.background = color;
     const b = el("button", { type: "button", class: "mov-chip" }, [
-      nodoIconoCategoria(c),
+      icono,
       el("span", { text: c.nombre }),
     ]);
     b.dataset.id = c.id;
@@ -282,7 +285,6 @@ export function abrirMovimientoForm({
   function pintarChips() {
     limpiar(chips);
     const lista = categoriasDelTipo();
-    for (const c of lista.slice(0, 5)) chips.append(chip(c));
     chips.append(
       el("button", {
         type: "button",
@@ -291,9 +293,12 @@ export function abrirMovimientoForm({
         onClick: () => abrirListaCompleta(lista),
       })
     );
+    for (const c of lista.slice(0, 5)) chips.append(chip(c));
     if (categoriaId && !lista.slice(0, 5).some((c) => c.id === categoriaId)) {
       const sel = lista.find((c) => c.id === categoriaId);
-      if (sel) chips.insertBefore(chip(sel), chips.firstChild);
+      // Se inserta después de "Todas" (índice 1), no antes — "Todas" queda
+      // siempre primero.
+      if (sel) chips.insertBefore(chip(sel), chips.children[1] || null);
     }
     marcarChipActivo();
   }

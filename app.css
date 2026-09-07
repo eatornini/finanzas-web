@@ -1040,7 +1040,7 @@
     scroll-snap-align: start;
   }
 
-  .mov-rapido-campo .mov-chip span:not(.ms-icono):not(.cat-emoji) {
+  .mov-rapido-campo .mov-chip span:not(.ms-icono):not(.cat-emoji):not(.mov-chip-icono) {
     display: -webkit-box;
     overflow: hidden;
     font-size: var(--txt-xs);
@@ -1050,9 +1050,20 @@
     -webkit-box-orient: vertical;
   }
 
+  /* Círculo de color de la categoría con el ícono en blanco adentro. */
+  .mov-rapido-campo .mov-chip-icono {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    color: #fff;
+  }
+
   .mov-rapido-campo .mov-chip .ms-icono,
   .mov-rapido-campo .mov-chip .cat-emoji {
-    font-size: 22px;
+    font-size: 20px;
   }
 
   /* --- Opciones secundarias (Activo/Pagado/Recurrente/Frecuencia) --- */
