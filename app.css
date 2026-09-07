@@ -1087,7 +1087,7 @@
     color: var(--fg-tenue);
   }
 
-  /* --- Categorías rápidas: tarjetas en carrusel horizontal --- */
+  /* --- Categorías rápidas: carrusel horizontal --- */
   .mov-rapido-campo .mov-chips {
     display: flex;
     flex-wrap: nowrap;
@@ -1097,6 +1097,11 @@
     padding-left: var(--esp-1);
     padding-right: var(--esp-1);
     overflow-x: auto;
+    /* El carrusel solo captura el gesto horizontal; el swipe vertical del
+       dedo pasa a la página en vez de quedar atrapado acá. El scroll
+       lateral sigue funcionando para llegar a todas las categorías. */
+    touch-action: pan-x;
+    overscroll-behavior-x: contain;
     scroll-snap-type: x proximity;
   }
 
