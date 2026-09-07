@@ -882,6 +882,60 @@
     padding: var(--esp-5);
   }
 
+  /* --- Overlay de carga (bloqueante, p. ej. OCR de comprobante) --- */
+  @keyframes girar {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .overlay-carga {
+    position: fixed;
+    inset: 0;
+    /* Por encima de todo: modal (100) y sidebar/drawer mobile (200). */
+    z-index: 300;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: var(--esp-4);
+    background: color-mix(in srgb, #0b0b0c 55%, transparent);
+  }
+
+  .overlay-carga-caja {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--esp-3);
+    padding: var(--esp-5) var(--esp-6);
+    border: 1px solid var(--borde);
+    border-radius: var(--r-lg);
+    background: var(--bg-elevado);
+    box-shadow: var(--sombra-popover);
+    color: var(--fg);
+  }
+
+  .overlay-carga-icono {
+    display: flex;
+    color: var(--acento);
+  }
+
+  .overlay-carga-icono svg {
+    width: 32px;
+    height: 32px;
+    animation: girar 0.8s linear infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .overlay-carga-icono svg {
+      animation-duration: 2s;
+    }
+  }
+
+  .overlay-carga-texto {
+    font-size: var(--txt-sm);
+    color: var(--fg-tenue);
+  }
+
   @media (max-width: 560px) {
     /* Pantalla completa: no un modal encogido, una pantalla propia. */
     .modal-overlay {
@@ -1296,14 +1350,14 @@
     display: none;
   }
 
-  @media (max-width: 560px) {
-    .panel-filtros {
-      position: static;
-      width: 100%;
-      margin-top: var(--esp-2);
-      box-shadow: none;
-      background: var(--bg-sutil);
-    }
+  /* Cabecera (asa + título + cerrar) y fondo: solo se usan en el modo
+     bottom sheet de móvil; en escritorio el panel es un popover simple. */
+  .panel-filtros-cabecera {
+    display: none;
+  }
+
+  .panel-filtros-backdrop {
+    display: none;
   }
 
   .panel-filtros label {
@@ -1312,6 +1366,87 @@
     gap: var(--esp-1);
     font-size: var(--txt-sm);
     color: var(--fg-tenue);
+  }
+
+  /* --- Móvil: el panel de filtros pasa a bottom sheet --- */
+  @media (max-width: 720px) {
+    .panel-filtros-backdrop {
+      display: block;
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      background: rgba(0, 0, 0, 0.4);
+      animation: filtros-backdrop-in 0.15s ease;
+    }
+
+    .panel-filtros-backdrop[hidden] {
+      display: none;
+    }
+
+    .panel-filtros {
+      position: fixed;
+      inset: auto 0 0 0;
+      z-index: 41;
+      width: auto;
+      max-height: 80vh;
+      overflow-y: auto;
+      gap: var(--esp-4);
+      padding: var(--esp-2) var(--esp-4)
+        calc(var(--esp-5) + env(safe-area-inset-bottom, 0px));
+      border: none;
+      border-radius: var(--r-lg) var(--r-lg) 0 0;
+      box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.18);
+      animation: filtros-sheet-in 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .panel-filtros-cabecera {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--esp-3);
+      /* Deja aire para el asa de arrastre centrada arriba. */
+      padding-top: var(--esp-4);
+    }
+
+    .panel-filtros-cabecera::before {
+      content: "";
+      position: absolute;
+      top: var(--esp-2);
+      left: 50%;
+      transform: translateX(-50%);
+      width: 36px;
+      height: 4px;
+      border-radius: var(--r-pill);
+      background: var(--borde);
+    }
+
+    .panel-filtros-titulo {
+      font-size: var(--txt-base);
+      font-weight: var(--peso-semibold);
+      color: var(--fg);
+    }
+
+    .panel-filtros label {
+      font-size: var(--txt-base);
+    }
+
+    .panel-filtros label select {
+      padding: var(--esp-3);
+      font-size: var(--txt-base);
+    }
+  }
+
+  @keyframes filtros-sheet-in {
+    from {
+      transform: translateY(100%);
+    }
+  }
+
+  @keyframes filtros-backdrop-in {
+    from {
+      opacity: 0;
+    }
   }
 
   .contador-lista {
@@ -1388,14 +1523,17 @@
     transition: background-color 0.12s ease, border-color 0.12s ease;
   }
 
-  button.fila--resultado {
-    grid-template-columns: auto 1fr auto;
-    grid-template-areas: none;
-    width: 100%;
-    text-align: left;
-    font: inherit;
-    color: inherit;
+  /* La fila de resultado usa exactamente la grilla de .fila (icono / nombre /
+     meta / monto). Solo agrega el cursor y el foco de elemento clickeable
+     (es un <div role="button">, no un <button>, que no funciona como
+     contenedor grid). */
+  .fila--resultado {
     cursor: pointer;
+  }
+
+  .fila--resultado:focus-visible {
+    outline: 2px solid var(--acento);
+    outline-offset: 2px;
   }
 
   /* --- Buscador global --- */
@@ -1452,6 +1590,20 @@
     display: flex;
     flex-direction: column;
     gap: 2px;
+    min-width: 0;
+  }
+
+  /* Nombre + badge "Inactivo" en la misma línea (el badge al lado del
+     nombre, no en un renglón propio). El nombre puede achicarse con
+     ellipsis; el badge conserva su tamaño. */
+  .fila-nombre-linea {
+    display: flex;
+    align-items: center;
+    gap: var(--esp-2);
+    min-width: 0;
+  }
+
+  .fila-nombre-linea .nombre {
     min-width: 0;
   }
 
@@ -1555,15 +1707,31 @@
   /* Especificidad ".fila.fila--categoria" (no solo ".fila--categoria") a
      propósito: tiene que ganarle a ".fila" también dentro del media query
      mobile, donde compite en igualdad de especificidad y perdería por
-     orden de declaración. */
+     orden de declaración.
+
+     La fila de categoría es un único renglón (icono · nombre · acciones):
+     flex en vez del grid de 2 filas de ".fila" (pensado para movimientos con
+     monto/meta). Así los tres elementos quedan centrados verticalmente como
+     grupo y la tarjeta toma el alto del contenido, sin huecos arriba/abajo. */
   .fila.fila--categoria {
-    display: grid;
-    grid-template-columns: auto 1fr auto auto;
-    /* Sin áreas propias: se desacopla de las grid-template-areas de .fila
-       (pensadas para la fila de movimiento) y usa ubicación automática,
-       como antes. */
+    display: flex;
+    align-items: center;
+    gap: var(--esp-3);
+    /* Anula el grid heredado de ".fila". */
+    grid-template-columns: none;
     grid-template-areas: none;
-    gap: var(--esp-2) var(--esp-3);
+  }
+
+  .fila--categoria .cat-fila-icono,
+  .fila--categoria .acciones {
+    align-self: center;
+  }
+
+  /* El nombre ocupa el espacio libre y empuja las acciones a la derecha;
+     "grid-area" heredado de ".fila .acciones" es inofensivo en flex. */
+  .fila--categoria .nombre {
+    flex: 1;
+    min-width: 0;
   }
 
   .fila--categoria .tipo {
@@ -2190,7 +2358,7 @@
     grid-column: 1 / -1;
   }
   .comprobante-caja {
-    display: flex;
+    display: none;
     align-items: center;
     gap: var(--esp-3);
   }
@@ -2341,11 +2509,11 @@
     opacity: 0.55;
   }
   .badge-inactivo {
+    flex: none;
     font-size: var(--txt-xs);
     padding: 1px 6px;
     border-radius: var(--r-pill);
     background: color-mix(in srgb, currentColor 15%, transparent);
-    margin-left: var(--esp-2);
   }
   .fila .estado-on,
   .fila .estado-off {

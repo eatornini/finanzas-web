@@ -1,7 +1,7 @@
 import { el, limpiar } from "./dom.js";
 import { listarMovimientos, actualizarMovimiento, eliminarMovimiento } from "../data/movimientos.js";
 import { listarCategorias } from "../data/categorias.js";
-import { basura, lupaIcono, embudoIcono, chevronAbajo, check, mas } from "./iconos.js";
+import { basura, lupaIcono, embudoIcono, chevronAbajo, check, mas, cerrarIcono } from "./iconos.js";
 import { colorMovimiento } from "./iconosCategoria.js";
 import { nodoIconoCategoria } from "./iconoCategoria.js";
 import { montarPanelResumen } from "./panelResumenView.js";
@@ -27,7 +27,15 @@ export async function montarMovimientos(contenedor, { rango, modo, tipo, categor
     "Filtros",
     chevronAbajo(),
   ]);
-  const panelFiltros = el("div", { class: "panel-filtros", hidden: "true" });
+  const panelFiltros = el("div", {
+    class: "panel-filtros",
+    role: "dialog",
+    "aria-label": "Filtros",
+    hidden: "true",
+  });
+  // Fondo oscuro para el modo bottom sheet en móvil (en escritorio queda
+  // oculto por CSS y el panel sigue siendo un popover anclado al botón).
+  const backdropFiltros = el("div", { class: "panel-filtros-backdrop", hidden: "true" });
   const selCategoria = el("select", {}, [el("option", { value: "", text: "Todas las categorías" })]);
   const ORDENES = [
     ["fecha_desc", "Más recientes primero"],
@@ -40,14 +48,65 @@ export async function montarMovimientos(contenedor, { rango, modo, tipo, categor
     {},
     ORDENES.map(([v, t]) => el("option", { value: v, text: t }))
   );
-  panelFiltros.append(
-    el("label", { text: "Categoría" }, [selCategoria]),
-    el("label", { text: "Ordenar por" }, [selOrden])
+  const selectDe = (opciones) =>
+    el(
+      "select",
+      {},
+      opciones.map(([v, t]) => el("option", { value: v, text: t }))
+    );
+  // "Estado" (activo/inactivo) aplica a ambos modos; "Pago" (pagado/pendiente)
+  // solo tiene sentido en estimado, donde los movimientos se marcan pagados.
+  const selEstado = selectDe([
+    ["", "Todos"],
+    ["activo", "Solo activos"],
+    ["inactivo", "Solo inactivos"],
+  ]);
+  const selPago = selectDe([
+    ["", "Todos"],
+    ["pagado", "Solo pagados"],
+    ["pendiente", "Solo pendientes"],
+  ]);
+  const btnCerrarFiltros = el(
+    "button",
+    { class: "boton--icono panel-filtros-cerrar", type: "button", "aria-label": "Cerrar filtros" },
+    [cerrarIcono()]
   );
+  panelFiltros.append(
+    ...[
+      el("div", { class: "panel-filtros-cabecera" }, [
+        el("span", { class: "panel-filtros-titulo", text: "Filtros" }),
+        btnCerrarFiltros,
+      ]),
+      el("label", { text: "Categoría" }, [selCategoria]),
+      el("label", { text: "Ordenar por" }, [selOrden]),
+      el("label", { text: "Estado" }, [selEstado]),
+      modo === "estimado" ? el("label", { text: "Pago" }, [selPago]) : null,
+    ].filter(Boolean)
+  );
+
+  function alTeclearFiltros(ev) {
+    if (ev.key === "Escape") cerrarFiltros();
+  }
+  function abrirFiltros() {
+    if (!panelFiltros.hidden) return;
+    panelFiltros.hidden = false;
+    backdropFiltros.hidden = false;
+    btnFiltros.classList.add("activo");
+    document.addEventListener("keydown", alTeclearFiltros);
+  }
+  function cerrarFiltros() {
+    if (panelFiltros.hidden) return;
+    panelFiltros.hidden = true;
+    backdropFiltros.hidden = true;
+    btnFiltros.classList.remove("activo");
+    document.removeEventListener("keydown", alTeclearFiltros);
+  }
   btnFiltros.addEventListener("click", () => {
-    panelFiltros.hidden = !panelFiltros.hidden;
-    btnFiltros.classList.toggle("activo", !panelFiltros.hidden);
+    if (panelFiltros.hidden) abrirFiltros();
+    else cerrarFiltros();
   });
+  btnCerrarFiltros.addEventListener("click", cerrarFiltros);
+  backdropFiltros.addEventListener("click", cerrarFiltros);
 
   const opcionesVista =
     modo === "estimado"
@@ -103,6 +162,7 @@ export async function montarMovimientos(contenedor, { rango, modo, tipo, categor
       el("div", { class: "lista-acciones" }, [
         el("div", { class: "campo-busqueda" }, [lupaIcono(), buscador]),
         btnFiltros,
+        backdropFiltros,
         panelFiltros,
       ]),
     ]),
@@ -153,7 +213,11 @@ export async function montarMovimientos(contenedor, { rango, modo, tipo, categor
     const valorPrevio = selCategoria.value;
     limpiar(selCategoria);
     selCategoria.append(el("option", { value: "", text: "Todas las categorías" }));
-    for (const c of categorias) selCategoria.append(el("option", { value: c.id, text: c.nombre }));
+    // Solo las categorías del modo activo: en "Real" no se listan las de
+    // "Estimado" y viceversa.
+    for (const c of categorias.filter((c) => c.modo === modo)) {
+      selCategoria.append(el("option", { value: c.id, text: c.nombre }));
+    }
     selCategoria.value = valorPrevio;
   }
 
@@ -178,8 +242,7 @@ export async function montarMovimientos(contenedor, { rango, modo, tipo, categor
 
   if (categoriaInicial) {
     selCategoria.value = String(categoriaInicial);
-    panelFiltros.hidden = false;
-    btnFiltros.classList.add("activo");
+    abrirFiltros();
   }
 
   // Al agregar (no al editar) se limpian los filtros que podrían esconder
@@ -189,6 +252,8 @@ export async function montarMovimientos(contenedor, { rango, modo, tipo, categor
   function alAgregarMovimiento() {
     buscador.value = "";
     selCategoria.value = "";
+    selEstado.value = "";
+    selPago.value = "";
     if (vista !== "todos" && opcionesVista.some((o) => o.valor === "todos")) {
       vista = "todos";
       sincronizarVista();
@@ -204,6 +269,8 @@ export async function montarMovimientos(contenedor, { rango, modo, tipo, categor
   buscador.addEventListener("input", pintarLista);
   selCategoria.addEventListener("change", pintarLista);
   selOrden.addEventListener("change", pintarLista);
+  selEstado.addEventListener("change", pintarLista);
+  selPago.addEventListener("change", pintarLista);
 
   await recargar();
 
@@ -238,6 +305,11 @@ export async function montarMovimientos(contenedor, { rango, modo, tipo, categor
     const filtrados = todos.filter((m) => {
       if (vista !== "todos" && m.tipo !== vista) return false;
       if (selCategoria.value && String(m.categoria_id || "") !== selCategoria.value) return false;
+      const inactivo = m.activo === false;
+      if (selEstado.value === "activo" && inactivo) return false;
+      if (selEstado.value === "inactivo" && !inactivo) return false;
+      if (selPago.value === "pagado" && m.pagado !== true) return false;
+      if (selPago.value === "pendiente" && m.pagado === true) return false;
       if (texto) {
         const hay = `${m.nombre} ${m.detalle || ""}`.toLowerCase();
         if (!hay.includes(texto)) return false;
@@ -253,19 +325,31 @@ export async function montarMovimientos(contenedor, { rango, modo, tipo, categor
     };
     filtrados.sort(comparadores[selOrden.value] || comparadores.fecha_desc);
 
+    // Al ordenar por "Monto", los grupos se ordenan por el total de su
+    // encabezado (magnitud del balance del grupo), no por el valor suelto de
+    // cada movimiento. El orden interno de cada grupo lo sigue fijando el
+    // sort de arriba (montos de mayor a menor / menor a mayor).
+    function ordenarGruposPorMonto(grupos) {
+      const v = selOrden.value;
+      if (v !== "monto_desc" && v !== "monto_asc") return grupos;
+      const totalGrupo = (g) => Math.abs(calcularTotales(g.movimientos).balance);
+      const dir = v === "monto_desc" ? -1 : 1;
+      return [...grupos].sort((a, b) => dir * (totalGrupo(a) - totalGrupo(b)));
+    }
+
     badge.textContent = String(todos.length);
     if (todos.length === 0) {
       lista.append(el("p", { class: "vacio", text: "No hay movimientos en este período." }));
     } else if (filtrados.length === 0) {
       lista.append(el("p", { class: "vacio", text: "Ningún movimiento coincide con la búsqueda." }));
     } else if (modo === "estimado") {
-      for (const grupo of agruparPorCategoria(filtrados)) {
+      for (const grupo of ordenarGruposPorMonto(agruparPorCategoria(filtrados))) {
         const { btn, colapsado } = grupoHeader(`estimado:${grupo.clave}`, grupo.nombre, grupo.movimientos);
         lista.append(btn);
         if (!colapsado) for (const m of grupo.movimientos) lista.append(fila(m, recargar, error, modo, asegurarCategorias));
       }
     } else {
-      for (const grupo of agruparPorFecha(filtrados)) {
+      for (const grupo of ordenarGruposPorMonto(agruparPorFecha(filtrados))) {
         const { btn, colapsado } = grupoHeader(`real:${grupo.clave}`, etiquetaDia(grupo.clave), grupo.movimientos);
         lista.append(btn);
         if (!colapsado) for (const m of grupo.movimientos) lista.append(fila(m, recargar, error, modo, asegurarCategorias));
@@ -360,21 +444,23 @@ function fila(m, recargar, error, modo, asegurarCategorias) {
   return el("div", { class: claseFila }, [
     iconoFila,
     el("div", { class: "fila-principal" }, [
-      el("span", {
-        class: "nombre",
-        text: m.nombre,
-        role: "button",
-        tabindex: "0",
-        "aria-label": `Editar ${m.nombre}`,
-        onClick: abrirEdicion,
-        onKeydown: (ev) => {
-          if (ev.key === "Enter" || ev.key === " ") {
-            ev.preventDefault();
-            abrirEdicion();
-          }
-        },
-      }),
-      inactivo ? el("span", { class: "badge-inactivo", text: "Inactivo" }) : null,
+      el("span", { class: "fila-nombre-linea" }, [
+        el("span", {
+          class: "nombre",
+          text: m.nombre,
+          role: "button",
+          tabindex: "0",
+          "aria-label": `Editar ${m.nombre}`,
+          onClick: abrirEdicion,
+          onKeydown: (ev) => {
+            if (ev.key === "Enter" || ev.key === " ") {
+              ev.preventDefault();
+              abrirEdicion();
+            }
+          },
+        }),
+        inactivo ? el("span", { class: "badge-inactivo", text: "Inactivo" }) : null,
+      ]),
     ]),
     el("span", { class: "fila-meta" }, metaHijos),
     el("div", { class: "acciones" }, controles),

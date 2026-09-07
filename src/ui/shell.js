@@ -43,6 +43,12 @@ function aplicarTema(tema) {
   document.documentElement.dataset.tema = tema;
 }
 
+// La vista guardada en prefs puede quedar obsoleta (clave renombrada, dato
+// corrupto); si no es una de VISTAS, se cae a "movimientos".
+function vistaValida(clave) {
+  return VISTAS.some((v) => v.clave === clave) ? clave : "movimientos";
+}
+
 function ymdLocal(d) {
   const mm = String(d.getMonth() + 1).padStart(2, "0");
   const dd = String(d.getDate()).padStart(2, "0");
@@ -67,7 +73,7 @@ export function montarShell(contenedor, sesion) {
   let tipo = prefs.get("periodoTipo");
   const fechaGuardada = prefs.get("fechaRef");
   let fechaRef = fechaGuardada ? new Date(`${fechaGuardada}T12:00:00`) : new Date();
-  let activa = "movimientos";
+  let activa = vistaValida(prefs.get("vistaActiva"));
   let modo = prefs.get("modo");
   let tema = prefs.get("tema");
   aplicarTema(tema);
@@ -176,6 +182,7 @@ export function montarShell(contenedor, sesion) {
 
   function irA(clave) {
     activa = clave;
+    prefs.set("vistaActiva", clave);
     sincronizarNav();
     pintarVista();
     cerrarDrawer();
@@ -260,7 +267,7 @@ export function montarShell(contenedor, sesion) {
   ]);
 
   const piePagina = el("footer", { class: "pie-app" }, [
-    el("span", { text: "Finanzas v2.48" }),
+    el("span", { text: "Finanzas v2.56" }),
     el("span", { class: "pie-punto", text: "·" }),
     el("span", { text: "Tus datos están seguros" }),
   ]);

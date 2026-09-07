@@ -10,6 +10,7 @@ import { subirComprobante, urlComprobante, eliminarComprobante } from "../data/s
 import { reconocerImagen } from "../ocr/tesseractWorker.js";
 import { construirBloques } from "../ocr/construirBloques.js";
 import { analizarComprobante } from "../ocr/ocrManager.js";
+import { mostrarOverlayCarga } from "./overlayCarga.js";
 import { sesionActual } from "../auth.js";
 
 const FRECUENCIAS = [
@@ -190,6 +191,9 @@ export function abrirMovimientoForm({
     actualizarBotones();
 
     estadoOcr.textContent = "Leyendo comprobante…";
+    // Overlay bloqueante: el OCR tarda varios segundos y el usuario no debe
+    // tocar el formulario mientras corre.
+    const quitarOverlay = mostrarOverlayCarga("Leyendo comprobante…");
     try {
       const bloquesTesseract = await reconocerImagen(file);
       const { lineas, bloques } = construirBloques(bloquesTesseract);
@@ -197,6 +201,8 @@ export function abrirMovimientoForm({
       estadoOcr.textContent = "";
     } catch {
       estadoOcr.textContent = "No se pudo leer el comprobante. Completá los datos a mano.";
+    } finally {
+      quitarOverlay();
     }
   });
 

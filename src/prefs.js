@@ -12,6 +12,9 @@ function hoyISO() {
 const DEFS = {
   modo: { tipo: "str", def: "real" },
   tema: { tipo: "str", def: "auto" },
+  // Última vista abierta en el shell (movimientos | resumen | categorias |
+  // buscar | reportes | configuracion). Se valida contra VISTAS al leerla.
+  vistaActiva: { tipo: "str", def: "movimientos" },
   ocultarTotal: { tipo: "bool", def: false },
   incluirInactivos: { tipo: "bool", def: false },
   periodoTipo: { tipo: "str", def: "mes" },

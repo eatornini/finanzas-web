@@ -130,27 +130,45 @@ export async function montarBuscador(contenedor, { modo }) {
     iconoFila.style.background = color;
     iconoFila.style.color = "#fff";
 
+    const abrir = () =>
+      abrirMovimientoForm({
+        modo,
+        categorias,
+        movimiento: m,
+        onGuardado: () => buscar({ continuar: false }),
+      });
+
+    // Misma estructura que las filas de Movimientos: un <div class="fila">
+    // con la grilla icono / nombre / (acciones) / monto y la meta debajo del
+    // nombre. Un <button> no sirve como contenedor grid (encierra el
+    // contenido en una caja anónima que se encoge y se superpone), por eso
+    // la fila entera es un div con role="button".
     return el(
-      "button",
+      "div",
       {
         class: `fila fila--resultado tipo-${m.tipo}` + (inactivo ? " fila--inactiva" : ""),
-        type: "button",
-        onClick: () =>
-          abrirMovimientoForm({
-            modo,
-            categorias,
-            movimiento: m,
-            onGuardado: () => buscar({ continuar: false }),
-          }),
+        role: "button",
+        tabindex: "0",
+        "aria-label": `Editar ${m.nombre}`,
+        onClick: abrir,
+        onKeydown: (ev) => {
+          if (ev.key === "Enter" || ev.key === " ") {
+            ev.preventDefault();
+            abrir();
+          }
+        },
       },
       [
         iconoFila,
         el("div", { class: "fila-principal" }, [
-          el("span", { class: "nombre", text: m.nombre }),
-          el("span", { class: "fila-meta" }, [
-            el("span", { class: "cat", text: cat }),
-            el("span", { class: "fecha", text: (m.fecha || "").slice(0, 10) }),
+          el("span", { class: "fila-nombre-linea" }, [
+            el("span", { class: "nombre", text: m.nombre }),
+            inactivo ? el("span", { class: "badge-inactivo", text: "Inactivo" }) : null,
           ]),
+        ]),
+        el("span", { class: "fila-meta" }, [
+          el("span", { class: "cat", text: cat }),
+          el("span", { class: "fecha", text: (m.fecha || "").slice(0, 10) }),
         ]),
         el("span", { class: "monto", text: `${signo} ${formatoCLP(m.monto)}` }),
       ]
