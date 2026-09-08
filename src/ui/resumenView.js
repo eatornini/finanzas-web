@@ -3,7 +3,8 @@ import { listarMovimientos } from "../data/movimientos.js";
 import { calcularTotales, desglosarPorPago, filtrarParaCalculos, todosActivos } from "../logic/totales.js";
 import { formatoCLP } from "../logic/dinero.js";
 import { prefs } from "../prefs.js";
-import { ojoIcono, ojoTachadoIcono, puntosIcono } from "./iconos.js";
+import { ojoIcono, ojoTachadoIcono, puntosIcono, tendenciaCombinadaIcono } from "./iconos.js";
+import { tituloVista } from "./tituloVista.js";
 import { periodoSiguiente, rangoPeriodo, etiquetaPeriodo } from "../logic/periodos.js";
 import {
   contarMovimientosEstimado,
@@ -66,7 +67,7 @@ export async function montarResumen(contenedor, { rango, tipo, fechaRef, modo })
   const aviso = el("p", { class: "aviso" });
   const cabecera = el("div", { class: "resumen-cabecera" });
   const cifras = el("div", { class: "cifras" });
-  contenedor.append(cabecera, aviso, cifras, error);
+  contenedor.append(tituloVista(tendenciaCombinadaIcono, "Resumen"), cabecera, aviso, cifras, error);
 
   let movimientos = [];
 

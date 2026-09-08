@@ -4,8 +4,18 @@ import { el, elSvg, limpiar } from "./dom.js";
 import { calcularTotales } from "../logic/totales.js";
 import { formatoCLP } from "../logic/dinero.js";
 import { prefs } from "../prefs.js";
-import { flechaArribaCirculo, flechaAbajoCirculo, billeteraIcono, ojoIcono, ojoTachadoIcono } from "./iconos.js";
-import { iconoMovimiento, colorMovimiento } from "./iconosCategoria.js";
+import {
+  flechaArribaCirculo,
+  flechaAbajoCirculo,
+  billeteraIcono,
+  ojoIcono,
+  ojoTachadoIcono,
+  tendenciaCombinadaIcono,
+  graficoTortaIcono,
+  reloj3Icono,
+} from "./iconos.js";
+import { iconoMovimiento, colorMovimiento, iconoSemanticoCategoria } from "./iconosCategoria.js";
+import { iconoTitulo } from "./tituloVista.js";
 
 const PALETA_DONA = [
   "#c0392b", "#2563a8", "#a56a12", "#6b46c1", "#1b7f4d", "#c2185b", "#00796b",
@@ -44,7 +54,10 @@ function tarjetaResumen(titulo, movimientos, onToggleOcultar) {
     [oculto ? ojoTachadoIcono() : ojoIcono()]
   );
   return el("section", { class: "panel-tarjeta" }, [
-    el("div", { class: "panel-tarjeta-cabecera" }, [el("h3", { text: titulo }), btnOjo]),
+    el("div", { class: "panel-tarjeta-cabecera" }, [
+      el("h3", {}, [iconoTitulo(tendenciaCombinadaIcono), titulo]),
+      btnOjo,
+    ]),
     el("div", { class: "resumen-lista" }, [
       filaResumen(flechaArribaCirculo, "resumen-icono--ingreso", "Ingresos", ingresos, "valor-ingreso"),
       filaResumen(flechaAbajoCirculo, "resumen-icono--gasto", "Gastos", gastos, "valor-gasto"),
@@ -75,7 +88,7 @@ function tarjetaDona(movimientos, onCategoria) {
 
   if (total <= 0) {
     return el("section", { class: "panel-tarjeta" }, [
-      el("h3", { text: "Gastos por categoría" }),
+      el("h3", {}, [iconoTitulo(graficoTortaIcono), "Gastos por categoría"]),
       el("p", { class: "vacio", text: "Sin gastos en este período." }),
     ]);
   }
@@ -150,8 +163,19 @@ function tarjetaDona(movimientos, onCategoria) {
     limpiar(leyenda);
     grupos.slice(0, 5).forEach((g, i) => {
       const pct = Math.round((g.total / total) * 100);
-      const punto = el("span", { class: "dona-punto" });
-      punto.style.background = colorDe(i, g);
+      const color = colorDe(i, g);
+      // Icono semántico en el color pleno de la categoría (complementa el
+      // color, no lo reemplaza); si la categoría no matchea ninguna regla,
+      // se mantiene el punto de color de siempre.
+      const fabricaIcono = iconoSemanticoCategoria(g.nombre);
+      let marcador;
+      if (fabricaIcono) {
+        marcador = el("span", { class: "dona-icono" }, [fabricaIcono()]);
+        marcador.style.color = color;
+      } else {
+        marcador = el("span", { class: "dona-punto" });
+        marcador.style.background = color;
+      }
       const boton = el(
         "button",
         {
@@ -160,7 +184,7 @@ function tarjetaDona(movimientos, onCategoria) {
           onClick: () => onCategoria && onCategoria(g.categoriaId),
         },
         [
-          punto,
+          marcador,
           el("span", { class: "dona-nombre", text: g.nombre }),
           el("span", {
             class: "dona-pct",
@@ -175,7 +199,7 @@ function tarjetaDona(movimientos, onCategoria) {
   pintar();
 
   return el("section", { class: "panel-tarjeta" }, [
-    el("h3", { text: "Gastos por categoría" }),
+    el("h3", {}, [iconoTitulo(graficoTortaIcono), "Gastos por categoría"]),
     el("div", { class: "dona-fila" }, [dona, leyenda]),
   ]);
 }
@@ -206,7 +230,7 @@ function tarjetaActividad(movimientos) {
   );
 
   return el("section", { class: "panel-tarjeta panel-tarjeta--actividad" }, [
-    el("h3", { text: "Actividad reciente" }),
+    el("h3", {}, [iconoTitulo(reloj3Icono), "Actividad reciente"]),
     recientes.length
       ? lista
       : el("p", { class: "vacio", text: "Sin movimientos recientes." }),

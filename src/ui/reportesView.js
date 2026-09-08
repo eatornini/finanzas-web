@@ -5,6 +5,8 @@ import { formatoCLP } from "../logic/dinero.js";
 import { prefs } from "../prefs.js";
 import { periodoAnterior, rangoPeriodo, etiquetaPeriodo, etiquetaCorta } from "../logic/periodos.js";
 import { fechasTendencia, calcularVariacion } from "../logic/reportes.js";
+import { reporteIcono } from "./iconos.js";
+import { tituloVista } from "./tituloVista.js";
 
 function valorOculto(valor) {
   return prefs.get("ocultarTotal") ? "*****" : formatoCLP(valor);
@@ -102,7 +104,11 @@ export async function montarReportes(contenedor, { rango, tipo, fechaRef, modo }
   const error = el("p", { class: "error", role: "alert" });
   const comparativa = el("section", { class: "panel-tarjeta" });
   const tendencia = el("section", { class: "panel-tarjeta" });
-  contenedor.append(el("div", { class: "reportes-vista" }, [comparativa, tendencia]), error);
+  contenedor.append(
+    tituloVista(reporteIcono, "Reportes"),
+    el("div", { class: "reportes-vista" }, [comparativa, tendencia]),
+    error
+  );
 
   await cargar();
 

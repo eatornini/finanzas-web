@@ -12,6 +12,11 @@ import {
   maletinIcono,
   flechaArribaCirculo,
   flechaAbajoCirculo,
+  utensiliosIcono,
+  alcanciaIcono,
+  saludPulsoIcono,
+  intercambioIcono,
+  carroIcono,
 } from "./iconos.js";
 
 const REGLAS = [
@@ -40,6 +45,25 @@ export function iconoMovimiento(m) {
     iconoPorPalabras(texto) ||
     (m.tipo === "ingreso" ? flechaArribaCirculo : flechaAbajoCirculo);
   return fabrica();
+}
+
+// Icono semántico para una categoría por su nombre (leyenda de "Gastos por
+// categoría"). Devuelve una fábrica de <svg> o null si no hay coincidencia
+// (en ese caso la leyenda mantiene el punto de color de siempre).
+const REGLAS_CATEGORIA = [
+  { rx: /aliment|comida|super|mercado|almac[eé]n|restaurant|caf[eé]/i, icono: utensiliosIcono },
+  { rx: /ahorro|saving|inversi[oó]n/i, icono: alcanciaIcono },
+  { rx: /salud|farmacia|m[eé]dic|dentista|hospital/i, icono: saludPulsoIcono },
+  { rx: /transferen/i, icono: intercambioIcono },
+  { rx: /locomoci[oó]n|transporte|micro|metro|\bbus\b|uber|taxi|bencina|combustible|movilizaci[oó]n/i, icono: carroIcono },
+];
+
+export function iconoSemanticoCategoria(nombre) {
+  const texto = nombre || "";
+  for (const { rx, icono } of REGLAS_CATEGORIA) {
+    if (rx.test(texto)) return icono;
+  }
+  return null;
 }
 
 // Devuelve el color hex a usar de fondo/ícono para un movimiento.

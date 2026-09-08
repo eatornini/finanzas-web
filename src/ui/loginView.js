@@ -1,49 +1,184 @@
 import { el, limpiar } from "./dom.js";
-import { iniciarSesion } from "../auth.js";
+import { iniciarSesion, registrarse, enviarResetPassword } from "../auth.js";
+import { validarRegistro } from "../logic/cuentas.js";
 
+// Vista de acceso con tres modos dentro de la misma tarjeta .login:
+//   login    → email + contraseña
+//   registro → crear cuenta (queda pendiente de aprobación)
+//   reset    → pedir enlace de recuperación por email
 export function montarLogin(contenedor) {
   limpiar(contenedor);
 
-  const error = el("p", { class: "error", role: "alert" });
-  const email = el("input", {
-    type: "email",
-    placeholder: "Email",
-    required: "true",
-    autocomplete: "username",
-  });
-  const pass = el("input", {
-    type: "password",
-    placeholder: "Contraseña",
-    required: "true",
-    autocomplete: "current-password",
-  });
-  const boton = el("button", {
-    type: "submit",
-    class: "boton--primario",
-    text: "Entrar",
-  });
-
-  const form = el(
-    "form",
-    {
-      class: "login",
-      onSubmit: async (ev) => {
-        ev.preventDefault();
-        error.textContent = "";
-        boton.disabled = true;
-        boton.textContent = "Entrando…";
-        try {
-          await iniciarSesion(email.value.trim(), pass.value);
-          // El router reacciona vía alCambiarSesion.
-        } catch (e) {
-          error.textContent = "No se pudo iniciar sesión. Revisa tus datos.";
-          boton.disabled = false;
-          boton.textContent = "Entrar";
-        }
-      },
-    },
-    [el("h1", { text: "Finanzas" }), email, pass, boton, error]
-  );
-
+  const form = el("form", { class: "login" });
   contenedor.append(form);
+
+  let modo = location.hash === "#registro" ? "registro" : "login";
+  let cargando = false;
+  let campos = {};
+
+  form.addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    if (cargando) return;
+    if (modo === "login") await enviarLogin();
+    else if (modo === "registro") await enviarRegistro();
+    else await enviarReset();
+  });
+
+  // --- helpers de construcción -------------------------------------------------
+
+  function campo(props) {
+    return el("input", { required: "true", ...props });
+  }
+
+  function enlace(texto, destino) {
+    return el("button", {
+      type: "button",
+      class: "login-enlace",
+      text: texto,
+      onClick: () => {
+        modo = destino;
+        render();
+      },
+    });
+  }
+
+  function botonEnvio(texto) {
+    return el("button", { type: "submit", class: "boton--primario", text: texto });
+  }
+
+  const error = el("p", { class: "error", role: "alert" });
+  const aviso = el("p", { class: "login-aviso" });
+
+  function limpiarMensajes() {
+    error.textContent = "";
+    aviso.textContent = "";
+  }
+
+  function setCargando(boton, activo, textoBase) {
+    cargando = activo;
+    boton.disabled = activo;
+    boton.textContent = activo ? "Un momento…" : textoBase;
+  }
+
+  // --- render por modo -------------------------------------------------------
+
+  function render() {
+    limpiar(form);
+    limpiarMensajes();
+    if (modo === "registro") return pintarRegistro();
+    if (modo === "reset") return pintarReset();
+    return pintarLogin();
+  }
+
+  function pintarLogin() {
+    const email = campo({ type: "email", placeholder: "Email", autocomplete: "username" });
+    const pass = campo({ type: "password", placeholder: "Contraseña", autocomplete: "current-password" });
+    const boton = botonEnvio("Entrar");
+    form.append(
+      el("h1", { text: "Finanzas" }),
+      email,
+      pass,
+      boton,
+      error,
+      el("div", { class: "login-cambiar" }, [
+        enlace("¿Olvidaste tu contraseña?", "reset"),
+        enlace("Crear cuenta", "registro"),
+      ])
+    );
+    campos = { email, pass, boton };
+  }
+
+  function pintarRegistro() {
+    const email = campo({ type: "email", placeholder: "Email", autocomplete: "username" });
+    const pass = campo({ type: "password", placeholder: "Contraseña", autocomplete: "new-password" });
+    const pass2 = campo({ type: "password", placeholder: "Repetir contraseña", autocomplete: "new-password" });
+    const boton = botonEnvio("Crear cuenta");
+    form.append(
+      el("h1", { text: "Crear cuenta" }),
+      email,
+      pass,
+      pass2,
+      boton,
+      error,
+      aviso,
+      el("div", { class: "login-cambiar" }, [enlace("Ya tengo cuenta", "login")])
+    );
+    campos = { email, pass, pass2, boton };
+  }
+
+  function pintarReset() {
+    const email = campo({ type: "email", placeholder: "Email", autocomplete: "username" });
+    const boton = botonEnvio("Enviarme el enlace");
+    form.append(
+      el("h1", { text: "Recuperar contraseña" }),
+      el("p", { class: "login-nota", text: "Te enviaremos un enlace para crear una contraseña nueva." }),
+      email,
+      boton,
+      error,
+      aviso,
+      el("div", { class: "login-cambiar" }, [enlace("Volver a iniciar sesión", "login")])
+    );
+    campos = { email, boton };
+  }
+
+  // --- envíos --------------------------------------------------------------
+
+  async function enviarLogin() {
+    const { email, pass, boton } = campos;
+    limpiarMensajes();
+    setCargando(boton, true, "Entrar");
+    try {
+      await iniciarSesion(email.value.trim(), pass.value);
+      // El router reacciona vía alCambiarSesion.
+    } catch (e) {
+      error.textContent = "No se pudo iniciar sesión. Revisa tus datos.";
+      setCargando(boton, false, "Entrar");
+    }
+  }
+
+  async function enviarRegistro() {
+    const { email, pass, pass2, boton } = campos;
+    limpiarMensajes();
+    const v = validarRegistro({ email: email.value.trim(), pass: pass.value, pass2: pass2.value });
+    if (!v.ok) {
+      error.textContent = v.error;
+      return;
+    }
+    setCargando(boton, true, "Crear cuenta");
+    try {
+      await registrarse(email.value.trim(), pass.value);
+      // Éxito: dejar solo el mensaje y el enlace de vuelta.
+      limpiar(form);
+      form.append(
+        el("h1", { text: "Registro recibido" }),
+        el("p", {
+          class: "login-aviso",
+          text: "Un administrador debe aprobar tu cuenta antes de que puedas entrar. Te avisaremos cuando esté lista.",
+        }),
+        el("div", { class: "login-cambiar" }, [enlace("Volver a iniciar sesión", "login")])
+      );
+    } catch (e) {
+      const ya = /registered|already/i.test(e?.message || "");
+      error.textContent = ya
+        ? "Ya existe una cuenta con ese email."
+        : "No se pudo crear la cuenta. Intenta de nuevo.";
+      setCargando(boton, false, "Crear cuenta");
+    }
+  }
+
+  async function enviarReset() {
+    const { email, boton } = campos;
+    limpiarMensajes();
+    setCargando(boton, true, "Enviarme el enlace");
+    try {
+      await enviarResetPassword(email.value.trim());
+    } catch (_e) {
+      // No se distingue el caso "email no existe" para no filtrar cuentas.
+    }
+    aviso.textContent =
+      "Si el email corresponde a una cuenta, te enviamos un enlace para restablecer la contraseña.";
+    setCargando(boton, false, "Enviarme el enlace");
+  }
+
+  render();
 }

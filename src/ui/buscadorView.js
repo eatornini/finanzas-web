@@ -6,6 +6,7 @@ import { nodoIconoCategoria } from "./iconoCategoria.js";
 import { colorMovimiento } from "./iconosCategoria.js";
 import { formatoCLP } from "../logic/dinero.js";
 import { lupaIcono } from "./iconos.js";
+import { tituloVista } from "./tituloVista.js";
 
 const LIMITE = 20;
 
@@ -34,6 +35,7 @@ export async function montarBuscador(contenedor, { modo }) {
   });
 
   contenedor.append(
+    tituloVista(lupaIcono, "Buscar"),
     el("section", { class: "panel-tarjeta" }, [
       el("div", { class: "buscador-cabecera" }, [
         el("div", { class: "campo-busqueda" }, [lupaIcono(), buscador]),

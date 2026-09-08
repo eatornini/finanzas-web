@@ -1,5 +1,7 @@
 import { el, limpiar } from "./dom.js";
 import { prefs } from "../prefs.js";
+import { engranajeIcono, intercambioIcono } from "./iconos.js";
+import { tituloVista, iconoTitulo } from "./tituloVista.js";
 
 export function montarConfiguracion(contenedor) {
   limpiar(contenedor);
@@ -12,9 +14,9 @@ export function montarConfiguracion(contenedor) {
 
   contenedor.append(
     el("div", { class: "config-vista" }, [
-      el("h2", { text: "Configuración" }),
+      tituloVista(engranajeIcono, "Configuración"),
       el("section", { class: "panel-tarjeta" }, [
-        el("h3", { text: "Movimientos" }),
+        el("h3", {}, [iconoTitulo(intercambioIcono), "Movimientos"]),
         el("label", { class: "campo campo--check", for: "config-inactivos" }, [
           chkInactivos,
           "Incluir movimientos inactivos en los cálculos de Estimado",

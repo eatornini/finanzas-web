@@ -63,6 +63,24 @@ export const etiquetaIcono = () =>
   ]);
 export const graficoIcono = () =>
   svg(["M3 3v18h18", "M18 17V9", "M13 17V5", "M8 17v-3"]);
+// Lucide: store — encabezado de la sección "Comercio".
+export const tiendaIcono = () =>
+  svg([
+    "M3 9l1.5-5h15L21 9",
+    "M4 9v10a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V9",
+    "M3 9h18",
+    "M9 20v-5h6v5",
+  ]);
+// Lucide: circle-dollar-sign — encabezado de la sección "Monto".
+export const dolarCirculoIcono = () =>
+  svg([
+    "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z",
+    "M16 8.5h-5A1.75 1.75 0 0 0 11 12h2a1.75 1.75 0 0 1 0 3.5H8",
+    "M12 7v10",
+  ]);
+// Lucide: layout-grid — tarjeta "Todas" en la fila de categorías.
+export const cuadriculaIcono = () =>
+  svg(["M3 3h8v8H3z", "M13 3h8v8h-8z", "M13 13h8v8h-8z", "M3 13h8v8H3z"]);
 export const engranajeIcono = () =>
   svg([
     "M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z",
@@ -131,6 +149,93 @@ export const autoIcono = () =>
 export const maletinIcono = () =>
   svg([
     "M3 7h18v13H3z", "M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2", "M3 12h18",
+  ]);
+
+// --- Sistema de iconos de títulos y categorías (Lucide) ---
+// Añadidos para dar una iconografía coherente a los encabezados de cada
+// pantalla y a los paneles/listas. Mismo estilo que el resto del archivo:
+// viewBox 24, stroke 2, extremos redondeados.
+
+// Lucide: arrow-left-right
+export const intercambioIcono = () =>
+  svg(["M8 3 4 7l4 4", "M4 7h16", "M16 21l4-4-4-4", "M20 17H4"]);
+
+// Lucide: chart-no-axes-combined
+export const tendenciaCombinadaIcono = () =>
+  svg(["M12 16v5", "M16 14v7", "M20 10v11", "M8 10v11", "M4 18v3", "m2 14 8-6 4 3 8-7"]);
+
+// Lucide: tags (el tercer trazo es el punto del ojal, como en puntosIcono)
+export const etiquetasIcono = () =>
+  svg([
+    "M9.586 5.586A2 2 0 0 0 8.172 5H3a1 1 0 0 0-1 1v5.172a2 2 0 0 0 .586 1.414L8.29 18.29a2.426 2.426 0 0 0 3.42 0l3.58-3.58a2.426 2.426 0 0 0 0-3.42z",
+    "m15 5 6.3 6.3a2.4 2.4 0 0 1 0 3.4L17 19",
+    "M6.5 9.5h.01",
+  ]);
+
+// Lucide: file-chart-column
+export const reporteIcono = () =>
+  svg([
+    "M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7z",
+    "M14 2v4a2 2 0 0 0 2 2h4",
+    "M8 18v-1",
+    "M12 18v-4",
+    "M16 18v-6",
+  ]);
+
+// Lucide: pie-chart
+export const graficoTortaIcono = () =>
+  svg(["M21.21 15.89A10 10 0 1 1 8 2.83", "M22 12A10 10 0 0 0 12 2v10z"]);
+
+// Lucide: clock-3
+export const reloj3Icono = () =>
+  svg(["M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z", "M12 6v6h4.5"]);
+
+// Lucide: utensils
+export const utensiliosIcono = () =>
+  svg([
+    "M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2",
+    "M7 2v20",
+    "M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7",
+  ]);
+
+// Lucide: piggy-bank
+export const alcanciaIcono = () =>
+  svg([
+    "M19 5c-1.5 0-2.8 1.4-3 2-3.5-1.5-11-.3-11 5 0 1.8 0 3 2 4.5V20h4v-2h3v2h4v-4c1-.5 1.7-1 2-2h2v-4h-2c0-1-.5-1.5-1-2V5z",
+    "M2 9v1c0 1.1.9 2 2 2h1",
+    "M16 11h.01",
+  ]);
+
+// Lucide: heart-pulse
+export const saludPulsoIcono = () =>
+  svg([
+    "M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7z",
+    "M3.22 12H9.5l.5-1 2 4.5 2-7 1.5 3.5h5.27",
+  ]);
+
+// Lucide: car (ruedas expresadas como arcos de path)
+export const carroIcono = () =>
+  svg([
+    "M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2",
+    "M5 17a2 2 0 1 0 4 0 2 2 0 0 0-4 0z",
+    "M15 17a2 2 0 1 0 4 0 2 2 0 0 0-4 0z",
+    "M9 17h6",
+  ]);
+
+// Lucide: shield-check — panel de administración
+export const escudoIcono = () =>
+  svg([
+    "M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z",
+    "m9 12 2 2 4-4",
+  ]);
+
+// Lucide: user-plus — "crear cuenta"
+export const usuarioMasIcono = () =>
+  svg([
+    "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2",
+    "M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z",
+    "M19 8v6",
+    "M22 11h-6",
   ]);
 
 // Logo de la app: "savings" de Material Symbols, relleno (FILL=1) y con

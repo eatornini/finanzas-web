@@ -1,7 +1,8 @@
 import { el, limpiar } from "./dom.js";
 import { listarMovimientos, actualizarMovimiento, eliminarMovimiento } from "../data/movimientos.js";
 import { listarCategorias } from "../data/categorias.js";
-import { basura, lupaIcono, embudoIcono, chevronAbajo, check, mas, cerrarIcono } from "./iconos.js";
+import { basura, lupaIcono, embudoIcono, chevronAbajo, check, mas, cerrarIcono, intercambioIcono } from "./iconos.js";
+import { iconoTitulo } from "./tituloVista.js";
 import { colorMovimiento } from "./iconosCategoria.js";
 import { nodoIconoCategoria } from "./iconoCategoria.js";
 import { montarPanelResumen } from "./panelResumenView.js";
@@ -158,7 +159,7 @@ export async function montarMovimientos(contenedor, { rango, modo, tipo, categor
 
   const tarjetaLista = el("section", { class: "panel-tarjeta lista-movimientos" }, [
     el("div", { class: "lista-cabecera" }, [
-      el("div", { class: "lista-titulo" }, [el("h3", {}, ["Movimientos ", badge])]),
+      el("div", { class: "lista-titulo" }, [el("h3", {}, [iconoTitulo(intercambioIcono), "Movimientos ", badge])]),
       el("div", { class: "lista-acciones" }, [
         el("div", { class: "campo-busqueda" }, [lupaIcono(), buscador]),
         btnFiltros,

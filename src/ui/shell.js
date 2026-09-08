@@ -11,11 +11,12 @@ import {
   flechaIzq,
   flechaDer,
   salir,
-  listaIcono,
-  relojIcono,
-  etiquetaIcono,
-  graficoIcono,
+  intercambioIcono,
+  tendenciaCombinadaIcono,
+  etiquetasIcono,
+  reporteIcono,
   engranajeIcono,
+  escudoIcono,
   solIcono,
   lunaIcono,
   chevronAbajo,
@@ -29,24 +30,35 @@ import { montarCategorias } from "./categoriasView.js";
 import { montarBuscador } from "./buscadorView.js";
 import { montarReportes } from "./reportesView.js";
 import { montarConfiguracion } from "./configuracionView.js";
+import { montarAdmin } from "./adminView.js";
+import { registrarAcceso } from "../data/perfil.js";
 
-const VISTAS = [
-  { clave: "movimientos", titulo: "Movimientos", icono: listaIcono, montar: montarMovimientos },
-  { clave: "resumen", titulo: "Resumen", icono: relojIcono, montar: montarResumen },
-  { clave: "categorias", titulo: "Categorías", icono: etiquetaIcono, montar: montarCategorias },
+const VISTAS_BASE = [
+  { clave: "movimientos", titulo: "Movimientos", icono: intercambioIcono, montar: montarMovimientos },
+  { clave: "resumen", titulo: "Resumen", icono: tendenciaCombinadaIcono, montar: montarResumen },
+  { clave: "categorias", titulo: "Categorías", icono: etiquetasIcono, montar: montarCategorias },
   { clave: "buscar", titulo: "Buscar", icono: lupaIcono, montar: montarBuscador },
-  { clave: "reportes", titulo: "Reportes", icono: graficoIcono, montar: montarReportes },
+  { clave: "reportes", titulo: "Reportes", icono: reporteIcono, montar: montarReportes },
   { clave: "configuracion", titulo: "Configuración", icono: engranajeIcono, montar: montarConfiguracion },
 ];
+
+// Solo visible para cuentas admin (ver montarShell).
+const VISTA_ADMIN = {
+  clave: "admin",
+  titulo: "Administración",
+  icono: escudoIcono,
+  montar: montarAdmin,
+};
 
 function aplicarTema(tema) {
   document.documentElement.dataset.tema = tema;
 }
 
 // La vista guardada en prefs puede quedar obsoleta (clave renombrada, dato
-// corrupto); si no es una de VISTAS, se cae a "movimientos".
-function vistaValida(clave) {
-  return VISTAS.some((v) => v.clave === clave) ? clave : "movimientos";
+// corrupto, o "admin" guardada por alguien que ya no es admin); si no está
+// en `vistas`, se cae a "movimientos".
+function vistaValida(clave, vistas) {
+  return vistas.some((v) => v.clave === clave) ? clave : "movimientos";
 }
 
 function ymdLocal(d) {
@@ -67,13 +79,19 @@ function inicialesDesdeNombre(nombre) {
   return ((partes[0]?.[0] || "") + (partes[1]?.[0] || "")).toUpperCase() || "?";
 }
 
-export function montarShell(contenedor, sesion) {
+export function montarShell(contenedor, sesion, perfil) {
   limpiar(contenedor);
+
+  // El menú "Administración" solo existe para cuentas admin.
+  const VISTAS = perfil?.rol === "admin" ? [...VISTAS_BASE, VISTA_ADMIN] : VISTAS_BASE;
+
+  // Marca de último acceso (best-effort, no bloquea el render).
+  registrarAcceso();
 
   let tipo = prefs.get("periodoTipo");
   const fechaGuardada = prefs.get("fechaRef");
   let fechaRef = fechaGuardada ? new Date(`${fechaGuardada}T12:00:00`) : new Date();
-  let activa = vistaValida(prefs.get("vistaActiva"));
+  let activa = vistaValida(prefs.get("vistaActiva"), VISTAS);
   let modo = prefs.get("modo");
   let tema = prefs.get("tema");
   aplicarTema(tema);
@@ -232,7 +250,7 @@ export function montarShell(contenedor, sesion) {
   const nombre = nombreDesdeEmail(email);
   const iniciales = inicialesDesdeNombre(nombre);
 
-  const perfil = el("div", { class: "perfil" }, [
+  const perfilNodo = el("div", { class: "perfil" }, [
     el("span", { class: "perfil-avatar", text: iniciales }),
     el("div", { class: "perfil-info" }, [
       el("span", { class: "perfil-nombre", text: nombre }),
@@ -257,7 +275,7 @@ export function montarShell(contenedor, sesion) {
       btnTema,
     ]),
     nav,
-    el("div", { class: "sidebar-pie" }, [perfil, btnSalir]),
+    el("div", { class: "sidebar-pie" }, [perfilNodo, btnSalir]),
   ]);
 
   const topbar = el("header", { class: "topbar" }, [
@@ -267,7 +285,7 @@ export function montarShell(contenedor, sesion) {
   ]);
 
   const piePagina = el("footer", { class: "pie-app" }, [
-    el("span", { text: "Finanzas v2.59" }),
+    el("span", { text: "Finanzas v2.61" }),
     el("span", { class: "pie-punto", text: "·" }),
     el("span", { text: "Tus datos están seguros" }),
   ]);

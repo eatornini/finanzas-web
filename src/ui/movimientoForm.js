@@ -5,7 +5,21 @@ import { usoCategorias, sugerenciasComercio } from "../data/rpc.js";
 import { abrirCategoriaForm } from "./categoriaForm.js";
 import { formatoCLP, parseCLP } from "../logic/dinero.js";
 import { nodoIconoCategoria } from "./iconoCategoria.js";
-import { camaraIcono, cerrarIcono, chevronAbajo } from "./iconos.js";
+import {
+  camaraIcono,
+  cerrarIcono,
+  chevronAbajo,
+  mas,
+  lapiz,
+  flechaAbajoCirculo,
+  flechaArribaCirculo,
+  flechaDer,
+  etiquetaIcono,
+  tiendaIcono,
+  dolarCirculoIcono,
+  cuadriculaIcono,
+  lupaIcono,
+} from "./iconos.js";
 import { subirComprobante, urlComprobante, eliminarComprobante } from "../data/storage.js";
 import { reconocerImagen } from "../ocr/tesseractWorker.js";
 import { construirBloques } from "../ocr/construirBloques.js";
@@ -57,6 +71,8 @@ export function abrirMovimientoForm({
     id: "mov-nombre",
     required: "true",
     autocomplete: "off",
+    "aria-label": "Comercio",
+    placeholder: "Ej. Supermercado, Uber, Starbucks…",
     value: movimiento?.nombre || inicial?.comercio || "",
   });
   const sugerencias = el("datalist", { id: "mov-nombre-sugerencias" });
@@ -65,6 +81,8 @@ export function abrirMovimientoForm({
   const monto = el("input", {
     id: "mov-monto",
     inputmode: "numeric",
+    "aria-label": "Monto",
+    placeholder: "0",
     value: movimiento
       ? formatoMontoCampo(movimiento.monto)
       : inicial?.monto
@@ -80,8 +98,14 @@ export function abrirMovimientoForm({
   // Toggle Gasto/Ingreso (antes <select id="mov-tipo">). tipoActual sigue
   // siendo la única fuente de verdad; se conserva el mismo reseteo de
   // categoría al cambiar de tipo.
-  const btnTipoGasto = el("button", { type: "button", text: "Gasto" });
-  const btnTipoIngreso = el("button", { type: "button", text: "Ingreso" });
+  const btnTipoGasto = el("button", { type: "button" }, [
+    flechaAbajoCirculo(),
+    el("span", { text: "Gasto" }),
+  ]);
+  const btnTipoIngreso = el("button", { type: "button" }, [
+    flechaArribaCirculo(),
+    el("span", { text: "Ingreso" }),
+  ]);
   function sincronizarTipo() {
     btnTipoGasto.classList.toggle("activo", tipoActual === "gasto");
     btnTipoIngreso.classList.toggle("activo", tipoActual === "ingreso");
@@ -278,7 +302,7 @@ export function abrirMovimientoForm({
     icono.style.color = color;
     const b = el("button", { type: "button", class: "mov-chip" }, [
       icono,
-      el("span", { text: c.nombre }),
+      el("span", { class: "mov-chip-texto", text: c.nombre }),
     ]);
     b.dataset.id = c.id;
     if (c.color) b.style.setProperty("--chip-color", c.color);
@@ -320,16 +344,22 @@ export function abrirMovimientoForm({
     }
   }
 
+  // Tarjeta neutra (misma silueta que un chip de categoría) para las dos
+  // acciones de la fila: abrir la lista completa y crear una categoría.
+  function chipAccion(clase, fabricaIcono, contenidoTexto, onClick) {
+    return el("button", { type: "button", class: `mov-chip ${clase}`, onClick }, [
+      el("span", { class: "mov-chip-icono mov-chip-icono--neutro" }, [fabricaIcono()]),
+      el("span", { class: "mov-chip-texto" }, contenidoTexto),
+    ]);
+  }
+
   function pintarChips() {
     limpiar(chips);
     const lista = categoriasDelTipo();
     chips.append(
-      el("button", {
-        type: "button",
-        class: "mov-chip mov-chip--mas",
-        text: "Todas ▾",
-        onClick: () => abrirListaCompleta(lista),
-      })
+      chipAccion("mov-chip--todas", cuadriculaIcono, ["Todas", chevronAbajo()], () =>
+        abrirListaCompleta(lista)
+      )
     );
     for (const c of lista.slice(0, 4)) chips.append(chip(c));
     if (categoriaId && !lista.slice(0, 4).some((c) => c.id === categoriaId)) {
@@ -338,7 +368,24 @@ export function abrirMovimientoForm({
       // siempre primero.
       if (sel) chips.insertBefore(chip(sel), chips.children[1] || null);
     }
+    chips.append(
+      chipAccion("mov-chip--nueva-tile", mas, ["Nueva categoría"], abrirNuevaCategoria)
+    );
     marcarChipActivo();
+  }
+
+  function abrirNuevaCategoria() {
+    abrirCategoriaForm({
+      modoInicial: modo,
+      tipoInicial: tipoActual,
+      onGuardado: (nueva) => {
+        categorias.push(nueva);
+        categoriaId = nueva.id;
+        pintarChips();
+        actualizarSelectorCategoria();
+        actualizarBotones();
+      },
+    });
   }
 
   function abrirListaCompleta(lista) {
@@ -364,17 +411,7 @@ export function abrirMovimientoForm({
         text: "+ Nueva categoría",
         onClick: () => {
           cerrarLista();
-          abrirCategoriaForm({
-            modoInicial: modo,
-            tipoInicial: tipoActual,
-            onGuardado: (nueva) => {
-              categorias.push(nueva);
-              categoriaId = nueva.id;
-              pintarChips();
-              actualizarSelectorCategoria();
-              actualizarBotones();
-            },
-          });
+          abrirNuevaCategoria();
         },
       })
     );
@@ -440,6 +477,18 @@ export function abrirMovimientoForm({
     return el("label", { class: "campo", for: input.id, text: etiqueta }, [input]);
   }
 
+  // Encabezado de sección del formulario: icono de acento + título en
+  // negrita y, opcionalmente, una acción alineada a la derecha.
+  function seccionCab(fabricaIcono, texto, accion = null) {
+    return el("div", { class: "mov-seccion-cab" }, [
+      el("span", { class: "mov-seccion-titulo" }, [
+        el("span", { class: "mov-seccion-icono" }, [fabricaIcono()]),
+        texto,
+      ]),
+      accion,
+    ]);
+  }
+
   function opcionCheck(input, etiqueta) {
     return el("label", { class: "campo campo--check", for: input.id }, [input, etiqueta]);
   }
@@ -496,17 +545,32 @@ export function abrirMovimientoForm({
     selectorTipoMov,
     catSelector,
     el("div", { class: "campo mov-rapido-campo" }, [
-      el("span", { class: "campo-etiqueta", text: "Seleccionar categoría" }),
+      seccionCab(
+        etiquetaIcono,
+        "Categoría",
+        el(
+          "button",
+          {
+            type: "button",
+            class: "mov-ver-todas",
+            onClick: () => abrirListaCompleta(categoriasDelTipo()),
+          },
+          [el("span", { text: "Ver todas" }), flechaDer()]
+        )
+      ),
       chips,
     ]),
     el("div", { class: "campo" }, [
-      el("label", { class: "campo-etiqueta", for: "mov-nombre", text: "Comercio" }),
-      el("div", { class: "comercio-fila" }, [nombre, btnCargarComprobante]),
+      seccionCab(tiendaIcono, "Comercio"),
+      el("div", { class: "comercio-fila" }, [
+        el("div", { class: "comercio-input" }, [lupaIcono(), nombre]),
+        btnCargarComprobante,
+      ]),
     ]),
     sugerencias,
     comprobante,
     el("div", { class: "campo campo-monto" }, [
-      el("span", { class: "campo-etiqueta", text: "Monto" }),
+      seccionCab(dolarCirculoIcono, "Monto"),
       el("div", { class: "input-monto input-monto--grande" }, [
         el("span", { class: "input-monto-simbolo", text: "$" }),
         monto,
@@ -569,6 +633,10 @@ export function abrirMovimientoForm({
 
   const { cerrar } = montarModal({
     titulo: edicion ? "Editar movimiento" : "Agregar movimiento",
+    subtitulo: edicion
+      ? "Modificá los datos de este movimiento."
+      : "Registra un nuevo ingreso o gasto en tu cuenta.",
+    icono: edicion ? lapiz : mas,
     contenido: form,
     accionesCabecera: [btnGuardar],
   });

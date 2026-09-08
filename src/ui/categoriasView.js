@@ -3,7 +3,8 @@ import { listarCategorias, actualizarCategoria, eliminarCategoria } from "../dat
 import { abrirCategoriaForm } from "./categoriaForm.js";
 import { nodoIconoCategoria } from "./iconoCategoria.js";
 import { prefs } from "../prefs.js";
-import { lapiz, basura, flechaArribaCirculo, flechaAbajoCirculo } from "./iconos.js";
+import { lapiz, basura, flechaArribaCirculo, flechaAbajoCirculo, etiquetasIcono } from "./iconos.js";
+import { tituloVista } from "./tituloVista.js";
 
 export function montarCategorias(contenedor) {
   limpiar(contenedor);
@@ -38,6 +39,7 @@ export function montarCategorias(contenedor) {
   });
 
   contenedor.append(
+    tituloVista(etiquetasIcono, "Categorías"),
     el("div", { class: "categorias-cabecera" }, [
       el("div", { class: "selector-modo" }, [btnModo.real, btnModo.estimado]),
       btnNueva,
