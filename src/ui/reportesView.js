@@ -30,25 +30,31 @@ function tarjetaComparativa(titulo, actual, anterior, claseBase, invertir = fals
   ]);
 }
 
+function itemLeyendaTendencia(clasePunto, texto) {
+  return el("li", {}, [el("span", { class: `tendencia-leyenda-punto ${clasePunto}` }), texto]);
+}
+
 function construirGraficoTendencia(serie) {
   const maxValor = Math.max(0, ...serie.flatMap((s) => [s.ingresos, s.gastos]));
   if (maxValor <= 0) {
     return el("p", { class: "vacio", text: "Sin movimientos en este rango." });
   }
 
-  const ancho = 120;
+  const ancho = 200;
   const alto = 60;
   const base = 42;
   const altoMax = 32;
   const anchoGrupo = ancho / serie.length;
   const anchoBarra = anchoGrupo * 0.32;
 
-  const nodos = [];
+  const nodosBarras = [];
+  const puntosBalance = [];
+  const nodosBalance = [];
   serie.forEach((s, i) => {
     const cx = i * anchoGrupo + anchoGrupo / 2;
     const altoIngreso = Math.max((s.ingresos / maxValor) * altoMax, s.ingresos > 0 ? 1 : 0);
     const altoGasto = Math.max((s.gastos / maxValor) * altoMax, s.gastos > 0 ? 1 : 0);
-    nodos.push(
+    nodosBarras.push(
       elSvg("rect", {
         x: cx - anchoBarra - 1,
         y: base - altoIngreso,
@@ -65,9 +71,27 @@ function construirGraficoTendencia(serie) {
       }),
       elSvg("text", { x: cx, y: base + 9, class: "tendencia-eje-etiqueta" }, [s.etiqueta])
     );
+    // Balance neto (ingresos - gastos) en la misma escala que las barras;
+    // el cero cae en `base`: el punto sube si el período cerró en positivo
+    // y baja si cerró en rojo. Se acota para no pisar las etiquetas del eje.
+    const cy = Math.min(Math.max(base - (s.balance / maxValor) * altoMax, 3), base + 5);
+    puntosBalance.push(`${cx.toFixed(1)},${cy.toFixed(1)}`);
+    nodosBalance.push(elSvg("circle", { cx, cy, r: 1.1, class: "tendencia-punto-balance" }));
   });
 
+  const nodos = [
+    elSvg("line", { x1: 0, y1: base, x2: ancho, y2: base, class: "tendencia-cero" }),
+    ...nodosBarras,
+    elSvg("polyline", { points: puntosBalance.join(" "), class: "tendencia-linea-balance" }),
+    ...nodosBalance,
+  ];
+
   return el("div", { class: "tendencia-grafico" }, [
+    el("ul", { class: "tendencia-leyenda" }, [
+      itemLeyendaTendencia("tendencia-leyenda-punto--ingreso", "Ingresos"),
+      itemLeyendaTendencia("tendencia-leyenda-punto--gasto", "Gastos"),
+      itemLeyendaTendencia("tendencia-leyenda-punto--balance", "Balance neto"),
+    ]),
     elSvg("svg", { viewBox: `0 0 ${ancho} ${alto}` }, nodos),
   ]);
 }
@@ -130,7 +154,12 @@ export async function montarReportes(contenedor, { rango, tipo, fechaRef, modo }
     );
     const serie = fechas.map((f, i) => {
       const t = calcularTotales(filtrarParaCalculos(listas[i], { modo, incluirInactivos }));
-      return { etiqueta: etiquetaCorta(f, tipo), ingresos: t.ingresos, gastos: t.gastos };
+      return {
+        etiqueta: etiquetaCorta(f, tipo),
+        ingresos: t.ingresos,
+        gastos: t.gastos,
+        balance: t.balance,
+      };
     });
 
     limpiar(tendencia);

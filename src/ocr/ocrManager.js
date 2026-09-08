@@ -1,6 +1,7 @@
 import { detectarTipoDocumento } from "./documentTypeDetector.js";
 import { parsearTransferencia } from "./transferenciaParser.js";
 import { parsearCompra } from "./purchaseExtractor.js";
+import { parsearComprobanteTabular } from "./comprobanteTabularParser.js";
 
 // Los comprobantes de POS (ej. TUU) anteponen el proveedor al nombre del
 // comercio ("TUU*ALMACEN DON JUAN") — se saca ese prefijo y se deja solo
@@ -21,6 +22,14 @@ export function analizarComprobante({ lineas, bloques }) {
   if (tipo === "transferencia") {
     const r = parsearTransferencia(lineas);
     if (r) return { ...r, comercio: limpiarComercio(r.comercio), tipo };
+  }
+
+  // Comprobantes con tabla "etiqueta / valor" (vouchers TUU/Transbank y
+  // correos de POS). Solo gana si reconoce la etiqueta "Comercio" + un monto;
+  // si no, cae al parser por geometría que ya sirve para los screenshots.
+  const tabular = parsearComprobanteTabular(lineas);
+  if (tabular) {
+    return { ...tabular, comercio: limpiarComercio(tabular.comercio), detalle: null, tipo: "compra" };
   }
 
   const r = parsearCompra(lineas, bloques);

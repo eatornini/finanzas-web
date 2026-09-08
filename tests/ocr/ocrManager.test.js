@@ -52,6 +52,28 @@ describe("analizarComprobante", () => {
     expect(r.comercio).toBe("Café Central");
   });
 
+  it("parsea un voucher POS con tabla etiqueta / valor y saca el prefijo TUU*", () => {
+    const bloques = [
+      bloque("Número tarjeta débito ****5925", 0, 20),
+      bloque("Monto $3.400", 30, 50),
+      bloque("Fecha 07/09/2026", 60, 80),
+      bloque("Hora 20:30 horas", 90, 110),
+      bloque("Comercio TUU*DIERO I", 120, 140),
+    ];
+    const lineas = bloques.flatMap((b) => b.lines);
+
+    const r = analizarComprobante({ lineas, bloques });
+
+    expect(r.tipo).toBe("compra");
+    expect(r.comercio).toBe("DIERO I");
+    expect(r.monto).toBe(3400);
+    expect(r.detalle).toBeNull();
+    expect(r.fecha.getDate()).toBe(7);
+    expect(r.fecha.getMonth()).toBe(8);
+    expect(r.fecha.getHours()).toBe(20);
+    expect(r.fecha.getMinutes()).toBe(30);
+  });
+
   it("degrada a compra si el clasificador dice transferencia pero el parser específico no encuentra suficientes keywords", () => {
     // Menos de 2 keywords del set (más chico) de transferenciaParser, pero
     // >= 2 del set (más amplio) de documentTypeDetector.

@@ -170,15 +170,39 @@ export function abrirMovimientoForm({
     }
   }
 
+  // Valores que puso el OCR la última vez. Sirve para distinguir "el usuario
+  // no tocó el campo" (se puede reemplazar al cargar otro comprobante) de "lo
+  // editó a mano" (se respeta). Se siembra con los valoresIniciales para que
+  // un OCR previo también quede sujeto a reemplazo.
+  let ultimoOcr = {
+    comercio: inicial?.comercio ? String(inicial.comercio).trim() : "",
+    monto: inicial?.monto ? formatoMontoCampo(inicial.monto) : "",
+    fecha: inicial?.fecha ? isoAInputLocal(inicial.fecha.toISOString()) : "",
+    detalle: inicial?.detalle ? String(inicial.detalle).trim() : "",
+  };
+
   function aplicarValoresOcr(resultado) {
-    if (!nombre.value.trim() && resultado.comercio) nombre.value = resultado.comercio;
-    if (!parseCLP(monto.value) && resultado.monto) {
-      monto.value = formatoMontoCampo(resultado.monto);
+    const comercioOcr = resultado.comercio ? String(resultado.comercio).trim() : "";
+    const montoOcr = resultado.monto ? formatoMontoCampo(resultado.monto) : "";
+    const fechaOcr = resultado.fecha ? isoAInputLocal(resultado.fecha.toISOString()) : "";
+    const detalleOcr = resultado.detalle ? String(resultado.detalle).trim() : "";
+
+    // Cada campo se reemplaza si está vacío o si todavía tiene el valor que
+    // puso el OCR anterior; si el usuario lo editó a mano, no se toca.
+    if (!nombre.value.trim() || nombre.value === ultimoOcr.comercio) {
+      nombre.value = comercioOcr;
     }
-    if (!fechaTocada && resultado.fecha) {
-      fecha.value = isoAInputLocal(resultado.fecha.toISOString());
+    if (!parseCLP(monto.value) || monto.value === ultimoOcr.monto) {
+      monto.value = montoOcr;
     }
-    if (!detalle.value.trim() && resultado.detalle) detalle.value = resultado.detalle;
+    if (!fechaTocada || fecha.value === ultimoOcr.fecha) {
+      fecha.value = fechaOcr;
+    }
+    if (!detalle.value.trim() || detalle.value === ultimoOcr.detalle) {
+      detalle.value = detalleOcr;
+    }
+
+    ultimoOcr = { comercio: comercioOcr, monto: montoOcr, fecha: fechaOcr, detalle: detalleOcr };
     actualizarBotones();
   }
 
@@ -247,7 +271,11 @@ export function abrirMovimientoForm({
   function chip(c) {
     const color = c.color || (tipoActual === "ingreso" ? "#1b7f4d" : "#c0392b");
     const icono = el("span", { class: "mov-chip-icono" }, [nodoIconoCategoria(c)]);
-    icono.style.background = color;
+    // Mismo tratamiento visual que la lista de Movimientos (.fila-icono):
+    // fondo pastel (tinte suave del color de la categoría) e ícono en el
+    // color pleno, en lugar de círculo sólido con ícono blanco.
+    icono.style.background = `color-mix(in srgb, ${color} 16%, transparent)`;
+    icono.style.color = color;
     const b = el("button", { type: "button", class: "mov-chip" }, [
       icono,
       el("span", { text: c.nombre }),
@@ -426,11 +454,49 @@ export function abrirMovimientoForm({
     ...(esEstimado ? [campo("Frecuencia", frecuencia)] : []),
   ]);
 
+  // --- "Más opciones": secciona los campos secundarios en un panel
+  // colapsable. Solo cambia la presentación: los inputs siguen montados y
+  // conservan su valor esté abierto o cerrado, así el submit no cambia. ---
+  const avanzadoInner = el("div", { class: "mov-avanzado-inner" }, [
+    campo("Detalle (opcional)", detalle),
+    campo("Fecha y hora", fecha),
+    seccionOpciones,
+  ]);
+  const btnAvanzado = el(
+    "button",
+    {
+      type: "button",
+      class: "mov-avanzado-toggle",
+      "aria-expanded": "false",
+      "aria-controls": "mov-avanzado-contenido",
+    },
+    [el("span", { text: "Más opciones" }), el("span", { class: "mov-avanzado-chevron" }, [chevronAbajo()])]
+  );
+  const avanzadoWrap = el("div", { class: "mov-avanzado" }, [
+    btnAvanzado,
+    el("div", { class: "mov-avanzado-contenido", id: "mov-avanzado-contenido" }, [avanzadoInner]),
+  ]);
+  function setAvanzado(abierto) {
+    btnAvanzado.setAttribute("aria-expanded", String(abierto));
+    avanzadoWrap.classList.toggle("mov-avanzado--abierto", abierto);
+  }
+  btnAvanzado.addEventListener("click", () => {
+    setAvanzado(btnAvanzado.getAttribute("aria-expanded") !== "true");
+  });
+  // Al editar, abrir de entrada si hay algo que el usuario debería ver: un
+  // detalle escrito o una opción fuera de su valor por defecto (Activo
+  // desmarcado, o Pagado/Recurrente marcados en modo estimado). La fecha
+  // no cuenta: en edición siempre trae la del movimiento y forzaría el
+  // panel abierto en todos los casos. En alta siempre empieza cerrado.
+  const opcionesFueraDeDefault =
+    !activo.checked || (esEstimado && (pagado.checked || recurrente.checked));
+  setAvanzado(edicion && (Boolean(detalle.value.trim()) || opcionesFueraDeDefault));
+
   const filas = [
     selectorTipoMov,
     catSelector,
     el("div", { class: "campo mov-rapido-campo" }, [
-      el("span", { class: "campo-etiqueta", text: "Rápido" }),
+      el("span", { class: "campo-etiqueta", text: "Seleccionar categoría" }),
       chips,
     ]),
     el("div", { class: "campo" }, [
@@ -446,9 +512,7 @@ export function abrirMovimientoForm({
         monto,
       ]),
     ]),
-    campo("Detalle (opcional)", detalle),
-    campo("Fecha y hora", fecha),
-    seccionOpciones,
+    avanzadoWrap,
   ];
 
   const form = el(

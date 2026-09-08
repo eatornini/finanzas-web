@@ -1136,7 +1136,10 @@
     -webkit-box-orient: vertical;
   }
 
-  /* Círculo de color de la categoría con el ícono en blanco adentro. */
+  /* Mismo sistema visual que la lista de Movimientos (.fila-icono):
+     círculo con fondo pastel (tinte suave del color de la categoría) e
+     ícono en el color pleno. El fondo y el color se aplican inline en
+     chip(); acá solo la forma y el centrado del glifo. */
   .mov-rapido-campo .mov-chip-icono {
     display: flex;
     align-items: center;
@@ -1144,12 +1147,19 @@
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    color: #fff;
+    line-height: 1;
   }
 
   .mov-rapido-campo .mov-chip .ms-icono,
   .mov-rapido-campo .mov-chip .cat-emoji {
     font-size: 20px;
+  }
+
+  /* Ícono de respaldo (SVG) en el mismo tamaño que el glifo y en el color
+     pleno de la categoría, igual que .fila-icono svg en Movimientos. */
+  .mov-rapido-campo .mov-chip-icono svg {
+    width: 20px;
+    height: 20px;
   }
 
   /* --- Opciones secundarias (Activo/Pagado/Recurrente/Frecuencia) --- */
@@ -1184,6 +1194,77 @@
 
   .mov-opciones-checks .campo--check {
     flex: none;
+  }
+
+  /* --- "Más opciones": panel colapsable de campos secundarios --- */
+  .mov-avanzado {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Control discreto, no un botón principal: sin recuadro ni fondo, en
+     color tenue. Se reusa la cadena :not() del hover global para ganarle
+     en especificidad sin !important. */
+  .mov-avanzado-toggle {
+    align-self: flex-start;
+    gap: var(--esp-1);
+    padding: var(--esp-1) 0;
+    border-color: transparent;
+    background: transparent;
+    color: var(--fg-tenue);
+    font-size: var(--txt-sm);
+  }
+
+  .mov-avanzado-toggle:hover:not(:disabled):not(.activo):not(.boton--primario),
+  .mov-avanzado-toggle:active:not(:disabled):not(.activo):not(.boton--primario) {
+    background: transparent;
+    border-color: transparent;
+    color: var(--fg);
+    transform: none;
+  }
+
+  .mov-avanzado-chevron {
+    display: inline-flex;
+    transition: transform 0.2s ease;
+  }
+
+  .mov-avanzado-chevron svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .mov-avanzado--abierto .mov-avanzado-chevron {
+    transform: rotate(180deg);
+  }
+
+  /* Apertura/cierre suave con el truco de grid-template-rows 0fr -> 1fr:
+     anima la altura real del contenido sin números mágicos. */
+  .mov-avanzado-contenido {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.28s ease, visibility 0.28s;
+    visibility: hidden;
+  }
+
+  .mov-avanzado--abierto .mov-avanzado-contenido {
+    grid-template-rows: 1fr;
+    visibility: visible;
+  }
+
+  .mov-avanzado-inner {
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-5);
+    min-height: 0;
+    overflow: hidden;
+    padding-top: var(--esp-5);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mov-avanzado-contenido,
+    .mov-avanzado-chevron {
+      transition: none;
+    }
   }
 
   /* --- Comprobante como acción secundaria bajo "Comercio" --- */
@@ -1803,6 +1884,53 @@
     gap: var(--esp-3);
   }
 
+  /* Gráfico de barras Ingresos vs. Gastos de la vista Resumen. */
+  .barra-comparativa {
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-3);
+  }
+
+  .barra-comparativa-fila {
+    display: grid;
+    grid-template-columns: 4.5rem 1fr auto;
+    align-items: center;
+    gap: var(--esp-3);
+  }
+
+  .barra-comparativa-etiqueta {
+    font-size: var(--txt-sm);
+    color: var(--fg-tenue);
+  }
+
+  .barra-comparativa-pista {
+    height: 12px;
+    border-radius: var(--r-pill);
+    background: var(--bg-sutil);
+    overflow: hidden;
+  }
+
+  .barra-comparativa-relleno {
+    display: block;
+    height: 100%;
+    border-radius: var(--r-pill);
+    transition: width 0.35s ease;
+  }
+
+  .barra-comparativa-relleno--ingreso {
+    background: var(--ingreso);
+  }
+
+  .barra-comparativa-relleno--gasto {
+    background: var(--gasto);
+  }
+
+  .barra-comparativa-valor {
+    font-size: var(--txt-sm);
+    font-weight: var(--peso-semibold);
+    font-variant-numeric: tabular-nums;
+  }
+
   .tarjeta {
     border: 1px solid var(--borde);
     border-radius: var(--r-lg);
@@ -1944,11 +2072,14 @@
 
   .tendencia-grafico {
     margin-top: var(--esp-3);
+    max-width: 680px;
   }
 
   .tendencia-grafico svg {
+    display: block;
     width: 100%;
     height: auto;
+    max-height: 260px;
   }
 
   .tendencia-barra--ingreso {
@@ -1961,8 +2092,64 @@
 
   .tendencia-eje-etiqueta {
     fill: var(--fg-tenue);
-    font-size: 4.5px;
+    font-size: 3.4px;
     text-anchor: middle;
+  }
+
+  .tendencia-leyenda {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--esp-3);
+    margin-bottom: var(--esp-2);
+    padding: 0;
+    list-style: none;
+    font-size: var(--txt-xs);
+    color: var(--fg-tenue);
+  }
+
+  .tendencia-leyenda li {
+    display: flex;
+    align-items: center;
+    gap: var(--esp-1);
+  }
+
+  .tendencia-leyenda-punto {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex: none;
+  }
+
+  .tendencia-leyenda-punto--ingreso {
+    background: var(--ingreso);
+  }
+
+  .tendencia-leyenda-punto--gasto {
+    background: var(--gasto);
+  }
+
+  .tendencia-leyenda-punto--balance {
+    width: 12px;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--acento);
+  }
+
+  .tendencia-cero {
+    stroke: var(--borde);
+    stroke-width: 0.4;
+  }
+
+  .tendencia-linea-balance {
+    fill: none;
+    stroke: var(--acento);
+    stroke-width: 0.9;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+  }
+
+  .tendencia-punto-balance {
+    fill: var(--acento);
   }
 
   /* --- Panel lateral: resumen, dona, actividad --- */
@@ -2332,14 +2519,14 @@
     font-size: 20px;
   }
   .cat-swatches {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
     gap: var(--esp-1);
     margin: var(--esp-1) 0;
   }
   .cat-swatch {
-    width: 24px;
-    height: 24px;
+    width: 100%;
+    height: 28px;
     padding: 0;
     border-radius: var(--r-sm);
     border: 2px solid transparent;

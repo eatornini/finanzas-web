@@ -34,6 +34,31 @@ function grupo(titulo, t) {
   ]);
 }
 
+function barraComparativa(etiqueta, valor, maxValor, claseRelleno) {
+  const pct = maxValor > 0 ? Math.max((valor / maxValor) * 100, valor > 0 ? 3 : 0) : 0;
+  const relleno = el("span", { class: `barra-comparativa-relleno ${claseRelleno}` });
+  relleno.style.width = `${pct}%`;
+  return el("div", { class: "barra-comparativa-fila" }, [
+    el("span", { class: "barra-comparativa-etiqueta", text: etiqueta }),
+    el("span", { class: "barra-comparativa-pista" }, [relleno]),
+    el("span", { class: "barra-comparativa-valor", text: valorOculto(valor) }),
+  ]);
+}
+
+// Gráfico de barras Ingresos vs. Gastos del período, en la misma escala
+// (la barra más larga = 100%). Complementa las tarjetas de cifras.
+function graficoIngresoGasto(ingresos, gastos, titulo = "Ingresos vs. Gastos") {
+  const max = Math.max(ingresos, gastos, 0);
+  const contenido =
+    max > 0
+      ? el("div", { class: "barra-comparativa" }, [
+          barraComparativa("Ingresos", ingresos, max, "barra-comparativa-relleno--ingreso"),
+          barraComparativa("Gastos", gastos, max, "barra-comparativa-relleno--gasto"),
+        ])
+      : el("p", { class: "vacio", text: "Sin movimientos en este período." });
+  return el("div", { class: "grupo-resumen" }, [el("h3", { text: titulo }), contenido]);
+}
+
 export async function montarResumen(contenedor, { rango, tipo, fechaRef, modo }) {
   limpiar(contenedor);
 
@@ -98,7 +123,8 @@ export async function montarResumen(contenedor, { rango, tipo, fechaRef, modo })
           grupo("Estimado", d.total),
           grupo("Pagado", d.pagado),
           grupo("Pendiente", d.pendiente),
-        ])
+        ]),
+        graficoIngresoGasto(d.total.ingresos, d.total.gastos, "Estimado: ingresos vs. gastos")
       );
     } else {
       const { ingresos, gastos, balance } = calcularTotales(paraTotales);
@@ -107,7 +133,8 @@ export async function montarResumen(contenedor, { rango, tipo, fechaRef, modo })
           tarjeta("Ingresos", ingresos, "ingreso"),
           tarjeta("Gastos", gastos, "gasto"),
           tarjeta("Balance", balance, balance >= 0 ? "ingreso" : "gasto"),
-        ])
+        ]),
+        graficoIngresoGasto(ingresos, gastos)
       );
     }
   }
