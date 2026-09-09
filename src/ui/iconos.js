@@ -56,10 +56,21 @@ export const listaIcono = () =>
 export const relojIcono = () => svg(["M12 8v4l3 3", "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z"]);
 export const calendarioIcono = () =>
   svg(["M8 2v4", "M16 2v4", "M3 10h18", "M4 4h16a1 1 0 0 1 1 1v15a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1z"]);
+// Lucide: sticky-note — encabezado del campo "Detalle (opcional)" en el
+// panel "Más opciones". Nota con la esquina inferior derecha doblada.
+export const notaIcono = () =>
+  svg([
+    "M15 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h9l7-7V5a2 2 0 0 0-2-2z",
+    "M14 21v-5a2 2 0 0 1 2-2h5",
+    "M8 9h6",
+    "M8 13h4",
+  ]);
+// Lucide: tag — encabezado de la sección "Categoría". Etiqueta inclinada
+// con el agujero visible como anillo (no un punto suelto).
 export const etiquetaIcono = () =>
   svg([
-    "M20.59 13.41 11 3.83 3.83 11l9.58 9.58a2 2 0 0 0 2.83 0l4.35-4.35a2 2 0 0 0 0-2.82z",
-    "M7 7h.01",
+    "M12.59 2.59A2 2 0 0 0 11.17 2H4a2 2 0 0 0-2 2v7.17a2 2 0 0 0 .59 1.41l8.7 8.71a2.43 2.43 0 0 0 3.42 0l6.58-6.58a2.43 2.43 0 0 0 0-3.42z",
+    "M8 6.5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0z",
   ]);
 export const graficoIcono = () =>
   svg(["M3 3v18h18", "M18 17V9", "M13 17V5", "M8 17v-3"]);
@@ -105,6 +116,18 @@ export const camaraIcono = () =>
   ]);
 export const flechaArribaCirculo = () => svg("M12 19V5M5 12l7-7 7 7");
 export const flechaAbajoCirculo = () => svg("M12 5v14M5 12l7 7 7-7");
+// Círculo con flecha hacia abajo — encabezado del campo "Tipo" (Gasto).
+export const circuloFlechaAbajo = () =>
+  svg(["M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20z", "M12 8v8", "M8 12l4 4 4-4"]);
+// Lucide: palette — encabezado del campo "Color".
+export const paletaIcono = () =>
+  svg([
+    "M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.93 0 1.65-.75 1.65-1.69 0-.44-.18-.83-.44-1.12-.29-.29-.44-.65-.44-1.13a1.64 1.64 0 0 1 1.67-1.67h2c3.05 0 5.56-2.5 5.56-5.55C22 6 17.46 2 12 2z",
+    "M8.5 7.5h.01",
+    "M6.5 12.5h.01",
+    "M13.5 6.5h.01",
+    "M17.5 10.5h.01",
+  ]);
 export const billeteraIcono = () =>
   svg([
     "M21 12V7H5a2 2 0 0 1 0-4h14v4",

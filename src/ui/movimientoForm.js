@@ -15,9 +15,10 @@ import {
   flechaArribaCirculo,
   flechaDer,
   etiquetaIcono,
+  notaIcono,
+  calendarioIcono,
   tiendaIcono,
   dolarCirculoIcono,
-  cuadriculaIcono,
   lupaIcono,
 } from "./iconos.js";
 import { subirComprobante, urlComprobante, eliminarComprobante } from "../data/storage.js";
@@ -133,7 +134,11 @@ export function abrirMovimientoForm({
     type: "datetime-local",
     value: isoAInputLocal(movimiento?.fecha || inicial?.fecha?.toISOString()),
   });
-  const detalle = el("input", { id: "mov-detalle", value: movimiento?.detalle || inicial?.detalle || "" });
+  const detalle = el("input", {
+    id: "mov-detalle",
+    placeholder: "Ej. Almuerzo con amigos…",
+    value: movimiento?.detalle || inicial?.detalle || "",
+  });
 
   // --- Comprobante (imagen + OCR) ---
   let archivoComprobante = archivoInicial;
@@ -356,17 +361,12 @@ export function abrirMovimientoForm({
   function pintarChips() {
     limpiar(chips);
     const lista = categoriasDelTipo();
-    chips.append(
-      chipAccion("mov-chip--todas", cuadriculaIcono, ["Todas", chevronAbajo()], () =>
-        abrirListaCompleta(lista)
-      )
-    );
     for (const c of lista.slice(0, 4)) chips.append(chip(c));
     if (categoriaId && !lista.slice(0, 4).some((c) => c.id === categoriaId)) {
       const sel = lista.find((c) => c.id === categoriaId);
-      // Se inserta después de "Todas" (índice 1), no antes — "Todas" queda
-      // siempre primero.
-      if (sel) chips.insertBefore(chip(sel), chips.children[1] || null);
+      // La categoría seleccionada que no está entre las 4 primeras se
+      // muestra igualmente, al principio de la fila.
+      if (sel) chips.insertBefore(chip(sel), chips.children[0] || null);
     }
     chips.append(
       chipAccion("mov-chip--nueva-tile", mas, ["Nueva categoría"], abrirNuevaCategoria)
@@ -389,33 +389,91 @@ export function abrirMovimientoForm({
   }
 
   function abrirListaCompleta(lista) {
-    const cont = el("div", { class: "mov-lista-cats" });
-    for (const c of lista) {
-      const b = el("button", { type: "button", class: "mov-chip" }, [
-        nodoIconoCategoria(c),
-        el("span", { text: c.nombre }),
-      ]);
-      b.addEventListener("click", () => {
-        categoriaId = c.id;
+    // Selección en dos pasos: al tocar una tarjeta se resalta; recién
+    // "Seleccionar" la aplica y cierra. "Cancelar" / X cierran sin cambios.
+    let seleccionadaId = categoriaId;
+
+    const buscador = el("input", {
+      type: "search",
+      placeholder: "Buscar categorías…",
+      "aria-label": "Buscar categorías",
+    });
+    const grid = el("div", { class: "cat-picker-grid" });
+
+    const btnSeleccionar = el("button", {
+      type: "button",
+      class: "boton--primario",
+      text: "Seleccionar",
+      onClick: () => {
+        if (!seleccionadaId) return;
+        categoriaId = seleccionadaId;
         cerrarLista();
         pintarChips();
         actualizarSelectorCategoria();
         actualizarBotones();
-      });
-      cont.append(b);
+      },
+    });
+    const btnCancelar = el("button", {
+      type: "button",
+      text: "Cancelar",
+      onClick: () => cerrarLista(),
+    });
+
+    function sincronizarSeleccion() {
+      for (const tile of grid.children) {
+        if (tile.dataset.id) tile.classList.toggle("activo", tile.dataset.id === seleccionadaId);
+      }
+      btnSeleccionar.disabled = !seleccionadaId;
     }
-    cont.append(
-      el("button", {
-        type: "button",
-        class: "mov-chip mov-chip--nueva",
-        text: "+ Nueva categoría",
-        onClick: () => {
-          cerrarLista();
-          abrirNuevaCategoria();
-        },
-      })
-    );
-    const { cerrar: cerrarLista } = montarModal({ titulo: "Elegir categoría", contenido: cont });
+
+    function pintarGrid() {
+      limpiar(grid);
+      const q = buscador.value.trim().toLowerCase();
+      const filtradas = q ? lista.filter((c) => c.nombre.toLowerCase().includes(q)) : lista;
+      for (const c of filtradas) {
+        const color = c.color || (tipoActual === "ingreso" ? "#1b7f4d" : "#c0392b");
+        const icono = el("span", { class: "mov-chip-icono" }, [nodoIconoCategoria(c)]);
+        icono.style.background = `color-mix(in srgb, ${color} 16%, transparent)`;
+        icono.style.color = color;
+        const tile = el("button", { type: "button", class: "mov-chip" }, [
+          icono,
+          el("span", { class: "mov-chip-texto", text: c.nombre }),
+        ]);
+        tile.dataset.id = c.id;
+        tile.addEventListener("click", () => {
+          seleccionadaId = c.id;
+          sincronizarSeleccion();
+        });
+        grid.append(tile);
+      }
+      if (!q) {
+        grid.append(
+          chipAccion("mov-chip--nueva-tile", mas, ["Nueva categoría"], () => {
+            cerrarLista();
+            abrirNuevaCategoria();
+          })
+        );
+      } else if (!filtradas.length) {
+        grid.append(el("p", { class: "cat-picker-vacio", text: "Sin resultados." }));
+      }
+      sincronizarSeleccion();
+    }
+
+    buscador.addEventListener("input", pintarGrid);
+    pintarGrid();
+
+    const cont = el("div", { class: "mov-rapido-campo cat-picker" }, [
+      el("div", { class: "cat-picker-buscar" }, [lupaIcono(), buscador]),
+      grid,
+    ]);
+    const { cerrar: cerrarLista } = montarModal({
+      titulo: "Elegir categoría",
+      subtitulo: "Selecciona la categoría que mejor se ajuste a este movimiento.",
+      icono: etiquetaIcono,
+      contenido: cont,
+      acciones: [btnCancelar, btnSeleccionar],
+      claseExtra: "modal-panel--ancho",
+    });
   }
 
   // Autocompletado de comercio (debounce simple).
@@ -489,17 +547,49 @@ export function abrirMovimientoForm({
     ]);
   }
 
-  function opcionCheck(input, etiqueta) {
-    return el("label", { class: "campo campo--check", for: input.id }, [input, etiqueta]);
+  // Campo con encabezado de icono + título (mismo estilo que las secciones
+  // principales), usado dentro del panel "Más opciones".
+  //
+  // El <input> queda como hermano del <label>, NO anidado: un <label for>
+  // que además envuelve a su control hace que el navegador dispare un
+  // segundo click sintético sobre el input, y ese segundo click cierra de
+  // inmediato el selector nativo de <input type="datetime-local"> (parecía
+  // que no abría). Con el input afuera, un solo click llega al control.
+  function campoConCab(fabricaIcono, etiqueta, input) {
+    return el("div", { class: "campo mov-avanzado-campo" }, [
+      el("label", { class: "mov-seccion-cab", for: input.id }, [
+        el("span", { class: "mov-seccion-titulo" }, [
+          el("span", { class: "mov-seccion-icono" }, [fabricaIcono()]),
+          etiqueta,
+        ]),
+      ]),
+      input,
+    ]);
   }
 
-  const checksOpciones = [opcionCheck(activo, "Activo")];
-  if (esEstimado) {
-    checksOpciones.push(opcionCheck(pagado, "Pagado"), opcionCheck(recurrente, "Recurrente"));
+  // Opción tipo switch: interruptor a la izquierda + nombre y, si aplica,
+  // una línea de ayuda debajo.
+  function opcionCheck(input, etiqueta, ayuda = null) {
+    return el("label", { class: "campo campo--check mov-opcion-switch", for: input.id }, [
+      input,
+      el("span", { class: "mov-opcion-switch-texto" }, [
+        el("span", { class: "mov-opcion-switch-nombre", text: etiqueta }),
+        ...(ayuda ? [el("span", { class: "mov-opcion-switch-ayuda", text: ayuda })] : []),
+      ]),
+    ]);
   }
-  const seccionOpciones = el("div", { class: "campo mov-opciones" }, [
-    el("span", { class: "campo-etiqueta", text: "Opciones" }),
-    el("div", { class: "mov-opciones-checks" }, checksOpciones),
+
+  const checksOpciones = [
+    opcionCheck(activo, "Activo", "El movimiento se incluirá en tus reportes."),
+  ];
+  if (esEstimado) {
+    checksOpciones.push(
+      opcionCheck(pagado, "Pagado", "Marcá el estimado como ya concretado."),
+      opcionCheck(recurrente, "Recurrente", "Se repetirá según la frecuencia elegida.")
+    );
+  }
+  const seccionOpciones = el("div", { class: "mov-opciones" }, [
+    ...checksOpciones,
     ...(esEstimado ? [campo("Frecuencia", frecuencia)] : []),
   ]);
 
@@ -507,9 +597,11 @@ export function abrirMovimientoForm({
   // colapsable. Solo cambia la presentación: los inputs siguen montados y
   // conservan su valor esté abierto o cerrado, así el submit no cambia. ---
   const avanzadoInner = el("div", { class: "mov-avanzado-inner" }, [
-    campo("Detalle (opcional)", detalle),
-    campo("Fecha y hora", fecha),
-    seccionOpciones,
+    el("div", { class: "mov-avanzado-panel" }, [
+      campoConCab(notaIcono, "Detalle (opcional)", detalle),
+      campoConCab(calendarioIcono, "Fecha y hora", fecha),
+      seccionOpciones,
+    ]),
   ]);
   const btnAvanzado = el(
     "button",

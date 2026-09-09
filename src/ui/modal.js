@@ -6,7 +6,18 @@ import { cerrarIcono } from "./iconos.js";
 // `icono` (opcional): función que devuelve un <svg> nuevo (los exports de
 // iconos.js). Con `icono` y/o `subtitulo` la cabecera pasa de un simple
 // <h3> a un bloque con badge circular + título + subtítulo.
-export function montarModal({ titulo, subtitulo, icono, contenido, onCerrar, accionesCabecera = [] }) {
+// `acciones` (opcional): botones para un pie sticky (ej. Cancelar/Aceptar).
+// `claseExtra` (opcional): clase adicional para el panel (ancho, etc.).
+export function montarModal({
+  titulo,
+  subtitulo,
+  icono,
+  contenido,
+  onCerrar,
+  accionesCabecera = [],
+  acciones = [],
+  claseExtra,
+}) {
   const btnCerrar = el(
     "button",
     { class: "boton--icono modal-cerrar", "aria-label": "Cerrar", onClick: () => cerrar() },
@@ -26,13 +37,19 @@ export function montarModal({ titulo, subtitulo, icono, contenido, onCerrar, acc
 
   const panel = el(
     "div",
-    { class: "modal-panel", role: "dialog", "aria-modal": "true", "aria-label": titulo },
+    {
+      class: claseExtra ? `modal-panel ${claseExtra}` : "modal-panel",
+      role: "dialog",
+      "aria-modal": "true",
+      "aria-label": titulo,
+    },
     [
       el("div", { class: "modal-cabecera" }, [
         tituloBloque,
         el("div", { class: "modal-cabecera-acciones" }, [...accionesCabecera, btnCerrar]),
       ]),
       el("div", { class: "modal-cuerpo" }, [contenido]),
+      acciones.length ? el("div", { class: "modal-pie" }, acciones) : null,
     ]
   );
 
