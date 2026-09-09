@@ -13,7 +13,7 @@
     --bg: #ffffff;
     --bg-pagina: #f7f8fa;
     --bg-elevado: #ffffff;
-    --bg-sutil: #f2f3f5;
+    --bg-sutil: #F3F7FB;
     --fg: #17181c;
     --fg-tenue: #6b6f76;
     --borde: #e6e7eb;
@@ -23,7 +23,7 @@
 
     --ingreso: #17994f;
     --gasto: #d0342c;
-    --estimado: #6b46c1;
+    --estimado: #0966DF;
     --estimado-fg: #ffffff;
     --pendiente: #a56a12;
 
@@ -41,7 +41,7 @@
 
     --txt-xs: 0.75rem;
     --txt-sm: 0.8125rem;
-    --txt-base: -0.0625rem;
+    --txt-base: 13px;
     --txt-lg: 1.25rem;
     --txt-xl: 1.75rem;
 
@@ -75,7 +75,7 @@
 
       --ingreso: #46c98a;
       --gasto: #f27a72;
-      --estimado: #5b9bd8;
+      --estimado: #0966DF;
       --estimado-fg: #0b0b0c;
       --pendiente: #e0a44a;
 
@@ -98,7 +98,7 @@
 
     --ingreso: #46c98a;
     --gasto: #f27a72;
-    --estimado: #5b9bd8;
+    --estimado: #0966DF;
     --estimado-fg: #0b0b0c;
     --pendiente: #e0a44a;
 
@@ -158,7 +158,12 @@
   .app {
     display: grid;
     grid-template-columns: var(--ancho-sidebar) 1fr;
-    min-height: 100vh;
+    /* Alto exacto del viewport y una fila fija: el contenedor no scrollea,
+       el scroll vive dentro de .principal. Así el sidebar queda pegado al
+       viewport sin importar cuánto contenido tenga la página. */
+    grid-template-rows: 100vh;
+    height: 100vh;
+    overflow: hidden;
   }
 
   .sidebar {
@@ -167,12 +172,21 @@
     padding: var(--esp-5) var(--esp-4);
     background: var(--bg-elevado);
     border-right: 1px solid var(--borde);
+    /* Ocupa toda la altura del viewport y, si el propio menú no cabe,
+       scrollea él mismo — nunca la página — manteniendo el pie visible. */
+    height: 100vh;
+    min-height: 0;
+    overflow-y: auto;
   }
 
   .principal {
     display: flex;
     flex-direction: column;
     min-width: 0;
+    /* min-height:0 permite que este ítem del grid sea más bajo que su
+       contenido; overflow-y:auto lo convierte en el área que scrollea. */
+    min-height: 0;
+    overflow-y: auto;
     background: var(--bg-pagina);
   }
 
@@ -185,6 +199,12 @@
     padding: var(--esp-4) var(--esp-5);
     background: var(--bg);
     border-bottom: 1px solid var(--borde);
+    /* Fija la barra (período + Real/Estimado) al tope del área que scrollea
+       (.principal), para que siga visible al desplazar el contenido. */
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    flex-shrink: 0;
   }
 
   .topbar-marca-movil {
@@ -246,8 +266,14 @@
   }
 
   @media (max-width: 720px) {
+    /* En móvil el layout vuelve a flujo normal: el scroll es de la página
+       y el sidebar es un drawer off-canvas, así que se revierte el
+       viewport-lock de escritorio. */
     .app {
       display: block;
+      grid-template-rows: none;
+      height: auto;
+      overflow: visible;
     }
 
     /* El sidebar deja de ser una columna fija y pasa a ser el contenido
@@ -337,7 +363,13 @@
     }
 
     .principal {
+      /* El scroll vuelve a ser el de la página en móvil. */
+      overflow: visible;
       padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    .sidebar {
+      height: 100%;
     }
 
     .balance-movil {
@@ -1969,9 +2001,7 @@
     cursor: pointer;
   }
 
-  .fila .nombre:hover {
-    text-decoration: underline;
-  }
+ 
 
   .fila .nombre:focus-visible {
     outline: 2px solid var(--acento);
@@ -2071,6 +2101,8 @@
     /* Anula el grid heredado de ".fila". */
     grid-template-columns: none;
     grid-template-areas: none;
+    /* Toda la fila (menos los botones de acción) abre la edición. */
+    cursor: pointer;
   }
 
   .fila--categoria .cat-fila-icono,
@@ -2957,7 +2989,7 @@
   /* --- Vista Categorías --- */
   .categorias-cabecera {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: center;
     gap: var(--esp-3);
     margin-bottom: var(--esp-3);

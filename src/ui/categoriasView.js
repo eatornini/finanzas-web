@@ -8,28 +8,12 @@ import { tituloVista } from "./tituloVista.js";
 
 export function montarCategorias(contenedor) {
   limpiar(contenedor);
-  let modo = prefs.get("modo");
+  const modo = prefs.get("modo");
   let todas = [];
   const normalizados = new Set();
 
   const error = el("p", { class: "error", role: "alert" });
   const cuerpo = el("div", { class: "categorias-cuerpo" });
-
-  const btnModo = {};
-  for (const m of ["real", "estimado"]) {
-    btnModo[m] = el("button", {
-      text: m === "real" ? "Real" : "Estimado",
-      class: modo === m ? "activo" : "",
-      onClick: () => {
-        modo = m;
-        sincronizarModo();
-        pintar();
-      },
-    });
-  }
-  function sincronizarModo() {
-    for (const m of ["real", "estimado"]) btnModo[m].classList.toggle("activo", modo === m);
-  }
 
   const btnNueva = el("button", {
     class: "boton--primario",
@@ -40,10 +24,7 @@ export function montarCategorias(contenedor) {
 
   contenedor.append(
     tituloVista(etiquetasIcono, "Categorías"),
-    el("div", { class: "categorias-cabecera" }, [
-      el("div", { class: "selector-modo" }, [btnModo.real, btnModo.estimado]),
-      btnNueva,
-    ]),
+    el("div", { class: "categorias-cabecera" }, [btnNueva]),
     error,
     cuerpo
   );
@@ -126,11 +107,34 @@ export function montarCategorias(contenedor) {
       }
     });
 
-    return el("div", { class: "fila fila--categoria" }, [
-      icono,
-      el("span", { class: "nombre", text: c.nombre }),
-      el("div", { class: "acciones" }, [subir, bajar, editar, borrar]),
-    ]);
+    const abrirEdicion = () =>
+      abrirCategoriaForm({ categoria: c, modoInicial: modo, onGuardado: recargar });
+
+    return el(
+      "div",
+      {
+        class: "fila fila--categoria",
+        role: "button",
+        tabindex: "0",
+        onClick: (e) => {
+          // Los botones de acción (↑ ↓ ✎ 🗑) tienen su propio manejador.
+          if (e.target.closest(".acciones")) return;
+          abrirEdicion();
+        },
+        onKeydown: (e) => {
+          if (e.target !== e.currentTarget) return;
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            abrirEdicion();
+          }
+        },
+      },
+      [
+        icono,
+        el("span", { class: "nombre", text: c.nombre }),
+        el("div", { class: "acciones" }, [subir, bajar, editar, borrar]),
+      ]
+    );
   }
 
   function botonIcono(label, fabricaIcono, deshabilitado, onClick) {
