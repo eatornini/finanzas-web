@@ -17,7 +17,7 @@
     --fg: #17181c;
     --fg-tenue: #6b6f76;
     --borde: #e6e7eb;
-    --acento: #1564C0;
+    --acento: #0966DF;
     --acento-fg: #ffffff;
     --acento-tenue: #e8f0fe;
 
@@ -41,7 +41,7 @@
 
     --txt-xs: 0.75rem;
     --txt-sm: 0.8125rem;
-    --txt-base: 0.9375rem;
+    --txt-base: -0.0625rem;
     --txt-lg: 1.25rem;
     --txt-xl: 1.75rem;
 
@@ -69,7 +69,7 @@
       --fg: #ececee;
       --fg-tenue: #9a9aa2;
       --borde: #2e2e33;
-      --acento: #1564C0;
+      --acento: #0966DF;
       --acento-fg: #0b0b0c;
       --acento-tenue: color-mix(in srgb, #5b9bd8 18%, transparent);
 
@@ -92,7 +92,7 @@
     --fg: #ececee;
     --fg-tenue: #9a9aa2;
     --borde: #2e2e33;
-    --acento: #1564C0;
+    --acento: #0966DF;
     --acento-fg: #0b0b0c;
     --acento-tenue: color-mix(in srgb, #5b9bd8 18%, transparent);
 
@@ -921,10 +921,10 @@
     align-items: flex-start;
     justify-content: space-between;
     gap: var(--esp-3);
-    padding: var(--esp-4) var(--esp-5);
+    padding: 17px;
     border-bottom: 1px solid var(--borde);
     background: var(--bg-elevado);
-  }
+}
 
   .modal-cabecera h3 {
     font-size: var(--txt-lg);
@@ -984,8 +984,36 @@
     font-size: var(--txt-sm);
   }
 
-  .modal-cuerpo {
-    padding: var(--esp-5);
+ .modal-cuerpo {
+    padding: 23px;
+}
+
+  .modal-panel--ancho {
+    max-width: 640px;
+  }
+
+  /* Pie sticky con acciones (Cancelar / Aceptar). */
+  .modal-pie {
+    position: sticky;
+    bottom: 0;
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--esp-3);
+    padding: var(--esp-4) 23px;
+    border-top: 1px solid var(--borde);
+    background: var(--bg-elevado);
+  }
+
+  .modal-pie button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--esp-2);
+  }
+
+  .modal-pie button svg {
+    width: 18px;
+    height: 18px;
   }
 
   /* --- Overlay de carga (bloqueante, p. ej. OCR de comprobante) --- */
@@ -1076,6 +1104,15 @@
     .modal-acciones button {
       width: 100%;
     }
+
+    .modal-pie {
+      flex-direction: column-reverse;
+      padding: var(--esp-3) var(--esp-4);
+    }
+
+    .modal-pie button {
+      width: 100%;
+    }
   }
 
   .form-grid {
@@ -1145,8 +1182,8 @@
      icono + texto; el activo queda azul pleno (button.activo de base). */
   .mov-tipo-toggle {
     display: flex;
-    width: 100%;
-  }
+    width: 55%;
+}
 
   .mov-tipo-toggle button {
     flex: 1;
@@ -1155,7 +1192,6 @@
     justify-content: center;
     gap: var(--esp-2);
     padding: var(--esp-2) var(--esp-3);
-    font-size: var(--txt-base);
     font-weight: var(--peso-semibold);
   }
 
@@ -1252,11 +1288,11 @@
     flex: none;
     flex-direction: column;
     align-items: center;
-    justify-content: flex-start;
-    gap: var(--esp-2);
+    justify-content: center;
+    gap: 6px;
     width: 96px;
-    min-height: 108px;
-    padding: var(--esp-3) var(--esp-2);
+    min-height: 96px;
+    padding: var(--esp-2);
     border: 1px solid var(--borde);
     border-radius: var(--r-lg);
     background: var(--bg);
@@ -1299,21 +1335,6 @@
     color: var(--fg-tenue);
   }
 
-  /* Tarjeta "Todas": texto + chevron en una fila, no apilados por el
-     -webkit-box de .mov-chip-texto. */
-  .mov-rapido-campo .mov-chip--todas .mov-chip-texto {
-    display: inline-flex;
-    align-items: center;
-    gap: 2px;
-  }
-
-  .mov-rapido-campo .mov-chip--todas .mov-chip-texto svg {
-    width: 13px;
-    height: 13px;
-    flex: none;
-    color: var(--fg-tenue);
-  }
-
   /* Mismo sistema visual que la lista de Movimientos (.fila-icono):
      círculo con fondo pastel (tinte suave del color de la categoría) e
      ícono en el color pleno. El fondo y el color se aplican inline en
@@ -1322,8 +1343,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 44px;
-    height: 44px;
+    width: 40px;
+    height: 40px;
     flex: none;
     border-radius: 50%;
     line-height: 1;
@@ -1351,38 +1372,66 @@
     height: 22px;
   }
 
+  /* --- Modal "Elegir categoría" (botón "Ver todas") --- */
+  .cat-picker {
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-4);
+  }
+
+  /* Buscador con lupa embebida, mismo patrón que el campo "Comercio". */
+  .cat-picker-buscar {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .cat-picker-buscar svg {
+    position: absolute;
+    left: var(--esp-3);
+    width: 18px;
+    height: 18px;
+    color: var(--fg-tenue);
+    pointer-events: none;
+  }
+
+  .cat-picker-buscar input {
+    width: 100%;
+    padding-left: calc(var(--esp-3) * 2 + 18px);
+  }
+
+  /* Rejilla de tarjetas: reutiliza el estilo tile de .mov-rapido-campo
+     .mov-chip (círculo pastel arriba + nombre debajo), pero en grilla que
+     envuelve en vez del carrusel horizontal. */
+  .cat-picker-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--esp-2);
+  }
+
+  .cat-picker-grid .mov-chip {
+    width: auto;
+  }
+
+  .cat-picker-vacio {
+    grid-column: 1 / -1;
+    padding: var(--esp-4);
+    text-align: center;
+    font-size: var(--txt-sm);
+    color: var(--fg-tenue);
+  }
+
+  @media (max-width: 560px) {
+    .cat-picker-grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+
   /* --- Opciones secundarias (Activo/Pagado/Recurrente/Frecuencia) --- */
   .mov-opciones {
     display: flex;
     flex-direction: column;
-    gap: var(--esp-2);
-    padding: var(--esp-3) var(--esp-4);
-    border-radius: var(--r-md);
-    background: var(--bg-sutil);
-  }
-
-  .mov-opciones > .campo-etiqueta {
-    font-size: var(--txt-sm);
-    font-weight: var(--peso-semibold);
-    color: var(--fg);
-  }
-
-  .mov-opciones .campo {
-    font-size: var(--txt-xs);
-  }
-
-  /* Fila de checks: cada uno es una unidad compacta (check + etiqueta) que
-     fluye y envuelve según el ancho disponible — nunca separa el check de
-     su texto en columnas distintas. */
-  .mov-opciones-checks {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--esp-2) var(--esp-5);
-    margin: var(--esp-1) 0;
-  }
-
-  .mov-opciones-checks .campo--check {
-    flex: none;
+    gap: var(--esp-4);
   }
 
   /* --- "Más opciones": panel colapsable de campos secundarios --- */
@@ -1440,13 +1489,32 @@
     visibility: visible;
   }
 
+  /* Capa de recorte del truco de grid: sin padding/margin propios para que
+     no se filtren cuando el panel está colapsado. */
   .mov-avanzado-inner {
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  /* Recuadro visible con los campos secundarios (Detalle, Fecha, opciones). */
+  .mov-avanzado-panel {
     display: flex;
     flex-direction: column;
     gap: var(--esp-5);
-    min-height: 0;
-    overflow: hidden;
-    padding-top: var(--esp-5);
+    margin-top: var(--esp-3);
+    padding: var(--esp-4);
+    border-radius: var(--r-md);
+    background: var(--bg-sutil);
+  }
+
+  /* Campo con encabezado de icono dentro del panel: un poco más de aire
+     entre el título y el input que en un .campo normal. */
+  .mov-avanzado-campo {
+    gap: var(--esp-2);
+  }
+
+  .mov-avanzado-campo .mov-seccion-cab {
+    margin-bottom: 0;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -2677,57 +2745,188 @@
     -webkit-font-smoothing: antialiased;
   }
 
-  /* --- Formulario de categoría --- */
-  .cat-preview {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 40px;
-    height: 40px;
-    border-radius: var(--r-md);
-    color: #fff;
-    flex: none;
-  }
-  .cat-preview .cat-emoji {
-    font-size: 20px;
-  }
-  .cat-swatches {
-    display: grid;
-    grid-template-columns: repeat(12, 1fr);
-    gap: var(--esp-1);
-    margin: var(--esp-1) 0;
-  }
-  .cat-swatch {
-    width: 100%;
-    height: 28px;
-    padding: 0;
-    border-radius: var(--r-sm);
-    border: 2px solid transparent;
-    cursor: pointer;
-  }
-  .cat-swatch:hover {
-    border-color: var(--fg-tenue);
-  }
-  .cat-icono-fila {
+  /* --- Formulario de categoría (modal "Nueva categoría") --- */
+  .cat-form {
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    gap: var(--esp-5);
+  }
+
+  .cat-form-fila {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--esp-4);
+  }
+
+  .cat-campo {
+    display: flex;
+    flex-direction: column;
     gap: var(--esp-2);
-    margin: var(--esp-1) 0;
+    min-width: 0;
   }
-  .cat-emoji-input {
-    width: 3rem;
-    text-align: center;
+
+  .cat-campo .mov-seccion-cab {
+    margin-bottom: 0;
   }
-  .campo-etiqueta {
-    display: block;
+
+  .cat-campo-ayuda {
+    margin: 0;
     font-size: var(--txt-sm);
     color: var(--fg-tenue);
-    margin-bottom: var(--esp-1);
   }
+
+  /* Color: fila de círculos; el elegido lleva un anillo de su propio color. */
+  .cat-swatches {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--esp-3);
+  }
+
+  .cat-swatch {
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    flex: none;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+  }
+
+  .cat-swatch:hover {
+    box-shadow: 0 0 0 2px var(--bg-elevado),
+      0 0 0 4px color-mix(in srgb, var(--swatch-color) 45%, transparent);
+  }
+
+  .cat-swatch.activo {
+    box-shadow: 0 0 0 2px var(--bg-elevado), 0 0 0 4px var(--swatch-color);
+  }
+
+  /* Icono: buscador con lupa embebida (mismo patrón que "Comercio"). */
+  .cat-iconos-buscar {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .cat-iconos-buscar svg {
+    position: absolute;
+    left: var(--esp-3);
+    width: 18px;
+    height: 18px;
+    color: var(--fg-tenue);
+    pointer-events: none;
+  }
+
+  .cat-iconos-buscar input {
+    width: 100%;
+    padding-left: calc(var(--esp-3) * 2 + 18px);
+  }
+
+  .cat-iconos-populares {
+    margin-top: var(--esp-3);
+  }
+
+  .cat-iconos-populares-titulo {
+    margin: 0 0 var(--esp-2);
+    font-size: var(--txt-sm);
+    font-weight: var(--peso-bold);
+    color: var(--fg);
+  }
+
+  .cat-iconos-grilla {
+    display: grid;
+    /* minmax(0, 1fr): las columnas pueden encogerse por debajo del ancho
+       del contenido, así los nombres largos se recortan con "…" en vez de
+       ensanchar la grilla y forzar scroll horizontal. */
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: var(--esp-2);
+  }
+
+  .cat-iconos-grilla--busqueda {
+    max-height: 216px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    padding: var(--esp-1);
+    border: 1px solid var(--borde);
+    border-radius: var(--r-md);
+  }
+
+  /* Tarjeta de icono: recuadro con glifo centrado y nombre debajo. */
+  .cat-icono-op {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--esp-1);
+    min-width: 0;
+    min-height: 76px;
+    padding: var(--esp-2);
+    border: 1px solid var(--borde);
+    border-radius: var(--r-md);
+    background: var(--bg);
+    cursor: pointer;
+    color: var(--fg);
+  }
+
+  .cat-icono-op:hover:not(.activo) {
+    border-color: color-mix(in srgb, var(--fg) 18%, var(--borde));
+  }
+
+  /* `color` explícito: sin él, la regla global `button.activo` pinta el
+     glifo con --acento-fg (blanco en modo claro) y el icono desaparece. */
+  .cat-icono-op.activo {
+    border-color: var(--acento);
+    background: var(--acento-tenue);
+    color: var(--fg);
+  }
+
+  .cat-icono-op-glifo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .cat-icono-op-glifo .ms-icono {
+    font-size: 24px;
+  }
+
+  .cat-icono-op-nombre {
+    display: block;
+    width: 100%;
+    overflow: hidden;
+    font-size: var(--txt-xs);
+    line-height: 1.2;
+    text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--fg-tenue);
+  }
+
+  .cat-icono-op.activo .cat-icono-op-nombre {
+    color: var(--fg);
+  }
+
+  .cat-icono-busqueda-estado {
+    font-size: var(--txt-sm);
+    color: var(--fg-tenue);
+    margin: 0 0 var(--esp-1);
+  }
+
+  .mov-seccion-icono--rojo {
+    color: #c0392b;
+  }
+
+  @media (max-width: 560px) {
+    .cat-form-fila {
+      grid-template-columns: 1fr;
+    }
+    .cat-iconos-grilla {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+
+  /* Comprobante (usado por el formulario de movimiento). */
   .comprobante-campo {
-    grid-column: 1 / -1;
-  }
-  .cat-icono-campo {
     grid-column: 1 / -1;
   }
   .comprobante-caja {
@@ -2750,41 +2949,6 @@
     font-size: var(--txt-sm);
     color: var(--fg-tenue);
     margin: var(--esp-1) 0 0;
-  }
-  .cat-iconos-grilla {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(40px, 1fr));
-    gap: var(--esp-1);
-    max-height: 180px;
-    overflow-y: auto;
-    padding: var(--esp-1);
-    border: 1px solid var(--borde);
-    border-radius: var(--r-md);
-  }
-  .cat-icono-op {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    aspect-ratio: 1;
-    padding: 0;
-    border: 1px solid transparent;
-    border-radius: var(--r-sm);
-    background: transparent;
-    cursor: pointer;
-    color: var(--fg);
-  }
-  .cat-icono-op.activo {
-    border-color: var(--acento);
-    background: var(--acento-tenue);
-    color: var(--acento);
-  }
-  .cat-icono-busqueda {
-    margin: var(--esp-2) 0;
-  }
-  .cat-icono-busqueda-estado {
-    font-size: var(--txt-sm);
-    color: var(--fg-tenue);
-    margin: 0 0 var(--esp-1);
   }
   .ms-icono--completo {
     font-family: "Material Symbols Full", "Material Symbols";
@@ -2828,8 +2992,7 @@
   }
 
   /* --- Formulario de movimiento: chips de categoría --- */
-  .mov-chips,
-  .mov-lista-cats {
+  .mov-chips {
     display: flex;
     flex-wrap: wrap;
     gap: var(--esp-1);
@@ -2855,10 +3018,6 @@
     background: color-mix(in srgb, var(--chip-color, var(--acento)) 15%, transparent);
     color: var(--fg);
   }
-  .mov-chip--mas,
-  .mov-chip--nueva {
-    font-weight: var(--peso-semibold);
-  }
   .campo--check {
     flex-direction: row;
     align-items: center;
@@ -2875,6 +3034,78 @@
     width: 18px;
     height: 18px;
     flex: none;
+  }
+
+  /* Opciones del formulario de movimiento (Activo/Pagado/Recurrente): los
+     checkbox se presentan como interruptores tipo switch, azules (--acento)
+     cuando están activos. Solo cambia la presentación; el <input> sigue
+     siendo un checkbox normal para el submit y la accesibilidad. */
+  .campo--check.mov-opcion-switch input[type="checkbox"] {
+    appearance: none;
+    -webkit-appearance: none;
+    position: relative;
+    width: 44px;
+    height: 24px;
+    border: none;
+    border-radius: var(--r-pill);
+    background: color-mix(in srgb, var(--fg) 22%, transparent);
+    cursor: pointer;
+    transition: background-color 120ms ease;
+  }
+
+  .campo--check.mov-opcion-switch input[type="checkbox"]::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: #fff;
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.25);
+    transition: transform 120ms ease;
+  }
+
+  .campo--check.mov-opcion-switch input[type="checkbox"]:checked {
+    background: var(--acento);
+  }
+
+  .campo--check.mov-opcion-switch input[type="checkbox"]:checked::after {
+    transform: translateX(20px);
+  }
+
+  .campo--check.mov-opcion-switch input[type="checkbox"]:focus-visible {
+    outline: 2px solid var(--acento);
+    outline-offset: 2px;
+  }
+
+  /* Fila de la opción: switch alineado a la primera línea del texto +
+     nombre y, opcionalmente, una línea de ayuda debajo. */
+  .mov-opcion-switch {
+    flex-direction: row;
+    align-items: flex-start;
+    gap: var(--esp-3);
+    padding: 0;
+  }
+
+  .mov-opcion-switch-texto {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding-top: 1px;
+  }
+
+  .mov-opcion-switch-nombre {
+    font-size: var(--txt-base);
+    font-weight: var(--peso-medio);
+    line-height: 1.2;
+    color: var(--fg);
+  }
+
+  .mov-opcion-switch-ayuda {
+    font-size: var(--txt-sm);
+    line-height: 1.3;
+    color: var(--fg-tenue);
   }
 
   /* --- Lista de movimientos: inactivos --- */
