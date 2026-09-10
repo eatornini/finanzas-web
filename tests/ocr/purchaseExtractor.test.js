@@ -85,6 +85,36 @@ describe("parsearCompra", () => {
     expect(r.fecha.getMinutes()).toBe(24);
   });
 
+  it("recibo Google Wallet: nombre del comercio cortado en dos bloques ('MITO' aparte)", () => {
+    const bloques = [
+      bloque("00:05", 5, 25),
+      bloque("MERCADOPAGO*ZORROCHIS", 210, 245, 35),
+      bloque("MITO", 250, 285, 35),
+      bloque("CLP3,750", 340, 400, 55),
+      bloque("miércoles, 9 de sept a las 21:10", 470, 495),
+    ];
+    const lineas = bloques.flatMap((b) => b.lines).sort((a, b) => a.top - b.top);
+    const r = parsearCompra(lineas, bloques);
+    expect(r.comercio).toBe("MERCADOPAGO*ZORROCHIS MITO");
+    expect(r.monto).toBe(3750);
+  });
+
+  it("recibo Google Wallet: usa 'Nombre del estado de cuenta' cuando está presente", () => {
+    const bloques = [
+      bloque("MERCADOPAGO*ZORROCHIS", 210, 245, 35),
+      bloque("MITO", 250, 285, 35),
+      bloque("CLP3,750", 340, 400, 55),
+      bloque("miércoles, 9 de sept a las 21:10", 470, 495),
+      bloque("Nombre del estado de cuenta", 1100, 1120),
+      bloque("MERCADOPAGO*ZORROCHISMITO", 1125, 1145),
+      bloque("ID de transacción", 1160, 1180),
+      bloque("142234093570:VIS.386253006190979", 1185, 1205),
+    ];
+    const lineas = bloques.flatMap((b) => b.lines).sort((a, b) => a.top - b.top);
+    const r = parsearCompra(lineas, bloques);
+    expect(r.comercio).toBe("MERCADOPAGO*ZORROCHISMITO");
+  });
+
   it("sin ningún bloque de monto: comercio null", () => {
     const bloques = [bloque("Solo texto", 100, 130)];
     const lineas = bloques.flatMap((b) => b.lines);

@@ -213,6 +213,14 @@ export const graficoTortaIcono = () =>
 export const reloj3Icono = () =>
   svg(["M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20z", "M12 6v6h4.5"]);
 
+// Lucide: lightbulb — "Consejo del mes"
+export const bombillaIcono = () =>
+  svg([
+    "M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5",
+    "M9 18h6",
+    "M10 22h4",
+  ]);
+
 // Lucide: utensils
 export const utensiliosIcono = () =>
   svg([

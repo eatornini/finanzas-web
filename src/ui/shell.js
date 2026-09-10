@@ -103,7 +103,7 @@ export function montarShell(contenedor, sesion, perfil) {
     const rango = rangoPeriodo(fechaRef, tipo);
     etiqueta.textContent = etiquetaPeriodo(fechaRef, tipo);
     const vista = VISTAS.find((v) => v.clave === activa);
-    vista.montar(cuerpo, { rango, tipo, fechaRef, modo });
+    vista.montar(cuerpo, { rango, tipo, fechaRef, modo, irA });
   }
 
   const ETIQUETAS_TIPO = { semana: "Sem", mes: "Mes", año: "Año" };

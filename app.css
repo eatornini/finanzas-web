@@ -20,6 +20,9 @@
     --acento: #0966DF;
     --acento-fg: #ffffff;
     --acento-tenue: #e8f0fe;
+    /* Halo de focus: mismo tono que el borde azul, muy sutil y sin
+       desplazamiento, para que quede pegado al contorno del campo. */
+    --anillo-focus: 0 0 0 2px color-mix(in srgb, var(--acento) 22%, transparent);
 
     --ingreso: #17994f;
     --gasto: #d0342c;
@@ -583,31 +586,93 @@
     height: 17px;
   }
 
-  :where(button, input, select):focus-visible {
+  /* Focus para botones y controles no textuales (checkbox, radio, file,
+     range). Estos sí usan un anillo desplazado clásico. Los campos de
+     texto tienen su propio sistema borde-azul + halo (más abajo). */
+  :where(
+      button,
+      [type="checkbox"],
+      [type="radio"],
+      [type="file"],
+      [type="range"]
+    ):focus-visible {
     outline: 2px solid var(--acento);
     outline-offset: 2px;
   }
 
   input,
-  select {
+  select,
+  textarea {
     padding: var(--esp-2) var(--esp-3);
     border: 1px solid var(--borde);
     border-radius: var(--r-sm);
     background: var(--bg);
     font-size: var(--txt-sm);
     width: 100%;
-    transition: border-color 0.12s ease;
+    transition: border-color 0.12s ease, box-shadow 0.12s ease;
   }
 
   input:hover:not(:disabled),
-  select:hover:not(:disabled) {
+  select:hover:not(:disabled),
+  textarea:hover:not(:disabled) {
     border-color: color-mix(in srgb, var(--fg) 20%, var(--borde));
   }
 
   input:disabled,
-  select:disabled {
+  select:disabled,
+  textarea:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+  }
+
+  /* --- Sistema de focus unificado para campos de formulario ---
+     Un único borde azul con el mismo tamaño y radio que el campo, más un
+     halo muy sutil y perfectamente alineado. Sin outline desplazado y sin
+     segundo rectángulo. Excluye checkbox/radio/file/range/botones, que ya
+     tienen su anillo clásico arriba. */
+  :is(input, select, textarea):not(
+      [type="checkbox"],
+      [type="radio"],
+      [type="file"],
+      [type="range"],
+      [type="submit"],
+      [type="button"],
+      [type="reset"],
+      [type="color"]
+    ):focus,
+  :is(input, select, textarea):not(
+      [type="checkbox"],
+      [type="radio"],
+      [type="file"],
+      [type="range"],
+      [type="submit"],
+      [type="button"],
+      [type="reset"],
+      [type="color"]
+    ):focus-visible {
+    outline: none;
+    border-color: var(--acento);
+    box-shadow: var(--anillo-focus);
+  }
+
+  /* Campos con icono embebido cuyo borde vive en el CONTENEDOR (el <input>
+     interno no tiene borde). El focus se pinta sobre todo el contenedor
+     para que abarque icono + input, no solo el <input>. */
+  .campo-busqueda:focus-within,
+  .input-monto:focus-within {
+    border-color: var(--acento);
+    box-shadow: var(--anillo-focus);
+  }
+
+  /* En esos contenedores, el <input> interno no debe añadir su propio
+     borde/halo: quedaría un segundo rectángulo dentro del contenedor. */
+  .campo-busqueda input:focus,
+  .campo-busqueda input:focus-visible,
+  .input-monto input:focus,
+  .input-monto input:focus-visible {
+    outline: none;
+    border-color: transparent;
+    box-shadow: none;
   }
 
   /* --- Marca / logo --- */
@@ -1178,10 +1243,6 @@
     min-width: 0;
   }
 
-  .input-monto input:focus-visible {
-    outline-offset: -2px;
-  }
-
   .input-monto-simbolo {
     display: flex;
     align-items: center;
@@ -1349,6 +1410,38 @@
   .mov-rapido-campo .mov-chip--nueva-tile {
     border-style: dashed;
     background: var(--bg-sutil);
+  }
+
+  /* Placeholder mientras cargan las estadísticas de uso que ordenan las
+     tarjetas: mismo tamaño que un chip, con un brillo sutil. Así la fila se
+     pinta una sola vez y no se reordena a la vista. */
+  .mov-rapido-campo .mov-chip--esqueleto {
+    pointer-events: none;
+    cursor: default;
+    background: var(--bg-sutil);
+    background-image: linear-gradient(
+      100deg,
+      transparent 30%,
+      color-mix(in srgb, var(--fg) 7%, transparent) 50%,
+      transparent 70%
+    );
+    background-size: 220% 100%;
+    animation: mov-chip-esqueleto 1.1s ease-in-out infinite;
+  }
+
+  @keyframes mov-chip-esqueleto {
+    from {
+      background-position: 220% 0;
+    }
+    to {
+      background-position: -220% 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mov-rapido-campo .mov-chip--esqueleto {
+      animation: none;
+    }
   }
 
   .mov-rapido-campo .mov-chip-texto {
@@ -1910,11 +2003,13 @@
      meta / monto). Solo agrega el cursor y el foco de elemento clickeable
      (es un <div role="button">, no un <button>, que no funciona como
      contenedor grid). */
-  .fila--resultado {
+  .fila--resultado,
+  .fila--editable {
     cursor: pointer;
   }
 
-  .fila--resultado:focus-visible {
+  .fila--resultado:focus-visible,
+  .fila--editable:focus-visible {
     outline: 2px solid var(--acento);
     outline-offset: 2px;
   }
@@ -2085,44 +2180,6 @@
     flex: none;
   }
 
-  /* Especificidad ".fila.fila--categoria" (no solo ".fila--categoria") a
-     propósito: tiene que ganarle a ".fila" también dentro del media query
-     mobile, donde compite en igualdad de especificidad y perdería por
-     orden de declaración.
-
-     La fila de categoría es un único renglón (icono · nombre · acciones):
-     flex en vez del grid de 2 filas de ".fila" (pensado para movimientos con
-     monto/meta). Así los tres elementos quedan centrados verticalmente como
-     grupo y la tarjeta toma el alto del contenido, sin huecos arriba/abajo. */
-  .fila.fila--categoria {
-    display: flex;
-    align-items: center;
-    gap: var(--esp-3);
-    /* Anula el grid heredado de ".fila". */
-    grid-template-columns: none;
-    grid-template-areas: none;
-    /* Toda la fila (menos los botones de acción) abre la edición. */
-    cursor: pointer;
-  }
-
-  .fila--categoria .cat-fila-icono,
-  .fila--categoria .acciones {
-    align-self: center;
-  }
-
-  /* El nombre ocupa el espacio libre y empuja las acciones a la derecha;
-     "grid-area" heredado de ".fila .acciones" es inofensivo en flex. */
-  .fila--categoria .nombre {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .fila--categoria .tipo {
-    text-transform: capitalize;
-    color: var(--fg-tenue);
-    font-size: var(--txt-sm);
-  }
-
   button.pagado {
     background: color-mix(in srgb, var(--ingreso) 15%, transparent);
     border-color: var(--ingreso);
@@ -2285,15 +2342,14 @@
       justify-content: flex-end;
     }
 
-    /* Botones de acción más chicos en la fila de movimiento (no en
-       Categorías): la fila ya es angosta y son tres juntos — igual quedan
-       cómodos para tocar (30px). */
-    .fila:not(.fila--categoria) .acciones .boton--icono {
+    /* Botones de acción más chicos en la fila de movimiento: la fila ya es
+       angosta y son tres juntos — igual quedan cómodos para tocar (30px). */
+    .fila .acciones .boton--icono {
       width: 30px;
       height: 30px;
     }
 
-    .fila:not(.fila--categoria) .acciones .boton--icono svg {
+    .fila .acciones .boton--icono svg {
       width: 15px;
       height: 15px;
     }
@@ -2833,6 +2889,31 @@
     box-shadow: 0 0 0 2px var(--bg-elevado), 0 0 0 4px var(--swatch-color);
   }
 
+  /* Último círculo: color personalizado. Gradiente mientras no hay uno
+     elegido; al elegirlo, JS pinta el color real como fondo. */
+  .cat-swatch--custom {
+    position: relative;
+    overflow: hidden;
+    --swatch-color: #3498db;
+    background: conic-gradient(
+      from 180deg,
+      #f43f5e, #f59e0b, #facc15, #22c55e, #06b6d4, #3b82f6, #a855f7, #f43f5e
+    );
+  }
+
+  .cat-swatch-custom-input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    border: none;
+    background: none;
+    opacity: 0;
+    cursor: pointer;
+  }
+
   /* Icono: buscador con lupa embebida (mismo patrón que "Comercio"). */
   .cat-iconos-buscar {
     position: relative;
@@ -2987,40 +3068,300 @@
   }
 
   /* --- Vista Categorías --- */
+
+  /* Encabezado: bloque título + descripción a la izquierda, botón principal
+     a la derecha. `align-items: flex-start` para que el botón se alinee con
+     el título y no se estire al alto del bloque de texto. */
   .categorias-cabecera {
     display: flex;
-    justify-content: flex-end;
-    align-items: center;
+    align-items: flex-start;
+    justify-content: space-between;
     gap: var(--esp-3);
-    margin-bottom: var(--esp-3);
     flex-wrap: wrap;
-  }
-  .categorias-grupo {
     margin-bottom: var(--esp-5);
   }
-  .categorias-grupo h3 {
-    margin: 0 0 var(--esp-2);
+  .categorias-cabecera-texto .vista-titulo {
+    margin-bottom: 4px;
   }
-  /* Círculo pastel igual que en la lista de Movimientos (.fila-icono).
-     34px = misma altura que los botones de acción de la fila, así el alto
-     de la tarjeta no cambia. La fila hereda `align-items: center` de
-     `.fila`, por lo que este círculo y el nombre quedan centrados como
-     grupo: el centro vertical del icono coincide con el del texto. */
-  .fila--categoria .cat-fila-icono {
+  .categorias-subtitulo {
+    margin: 0;
+    color: var(--fg-tenue);
+    font-size: var(--txt-sm);
+  }
+  .categorias-cabecera .boton--primario {
+    flex: none;
+  }
+
+  /* Resumen: 3 indicadores en tarjetas limpias y compactas. */
+  .categorias-resumen {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--esp-3);
+    margin-bottom: var(--esp-4);
+  }
+  .categorias-resumen-tarjeta {
+    display: flex;
+    align-items: center;
+    gap: var(--esp-3);
+    padding: var(--esp-3) var(--esp-4);
+    border: 1px solid var(--borde);
+    border-radius: var(--r-lg);
+    background: var(--bg-elevado);
+    box-shadow: var(--sombra-1);
+  }
+  .categorias-resumen-icono {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 34px;
-    height: 34px;
+    width: 40px;
+    height: 40px;
+    flex: none;
+    border-radius: 50%;
+    background: var(--bg-sutil);
+    color: var(--fg-tenue);
+  }
+  .categorias-resumen-icono svg {
+    width: 20px;
+    height: 20px;
+  }
+  .categorias-resumen-tarjeta--gasto .categorias-resumen-icono {
+    background: color-mix(in srgb, var(--gasto) 14%, transparent);
+    color: var(--gasto);
+  }
+  .categorias-resumen-tarjeta--ingreso .categorias-resumen-icono {
+    background: color-mix(in srgb, var(--ingreso) 14%, transparent);
+    color: var(--ingreso);
+  }
+  .categorias-resumen-texto {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+  .categorias-resumen-numero {
+    font-size: var(--txt-lg);
+    font-weight: var(--peso-bold);
+    line-height: 1.2;
+    font-variant-numeric: tabular-nums;
+  }
+  .categorias-resumen-etiqueta {
+    color: var(--fg-tenue);
+    font-size: var(--txt-sm);
+  }
+
+  /* Buscador (reutiliza .campo-busqueda) + selector de tipo. */
+  .categorias-barra-buscar {
+    display: flex;
+    align-items: center;
+    gap: var(--esp-3);
+    margin-bottom: var(--esp-5);
+  }
+  .categorias-barra-buscar .campo-busqueda {
+    flex: 1;
+    min-width: 0;
+  }
+  .categorias-barra-buscar .campo-busqueda input {
+    width: 100%;
+  }
+  .categorias-filtro-select {
+    flex: none;
+    width: auto;
+    min-width: 140px;
+  }
+
+  .categorias-cuerpo {
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-5);
+  }
+  /* Divisor entre Gastos e Ingresos. */
+  .categorias-grupo + .categorias-grupo {
+    border-top: 1px solid var(--borde);
+    padding-top: var(--esp-5);
+  }
+  .categorias-grupo-cabecera {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--esp-3);
+    margin-bottom: var(--esp-3);
+  }
+  .categorias-grupo-titulo {
+    display: flex;
+    align-items: center;
+    gap: var(--esp-2);
+    margin: 0;
+    font-size: var(--txt-base);
+    font-weight: var(--peso-bold);
+  }
+  .categorias-grupo-icono {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
     flex: none;
     border-radius: 50%;
   }
-  .fila--categoria .cat-fila-icono svg {
-    width: 18px;
-    height: 18px;
+  .categorias-grupo-icono svg {
+    width: 15px;
+    height: 15px;
   }
-  .fila--categoria .cat-fila-icono .cat-emoji {
-    font-size: 18px;
+  .categorias-grupo-icono--gasto {
+    background: color-mix(in srgb, var(--gasto) 14%, transparent);
+    color: var(--gasto);
+  }
+  .categorias-grupo-icono--ingreso {
+    background: color-mix(in srgb, var(--ingreso) 14%, transparent);
+    color: var(--ingreso);
+  }
+  .categorias-grupo-conteo {
+    flex: none;
+    color: var(--fg-tenue);
+    font-size: var(--txt-sm);
+  }
+
+  /* Cuadrícula de tarjetas: ~4 columnas en escritorio, se adapta sola al
+     ancho disponible (auto-fill mantiene el tamaño de tarjeta cuando hay
+     pocas, en vez de estirarlas). */
+  .categorias-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: var(--esp-3);
+  }
+  .categoria-tarjeta {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: var(--esp-3);
+    padding: var(--esp-4);
+    padding-right: calc(var(--esp-4) + 26px);
+    border: 1px solid var(--borde);
+    border-radius: var(--r-lg);
+    background: var(--bg-elevado);
+    box-shadow: var(--sombra-1);
+    cursor: pointer;
+    transition: background-color 0.12s ease, border-color 0.12s ease;
+  }
+  .categoria-tarjeta:hover {
+    background: var(--bg-sutil);
+    border-color: color-mix(in srgb, var(--fg) 12%, var(--borde));
+  }
+  .categoria-tarjeta:focus-visible {
+    outline: 2px solid var(--acento);
+    outline-offset: 2px;
+  }
+  .categoria-tarjeta-icono {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    flex: none;
+    border-radius: 50%;
+    background: var(--bg-sutil);
+  }
+  .categoria-tarjeta-icono svg {
+    width: 20px;
+    height: 20px;
+  }
+  .categoria-tarjeta-icono .ms-icono {
+    font-size: 20px;
+  }
+  .categoria-tarjeta-icono .cat-emoji {
+    font-size: 20px;
+  }
+  .categoria-tarjeta-nombre {
+    flex: 1;
+    min-width: 0;
+    font-size: var(--txt-base);
+    font-weight: var(--peso-semibold);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Menú de acciones (⋮) en la esquina superior derecha de la tarjeta. */
+  .categoria-tarjeta-menu {
+    position: absolute;
+    top: var(--esp-2);
+    right: var(--esp-2);
+  }
+  .categoria-tarjeta-menu-boton {
+    width: 28px;
+    height: 28px;
+  }
+  .categoria-tarjeta-menu-boton svg {
+    width: 16px;
+    height: 16px;
+  }
+  .categoria-menu {
+    position: absolute;
+    top: calc(100% + var(--esp-1));
+    right: 0;
+    z-index: 20;
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-1);
+    width: 170px;
+    padding: var(--esp-2);
+    border: 1px solid var(--borde);
+    border-radius: var(--r-md);
+    background: var(--bg-elevado);
+    box-shadow: var(--sombra-popover);
+  }
+  .categoria-menu[hidden] {
+    display: none;
+  }
+  .categoria-menu-item {
+    display: flex;
+    align-items: center;
+    gap: var(--esp-2);
+    width: 100%;
+    padding: var(--esp-2) var(--esp-3);
+    border: 0;
+    border-radius: var(--r-sm);
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: left;
+  }
+  .categoria-menu-item svg {
+    width: 16px;
+    height: 16px;
+    color: var(--fg-tenue);
+  }
+  .categoria-menu-item:hover:not(:disabled) {
+    background: var(--bg-sutil);
+  }
+  .categoria-menu-item:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .categoria-menu-item--peligro,
+  .categoria-menu-item--peligro svg {
+    color: var(--gasto);
+  }
+
+  @media (max-width: 720px) {
+    .categorias-cabecera .boton--primario {
+      width: 100%;
+    }
+    .categorias-resumen {
+      grid-template-columns: 1fr;
+      gap: var(--esp-2);
+    }
+    .categorias-barra-buscar {
+      flex-wrap: wrap;
+    }
+    .categorias-barra-buscar .campo-busqueda {
+      flex-basis: 100%;
+    }
+    .categorias-filtro-select {
+      flex: 1;
+    }
+    .categorias-grid {
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    }
   }
 
   /* --- Formulario de movimiento: chips de categoría --- */
@@ -3487,5 +3828,593 @@
   .admin-btn--peligro {
     border-color: var(--gasto);
     color: var(--gasto);
+  }
+
+  /* =========================================================
+     Resumen — dashboard del período seleccionado
+     ========================================================= */
+  .resumen-vista {
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-5);
+  }
+
+  /* --- Encabezado --- */
+  .resumen-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--esp-4);
+    flex-wrap: wrap;
+  }
+
+  .resumen-header-id {
+    display: flex;
+    align-items: center;
+    gap: var(--esp-3);
+    min-width: 0;
+  }
+
+  .resumen-header-icono {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--r-md);
+    color: var(--acento);
+    background: color-mix(in srgb, var(--acento) 12%, transparent);
+  }
+
+  .resumen-header-icono svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .resumen-header-titulo {
+    font-size: var(--txt-xl);
+    font-weight: var(--peso-bold);
+    line-height: 1.1;
+  }
+
+  .resumen-header-sub {
+    margin: 3px 0 0;
+    color: var(--fg-tenue);
+    font-size: var(--txt-sm);
+  }
+
+  .resumen-header-lado {
+    display: flex;
+    align-items: center;
+    gap: var(--esp-3);
+    flex-wrap: wrap;
+  }
+
+  .resumen-header-acciones {
+    display: flex;
+    align-items: center;
+    gap: var(--esp-1);
+  }
+
+  .resumen-header-fecha {
+    display: flex;
+    align-items: center;
+    gap: var(--esp-2);
+    color: var(--fg-tenue);
+  }
+
+  .resumen-header-fecha-icono {
+    display: flex;
+    flex: none;
+  }
+
+  .resumen-header-fecha-icono svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .resumen-header-fecha-txt {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.25;
+  }
+
+  .resumen-header-fecha-periodo {
+    color: var(--fg);
+    font-size: var(--txt-sm);
+    font-weight: var(--peso-semibold);
+  }
+
+  .resumen-header-fecha-rango {
+    font-size: var(--txt-xs);
+  }
+
+  /* --- Métricas principales --- */
+  .resumen-metricas {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    gap: var(--esp-4);
+  }
+
+  .metrica-tarjeta {
+    display: flex;
+    align-items: center;
+    gap: var(--esp-3);
+    padding: var(--esp-4) var(--esp-5);
+    border: 1px solid var(--borde);
+    border-radius: var(--r-lg);
+    background: var(--bg-elevado);
+    box-shadow: var(--sombra-1);
+  }
+
+  .metrica-icono {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--r-md);
+  }
+
+  .metrica-icono svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .metrica-icono--ingreso {
+    background: color-mix(in srgb, var(--ingreso) 14%, transparent);
+    color: var(--ingreso);
+  }
+
+  .metrica-icono--gasto {
+    background: color-mix(in srgb, var(--gasto) 14%, transparent);
+    color: var(--gasto);
+  }
+
+  .metrica-icono--balance {
+    background: color-mix(in srgb, var(--acento) 14%, transparent);
+    color: var(--acento);
+  }
+
+  .metrica-cuerpo {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+  }
+
+  .metrica-nombre {
+    color: var(--fg-tenue);
+    font-size: var(--txt-sm);
+  }
+
+  .metrica-valor {
+    font-size: var(--txt-xl);
+    font-weight: var(--peso-bold);
+    font-variant-numeric: tabular-nums;
+    line-height: 1.15;
+  }
+
+  .metrica-desc {
+    color: var(--fg-tenue);
+    font-size: var(--txt-xs);
+  }
+
+  /* --- Estimado: desglose pagado / pendiente --- */
+  .resumen-desglose {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--esp-4);
+  }
+
+  .resumen-desglose-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: var(--esp-3) var(--esp-4);
+    border: 1px solid var(--borde);
+    border-radius: var(--r-md);
+    background: var(--bg-elevado);
+  }
+
+  .resumen-desglose-nombre {
+    font-size: var(--txt-xs);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--fg-tenue);
+  }
+
+  .resumen-desglose-val {
+    font-size: var(--txt-lg);
+    font-weight: var(--peso-bold);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .resumen-desglose-detalle {
+    font-size: var(--txt-xs);
+    color: var(--fg-tenue);
+  }
+
+  /* --- Cabecera de tarjeta: título + subtítulo + enlace --- */
+  .resumen-card-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--esp-3);
+    margin-bottom: var(--esp-4);
+  }
+
+  .resumen-card-head-txt {
+    min-width: 0;
+  }
+
+  .resumen-card-head h3 {
+    margin: 0;
+  }
+
+  .resumen-card-sub {
+    margin: 4px 0 0;
+    color: var(--fg-tenue);
+    font-size: var(--txt-sm);
+  }
+
+  .enlace-ver {
+    flex: none;
+    border: 0;
+    background: transparent;
+    padding: var(--esp-1) 0;
+    color: var(--acento);
+    font-size: var(--txt-sm);
+    font-weight: var(--peso-semibold);
+    white-space: nowrap;
+  }
+
+  .enlace-ver:hover {
+    text-decoration: underline;
+  }
+
+  /* --- Ingresos vs. Gastos --- */
+  .resumen-vs-cuerpo {
+    display: flex;
+    align-items: stretch;
+    gap: var(--esp-5);
+  }
+
+  .resumen-vs-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+  }
+
+  .resumen-vs-main > * {
+    width: 100%;
+  }
+
+  .resumen-vs-nota {
+    flex: none;
+    width: 300px;
+    display: flex;
+    gap: var(--esp-3);
+    padding: var(--esp-4);
+    border-radius: var(--r-md);
+  }
+
+  .resumen-vs-nota--pos {
+    background: color-mix(in srgb, var(--ingreso) 10%, transparent);
+  }
+
+  .resumen-vs-nota--neg {
+    background: color-mix(in srgb, var(--gasto) 10%, transparent);
+  }
+
+  .resumen-vs-nota-icono {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+  }
+
+  .resumen-vs-nota-icono svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .resumen-vs-nota--pos .resumen-vs-nota-icono {
+    color: var(--ingreso);
+    background: color-mix(in srgb, var(--ingreso) 16%, transparent);
+  }
+
+  .resumen-vs-nota--neg .resumen-vs-nota-icono {
+    color: var(--gasto);
+    background: color-mix(in srgb, var(--gasto) 16%, transparent);
+  }
+
+  .resumen-vs-nota > div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .resumen-vs-nota-titulo {
+    font-size: var(--txt-sm);
+    font-weight: var(--peso-semibold);
+  }
+
+  .resumen-vs-nota-detalle {
+    font-size: var(--txt-xs);
+    color: var(--fg-tenue);
+  }
+
+  /* --- Fila inferior: gastos por categoría + actividad reciente --- */
+  .resumen-inferior {
+    display: grid;
+    grid-template-columns: 1.35fr 1fr;
+    gap: var(--esp-5);
+    align-items: start;
+  }
+
+  .resumen-gastos-cat-fila {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: var(--esp-5);
+  }
+
+  .resumen-gastos-cat-lista {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    flex: 1 1 240px;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-2);
+  }
+
+  .resumen-gastos-cat-item {
+    display: grid;
+    grid-template-columns: 32px minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: var(--esp-3);
+  }
+
+  .resumen-gastos-cat-icono {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    flex: none;
+    border-radius: 50%;
+  }
+
+  .resumen-gastos-cat-icono svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .resumen-gastos-cat-icono .ms-icono,
+  .resumen-gastos-cat-icono .cat-emoji {
+    font-size: 16px;
+    line-height: 1;
+  }
+
+  .resumen-gastos-cat-nombre {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: var(--txt-sm);
+  }
+
+  .resumen-gastos-cat-monto {
+    font-weight: var(--peso-bold);
+    font-size: var(--txt-sm);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .resumen-gastos-cat-pct {
+    min-width: 2.75em;
+    color: var(--fg-tenue);
+    font-size: var(--txt-xs);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+
+  .dona--grande {
+    width: 190px;
+    height: 190px;
+    flex: none;
+    margin: 0 auto;
+  }
+
+  .dona--grande .dona-segmento {
+    cursor: default;
+  }
+
+  .dona--grande .dona-total {
+    font-size: var(--txt-lg);
+  }
+
+  /* --- Actividad reciente --- */
+  .resumen-act-lista {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .resumen-act-item {
+    display: grid;
+    grid-template-columns: 36px minmax(0, 1fr) auto auto;
+    align-items: center;
+    column-gap: var(--esp-3);
+    padding: var(--esp-3) 0;
+    border-top: 1px solid var(--borde);
+  }
+
+  .resumen-act-item:first-child {
+    border-top: 0;
+  }
+
+  .resumen-act-icono {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    flex: none;
+    border-radius: 50%;
+  }
+
+  .resumen-act-icono svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  .resumen-act-icono .ms-icono,
+  .resumen-act-icono .cat-emoji {
+    font-size: 17px;
+    line-height: 1;
+  }
+
+  .resumen-act-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    line-height: 1.3;
+  }
+
+  .resumen-act-nombre {
+    font-weight: var(--peso-semibold);
+    font-size: var(--txt-sm);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .resumen-act-cat {
+    font-size: var(--txt-xs);
+    color: var(--fg-tenue);
+  }
+
+  .resumen-act-fecha {
+    color: var(--fg-tenue);
+    font-size: var(--txt-xs);
+    white-space: nowrap;
+  }
+
+  .resumen-act-monto {
+    font-weight: var(--peso-bold);
+    font-size: var(--txt-sm);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+    text-align: right;
+  }
+
+  /* --- Consejo del período --- */
+  .resumen-consejo {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--esp-3);
+    background: var(--acento-tenue);
+    border-color: color-mix(in srgb, var(--acento) 22%, var(--borde));
+    box-shadow: none;
+  }
+
+  .resumen-consejo-icono {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    color: var(--acento);
+    background: color-mix(in srgb, var(--acento) 14%, transparent);
+  }
+
+  .resumen-consejo-icono svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .resumen-consejo-txt {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .resumen-consejo-titulo {
+    font-size: var(--txt-sm);
+    font-weight: var(--peso-bold);
+  }
+
+  .resumen-consejo-cuerpo {
+    font-size: var(--txt-sm);
+    color: var(--fg-tenue);
+  }
+
+  @media (max-width: 1080px) {
+    .resumen-inferior {
+      grid-template-columns: 1fr;
+    }
+
+    .resumen-vs-nota {
+      width: 260px;
+    }
+  }
+
+  @media (max-width: 860px) {
+    .resumen-vs-cuerpo {
+      flex-direction: column;
+      gap: var(--esp-4);
+    }
+
+    .resumen-vs-nota {
+      width: 100%;
+    }
+  }
+
+  @media (max-width: 720px) {
+    .resumen-header-lado {
+      width: 100%;
+      justify-content: space-between;
+    }
+
+    .dona--grande {
+      width: 160px;
+      height: 160px;
+    }
+  }
+
+  @media (max-width: 560px) {
+    .resumen-desglose {
+      grid-template-columns: 1fr;
+    }
+
+    .resumen-act-item {
+      grid-template-columns: 32px minmax(0, 1fr) auto;
+      column-gap: var(--esp-2);
+    }
+
+    .resumen-act-fecha {
+      grid-column: 2 / -1;
+      grid-row: 2;
+    }
+
+    .resumen-act-monto {
+      grid-column: 3;
+      grid-row: 1 / span 2;
+    }
   }
 }

@@ -1,10 +1,30 @@
-import { el, limpiar } from "./dom.js";
+import { el, elSvg, limpiar } from "./dom.js";
 import { listarMovimientos } from "../data/movimientos.js";
-import { calcularTotales, desglosarPorPago, filtrarParaCalculos, todosActivos } from "../logic/totales.js";
+import {
+  calcularTotales,
+  desglosarPorPago,
+  filtrarParaCalculos,
+  todosActivos,
+} from "../logic/totales.js";
 import { formatoCLP } from "../logic/dinero.js";
 import { prefs } from "../prefs.js";
-import { ojoIcono, ojoTachadoIcono, puntosIcono, tendenciaCombinadaIcono } from "./iconos.js";
-import { tituloVista } from "./tituloVista.js";
+import {
+  ojoIcono,
+  ojoTachadoIcono,
+  puntosIcono,
+  tendenciaCombinadaIcono,
+  graficoIcono,
+  graficoTortaIcono,
+  reloj3Icono,
+  bombillaIcono,
+  calendarioIcono,
+  flechaArribaCirculo,
+  flechaAbajoCirculo,
+  billeteraIcono,
+} from "./iconos.js";
+import { iconoTitulo } from "./tituloVista.js";
+import { nodoIconoCategoria } from "./iconoCategoria.js";
+import { colorMovimiento } from "./iconosCategoria.js";
 import { periodoSiguiente, rangoPeriodo, etiquetaPeriodo } from "../logic/periodos.js";
 import {
   contarMovimientosEstimado,
@@ -13,28 +33,133 @@ import {
   cambiarEstadoMesEstimado,
 } from "../data/herramientasMes.js";
 
+const MESES_ABBR = [
+  "ene", "feb", "mar", "abr", "may", "jun",
+  "jul", "ago", "sep", "oct", "nov", "dic",
+];
+const MESES_LARGO = [
+  "enero", "febrero", "marzo", "abril", "mayo", "junio",
+  "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
+];
+
+// Paleta de respaldo para el donut cuando una categoría no define color.
+const PALETA_DONA = [
+  "#1b7f4d", "#0966DF", "#e0a44a", "#c0392b", "#6b46c1", "#c2185b", "#00796b", "#8a8f98",
+];
+
 function valorOculto(valor) {
   return prefs.get("ocultarTotal") ? "*****" : formatoCLP(valor);
 }
 
-function tarjeta(titulo, valor, clase) {
-  return el("div", { class: `tarjeta ${clase}` }, [
-    el("span", { class: "titulo", text: titulo }),
-    el("span", { class: "valor", text: valorOculto(valor) }),
-  ]);
+// "esta semana" / "este mes" / "este año" (para el subtítulo del encabezado).
+function sufijoPeriodo(tipo) {
+  if (tipo === "semana") return "esta semana";
+  if (tipo === "año") return "este año";
+  return "este mes";
 }
 
-function grupo(titulo, t) {
-  return el("div", { class: "grupo-resumen" }, [
-    el("h3", { text: titulo }),
-    el("div", { class: "tarjetas-grupo" }, [
-      tarjeta("Ingresos", t.ingresos, "ingreso"),
-      tarjeta("Gastos", t.gastos, "gasto"),
-      tarjeta("Balance", t.balance, t.balance >= 0 ? "ingreso" : "gasto"),
+// "de la semana" / "del mes" / "del año" (para descripciones y el consejo).
+function delPeriodo(tipo) {
+  if (tipo === "semana") return "de la semana";
+  if (tipo === "año") return "del año";
+  return "del mes";
+}
+
+// Rango legible del período: "1 al 30 de septiembre de 2026" (y variantes
+// entre meses o años distintos).
+function rangoLegible(desde, hasta) {
+  const a = new Date(`${desde}T12:00:00`);
+  const b = new Date(`${hasta}T12:00:00`);
+  const da = a.getDate();
+  const db = b.getDate();
+  const ma = MESES_LARGO[a.getMonth()];
+  const mb = MESES_LARGO[b.getMonth()];
+  const ya = a.getFullYear();
+  const yb = b.getFullYear();
+  if (ya !== yb) return `${da} de ${ma} de ${ya} al ${db} de ${mb} de ${yb}`;
+  if (a.getMonth() !== b.getMonth()) return `${da} de ${ma} al ${db} de ${mb} de ${yb}`;
+  return `${da} al ${db} de ${ma} de ${yb}`;
+}
+
+// "8 sep 2026" a partir de "YYYY-MM-DD" (o timestamp, se recorta).
+function fechaCorta(valor) {
+  const s = String(valor || "").slice(0, 10);
+  const d = new Date(`${s}T12:00:00`);
+  if (Number.isNaN(d.getTime())) return s;
+  return `${d.getDate()} ${MESES_ABBR[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+// Porcentaje con un decimal y coma: "20,5%".
+function formatoPct(n) {
+  return `${n.toLocaleString("es-CL", { minimumFractionDigits: 1, maximumFractionDigits: 1 })}%`;
+}
+
+// --- Piezas de UI -----------------------------------------------------------
+
+function bloqueEncabezado(tipo, fechaRef, rango, acciones) {
+  return el("header", { class: "resumen-header" }, [
+    el("div", { class: "resumen-header-id" }, [
+      el("span", { class: "resumen-header-icono" }, [tendenciaCombinadaIcono()]),
+      el("div", { class: "resumen-header-txt" }, [
+        el("h2", { class: "resumen-header-titulo", text: "Resumen" }),
+        el("p", {
+          class: "resumen-header-sub",
+          text: `Una visión general de tus finanzas ${sufijoPeriodo(tipo)}.`,
+        }),
+      ]),
+    ]),
+    el("div", { class: "resumen-header-lado" }, [
+      acciones,
+      el("div", { class: "resumen-header-fecha" }, [
+        el("span", { class: "resumen-header-fecha-icono" }, [calendarioIcono()]),
+        el("div", { class: "resumen-header-fecha-txt" }, [
+          el("span", {
+            class: "resumen-header-fecha-periodo",
+            text: etiquetaPeriodo(fechaRef, tipo),
+          }),
+          el("span", {
+            class: "resumen-header-fecha-rango",
+            text: rangoLegible(rango.desde, rango.hasta),
+          }),
+        ]),
+      ]),
     ]),
   ]);
 }
 
+function metricaTarjeta(fabricaIcono, claseIcono, nombre, valor, claseValor, desc) {
+  return el("div", { class: "metrica-tarjeta" }, [
+    el("span", { class: `metrica-icono metrica-icono--${claseIcono}` }, [fabricaIcono()]),
+    el("div", { class: "metrica-cuerpo" }, [
+      el("span", { class: "metrica-nombre", text: nombre }),
+      el("span", { class: `metrica-valor ${claseValor}`, text: valorOculto(valor) }),
+      el("span", { class: "metrica-desc", text: desc }),
+    ]),
+  ]);
+}
+
+function desgloseItem(nombre, t) {
+  return el("div", { class: "resumen-desglose-item" }, [
+    el("span", { class: "resumen-desglose-nombre", text: nombre }),
+    el("span", { class: "resumen-desglose-val", text: valorOculto(t.balance) }),
+    el("span", {
+      class: "resumen-desglose-detalle",
+      text: `${valorOculto(t.ingresos)} ingresos · ${valorOculto(t.gastos)} gastos`,
+    }),
+  ]);
+}
+
+function tarjetaHead(fabricaIcono, titulo, sub, extra) {
+  return el("div", { class: "resumen-card-head" }, [
+    el("div", { class: "resumen-card-head-txt" }, [
+      el("h3", {}, [iconoTitulo(fabricaIcono), titulo]),
+      sub ? el("p", { class: "resumen-card-sub", text: sub }) : null,
+    ]),
+    extra || null,
+  ]);
+}
+
+// Barra proporcional Ingresos / Gastos (misma escala: la mayor = 100%).
 function barraComparativa(etiqueta, valor, maxValor, claseRelleno) {
   const pct = maxValor > 0 ? Math.max((valor / maxValor) * 100, valor > 0 ? 3 : 0) : 0;
   const relleno = el("span", { class: `barra-comparativa-relleno ${claseRelleno}` });
@@ -46,28 +171,299 @@ function barraComparativa(etiqueta, valor, maxValor, claseRelleno) {
   ]);
 }
 
-// Gráfico de barras Ingresos vs. Gastos del período, en la misma escala
-// (la barra más larga = 100%). Complementa las tarjetas de cifras.
-function graficoIngresoGasto(ingresos, gastos, titulo = "Ingresos vs. Gastos") {
+// Nota contextual del período (solo datos del período actual, sin históricos).
+function notaBalance(ingresos, gastos, tipo) {
+  if (ingresos <= 0 && gastos <= 0) return null;
+  const oculto = prefs.get("ocultarTotal");
+  const balance = ingresos - gastos;
+  let clase = "resumen-vs-nota--pos";
+  let titulo;
+  let detalle;
+
+  if (balance > 0) {
+    titulo = `Tu balance ${sufijoPeriodo(tipo)} es positivo.`;
+    detalle =
+      ingresos > 0
+        ? `Has retenido el ${formatoPct((balance / ingresos) * 100)} de tus ingresos.`
+        : "Registraste gastos pero ningún ingreso en este período.";
+  } else if (balance < 0) {
+    clase = "resumen-vs-nota--neg";
+    titulo = `Tu balance ${sufijoPeriodo(tipo)} es negativo.`;
+    detalle = oculto
+      ? "Gastaste más de lo que ingresaste."
+      : `Gastaste ${formatoCLP(-balance)} más de lo que ingresaste.`;
+  } else {
+    titulo = "Ingresos y gastos quedaron parejos.";
+    detalle = "Tu balance de este período es cero.";
+  }
+
+  return el("div", { class: `resumen-vs-nota ${clase}` }, [
+    el("span", { class: "resumen-vs-nota-icono" }, [graficoTortaIcono()]),
+    el("div", {}, [
+      el("span", { class: "resumen-vs-nota-titulo", text: titulo }),
+      el("span", { class: "resumen-vs-nota-detalle", text: detalle }),
+    ]),
+  ]);
+}
+
+function seccionIngresoGasto(ingresos, gastos, enPeriodo, tipo, titulo) {
   const max = Math.max(ingresos, gastos, 0);
-  const contenido =
+  const main =
     max > 0
       ? el("div", { class: "barra-comparativa" }, [
           barraComparativa("Ingresos", ingresos, max, "barra-comparativa-relleno--ingreso"),
           barraComparativa("Gastos", gastos, max, "barra-comparativa-relleno--gasto"),
         ])
       : el("p", { class: "vacio", text: "Sin movimientos en este período." });
-  return el("div", { class: "grupo-resumen" }, [el("h3", { text: titulo }), contenido]);
+
+  const cuerpo = el("div", { class: "resumen-vs-cuerpo" }, [
+    el("div", { class: "resumen-vs-main" }, [main]),
+  ]);
+  const nota = notaBalance(ingresos, gastos, tipo);
+  if (nota) cuerpo.append(nota);
+
+  return el("section", { class: "panel-tarjeta resumen-vs" }, [
+    tarjetaHead(graficoIcono, titulo, `Comparación de tus ingresos y gastos en ${enPeriodo}.`),
+    cuerpo,
+  ]);
 }
 
-export async function montarResumen(contenedor, { rango, tipo, fechaRef, modo }) {
+// Agrupa los gastos del período por categoría, mayor a menor.
+function agruparGastos(movimientos) {
+  const idx = new Map();
+  for (const m of movimientos) {
+    if (m.tipo !== "gasto") continue;
+    const clave = m.categoria_id || "sin";
+    const g =
+      idx.get(clave) ||
+      {
+        clave,
+        nombre: m.categoria ? m.categoria.nombre : "Sin categoría",
+        categoria: m.categoria || null,
+        color: (m.categoria && m.categoria.color) || null,
+        total: 0,
+      };
+    g.total += Number(m.monto) || 0;
+    if (!g.color && m.categoria && m.categoria.color) g.color = m.categoria.color;
+    idx.set(clave, g);
+  }
+  return [...idx.values()].sort((a, b) => b.total - a.total);
+}
+
+function donutGastos(filas, total) {
+  const wrap = el("div", { class: "dona dona--grande" });
+  const grupoSvg = elSvg("g", { transform: "rotate(-90 50 50)" });
+  let acumulado = 0;
+  filas.forEach((f, i) => {
+    const pct = (f.total / total) * 100;
+    const color = f.color || PALETA_DONA[i % PALETA_DONA.length];
+    const seg = elSvg("circle", {
+      cx: "50",
+      cy: "50",
+      r: "40",
+      "stroke-width": "20",
+      fill: "none",
+      pathLength: "100",
+      "stroke-dasharray": `${pct} ${100 - pct}`,
+      "stroke-dashoffset": String(-acumulado),
+      stroke: color,
+      class: "dona-segmento",
+    });
+    seg.append(
+      elSvg("title", {}, [`${f.nombre}: ${formatoCLP(f.total)} (${Math.round(pct)}%)`])
+    );
+    grupoSvg.append(seg);
+    acumulado += pct;
+  });
+
+  const centro = el("div", { class: "dona-centro" }, [
+    el("span", { class: "dona-total", text: valorOculto(total) }),
+    el("span", { class: "dona-etiqueta", text: "Total gastos" }),
+  ]);
+  wrap.append(elSvg("svg", { viewBox: "0 0 100 100", class: "dona-svg" }, [grupoSvg]), centro);
+  return wrap;
+}
+
+function seccionGastosCategoria(movimientos, enPeriodo) {
+  const grupos = agruparGastos(movimientos);
+  const total = grupos.reduce((s, g) => s + g.total, 0);
+  const card = el("section", { class: "panel-tarjeta resumen-gastos-cat" });
+  const sub = `Principales categorías de gasto en ${enPeriodo}.`;
+
+  if (total <= 0) {
+    card.append(
+      tarjetaHead(graficoTortaIcono, "Gastos por categoría", sub),
+      el("p", { class: "vacio", text: "Sin gastos en este período." })
+    );
+    return card;
+  }
+
+  const LIMITE = 6;
+  const hayResto = grupos.length > LIMITE + 1;
+  let expandido = false;
+
+  const btnVer = hayResto
+    ? el("button", {
+        class: "enlace-ver",
+        type: "button",
+        onClick: () => {
+          expandido = !expandido;
+          pintar();
+        },
+      })
+    : null;
+
+  const cuerpo = el("div", { class: "resumen-gastos-cat-fila" });
+  card.append(tarjetaHead(graficoTortaIcono, "Gastos por categoría", sub, btnVer), cuerpo);
+
+  function filasAMostrar() {
+    if (expandido || !hayResto) return grupos;
+    const top = grupos.slice(0, LIMITE);
+    const resto = grupos.slice(LIMITE);
+    return [
+      ...top,
+      {
+        clave: "otros",
+        nombre: "Otros",
+        categoria: null,
+        color: "#8a8f98",
+        total: resto.reduce((s, g) => s + g.total, 0),
+        esOtros: true,
+      },
+    ];
+  }
+
+  function pintar() {
+    limpiar(cuerpo);
+    if (btnVer) btnVer.textContent = expandido ? "Ver menos" : "Ver todas →";
+    const filas = filasAMostrar();
+
+    const lista = el(
+      "ul",
+      { class: "resumen-gastos-cat-lista" },
+      filas.map((g, i) => {
+        const pct = Math.round((g.total / total) * 100);
+        const color = g.color || PALETA_DONA[i % PALETA_DONA.length];
+        const icono = el("span", { class: "resumen-gastos-cat-icono" }, [
+          g.esOtros ? puntosIcono() : nodoIconoCategoria(g.categoria, g.nombre),
+        ]);
+        icono.style.background = `color-mix(in srgb, ${color} 16%, transparent)`;
+        icono.style.color = color;
+        return el("li", { class: "resumen-gastos-cat-item" }, [
+          icono,
+          el("span", { class: "resumen-gastos-cat-nombre", text: g.nombre }),
+          el("span", { class: "resumen-gastos-cat-monto", text: valorOculto(g.total) }),
+          el("span", { class: "resumen-gastos-cat-pct", text: `${pct}%` }),
+        ]);
+      })
+    );
+
+    cuerpo.append(lista, donutGastos(filas, total));
+  }
+
+  pintar();
+  return card;
+}
+
+function seccionActividad(movimientos, enPeriodo, irA) {
+  const card = el("section", { class: "panel-tarjeta resumen-actividad" });
+  const recientes = movimientos.slice(0, 5); // ya ordenados por fecha desc
+  const sub = `Últimos movimientos de ${enPeriodo}.`;
+  const verTodos =
+    typeof irA === "function"
+      ? el("button", {
+          class: "enlace-ver",
+          type: "button",
+          text: "Ver todos →",
+          onClick: () => irA("movimientos"),
+        })
+      : null;
+
+  if (!recientes.length) {
+    card.append(
+      tarjetaHead(reloj3Icono, "Actividad reciente", sub, verTodos),
+      el("p", { class: "vacio", text: "Sin movimientos en este período." })
+    );
+    return card;
+  }
+
+  const oculto = prefs.get("ocultarTotal");
+  const lista = el(
+    "ul",
+    { class: "resumen-act-lista" },
+    recientes.map((m) => {
+      const color = colorMovimiento(m);
+      const icono = el("span", { class: "resumen-act-icono" }, [
+        nodoIconoCategoria(m.categoria, m.nombre),
+      ]);
+      icono.style.background = `color-mix(in srgb, ${color} 16%, transparent)`;
+      icono.style.color = color;
+      const esIngreso = m.tipo === "ingreso";
+      const signo = esIngreso ? "+" : "−";
+      return el("li", { class: "resumen-act-item" }, [
+        icono,
+        el("div", { class: "resumen-act-info" }, [
+          el("span", { class: "resumen-act-nombre", text: m.nombre }),
+          el("span", {
+            class: "resumen-act-cat",
+            text: m.categoria ? m.categoria.nombre : "Sin categoría",
+          }),
+        ]),
+        el("span", {
+          class: "resumen-act-fecha",
+          text: fechaCorta(m.fecha_local || m.fecha),
+        }),
+        el("span", {
+          class: `resumen-act-monto ${esIngreso ? "valor-ingreso" : "valor-gasto"}`,
+          text: oculto ? "*****" : `${signo} ${formatoCLP(m.monto)}`,
+        }),
+      ]);
+    })
+  );
+
+  card.append(tarjetaHead(reloj3Icono, "Actividad reciente", sub, verTodos), lista);
+  return card;
+}
+
+// Consejo del período: solo a partir de datos del período actual. Si no hay
+// movimientos, no se muestra.
+function seccionConsejo(ingresos, gastos, tipo, numMovimientos) {
+  if (numMovimientos === 0 || (ingresos <= 0 && gastos <= 0)) return null;
+  const balance = ingresos - gastos;
+  let texto;
+
+  if (balance > 0 && ingresos > 0) {
+    const pct = (balance / ingresos) * 100;
+    texto =
+      pct >= 20
+        ? `Vas muy bien ${sufijoPeriodo(tipo)}: tu balance es positivo y estás reteniendo el ${formatoPct(pct)} de tus ingresos.`
+        : `Tu balance ${sufijoPeriodo(tipo)} es positivo, aunque el margen es ajustado (${formatoPct(pct)} de tus ingresos).`;
+  } else if (balance > 0) {
+    texto = `Tu balance ${sufijoPeriodo(tipo)} es positivo, pero no registraste ingresos en este período.`;
+  } else if (balance < 0) {
+    texto = `Este período gastaste más de lo que ingresaste. Revisa tus categorías con mayor gasto para equilibrarlo.`;
+  } else {
+    texto = `Ingresos y gastos quedaron parejos ${sufijoPeriodo(tipo)}: tu balance es cero.`;
+  }
+
+  return el("section", { class: "panel-tarjeta resumen-consejo" }, [
+    el("span", { class: "resumen-consejo-icono" }, [bombillaIcono()]),
+    el("div", { class: "resumen-consejo-txt" }, [
+      el("span", { class: "resumen-consejo-titulo", text: `Consejo ${delPeriodo(tipo)}` }),
+      el("span", { class: "resumen-consejo-cuerpo", text: texto }),
+    ]),
+  ]);
+}
+
+// --- Vista -----------------------------------------------------------------
+
+export async function montarResumen(contenedor, { rango, tipo, fechaRef, modo, irA }) {
   limpiar(contenedor);
 
   const error = el("p", { class: "error", role: "alert" });
   const aviso = el("p", { class: "aviso" });
-  const cabecera = el("div", { class: "resumen-cabecera" });
-  const cifras = el("div", { class: "cifras" });
-  contenedor.append(tituloVista(tendenciaCombinadaIcono, "Resumen"), cabecera, aviso, cifras, error);
+  const raiz = el("div", { class: "resumen-vista" });
+  contenedor.append(raiz);
 
   let movimientos = [];
 
@@ -78,17 +474,18 @@ export async function montarResumen(contenedor, { rango, tipo, fechaRef, modo })
     aviso.textContent = "";
     try {
       movimientos = await listarMovimientos({ ...rango, modo });
-      pintarCabecera();
-      pintarCifras();
+      pintar();
     } catch (e) {
-      limpiar(cifras);
+      limpiar(raiz);
+      raiz.append(error);
       error.textContent = "No se pudo cargar el resumen. ";
       error.append(el("button", { text: "Reintentar", onClick: recargar }));
     }
   }
 
-  function pintarCabecera() {
-    limpiar(cabecera);
+  function pintar() {
+    limpiar(raiz);
+
     const oculto = prefs.get("ocultarTotal");
     const btnOjo = el(
       "button",
@@ -99,45 +496,74 @@ export async function montarResumen(contenedor, { rango, tipo, fechaRef, modo })
         "aria-pressed": String(oculto),
         onClick: () => {
           prefs.set("ocultarTotal", !oculto);
-          pintarCabecera();
-          pintarCifras();
+          pintar();
         },
       },
       [oculto ? ojoTachadoIcono() : ojoIcono()]
     );
-    cabecera.append(btnOjo);
-    if (modo === "estimado" && tipo === "mes") {
-      cabecera.append(construirMenuMes());
-    }
-  }
+    const acciones = el("div", { class: "resumen-header-acciones" }, [btnOjo]);
+    if (modo === "estimado" && tipo === "mes") acciones.append(construirMenuMes());
 
-  function pintarCifras() {
-    limpiar(cifras);
     const paraTotales = filtrarParaCalculos(movimientos, {
       modo,
       incluirInactivos: prefs.get("incluirInactivos"),
     });
+    const { ingresos, gastos, balance } = calcularTotales(paraTotales);
+    const enPeriodo = etiquetaPeriodo(fechaRef, tipo);
+
+    raiz.append(bloqueEncabezado(tipo, fechaRef, rango, acciones), aviso, error);
+
+    const descIngreso =
+      modo === "estimado"
+        ? `Ingresos estimados ${delPeriodo(tipo)}`
+        : `Total de ingresos ${delPeriodo(tipo)}`;
+    const descGasto =
+      modo === "estimado"
+        ? `Gastos estimados ${delPeriodo(tipo)}`
+        : `Total de gastos ${delPeriodo(tipo)}`;
+
+    raiz.append(
+      el("div", { class: "resumen-metricas" }, [
+        metricaTarjeta(flechaArribaCirculo, "ingreso", "Ingresos", ingresos, "valor-ingreso", descIngreso),
+        metricaTarjeta(flechaAbajoCirculo, "gasto", "Gastos", gastos, "valor-gasto", descGasto),
+        metricaTarjeta(
+          billeteraIcono,
+          "balance",
+          "Balance",
+          balance,
+          balance >= 0 ? "valor-balance" : "valor-gasto",
+          "Ingresos - Gastos"
+        ),
+      ])
+    );
+
+    // Modo estimado: se conserva el desglose pagado / pendiente.
     if (modo === "estimado") {
       const d = desglosarPorPago(paraTotales);
-      cifras.append(
-        el("div", { class: "grupos" }, [
-          grupo("Estimado", d.total),
-          grupo("Pagado", d.pagado),
-          grupo("Pendiente", d.pendiente),
-        ]),
-        graficoIngresoGasto(d.total.ingresos, d.total.gastos, "Estimado: ingresos vs. gastos")
-      );
-    } else {
-      const { ingresos, gastos, balance } = calcularTotales(paraTotales);
-      cifras.append(
-        el("div", { class: "tarjetas-fila" }, [
-          tarjeta("Ingresos", ingresos, "ingreso"),
-          tarjeta("Gastos", gastos, "gasto"),
-          tarjeta("Balance", balance, balance >= 0 ? "ingreso" : "gasto"),
-        ]),
-        graficoIngresoGasto(ingresos, gastos)
+      raiz.append(
+        el("div", { class: "resumen-desglose" }, [
+          desgloseItem("Pagado", d.pagado),
+          desgloseItem("Pendiente", d.pendiente),
+        ])
       );
     }
+
+    raiz.append(
+      seccionIngresoGasto(
+        ingresos,
+        gastos,
+        enPeriodo,
+        tipo,
+        modo === "estimado" ? "Estimado: ingresos vs. gastos" : "Ingresos vs. Gastos"
+      ),
+      el("div", { class: "resumen-inferior" }, [
+        seccionGastosCategoria(paraTotales, enPeriodo),
+        seccionActividad(movimientos, enPeriodo, irA),
+      ])
+    );
+
+    const consejo = seccionConsejo(ingresos, gastos, tipo, movimientos.length);
+    if (consejo) raiz.append(consejo);
   }
 
   function construirMenuMes() {

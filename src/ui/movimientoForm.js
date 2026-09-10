@@ -116,8 +116,7 @@ export function abrirMovimientoForm({
     tipoActual = t;
     categoriaId = null;
     sincronizarTipo();
-    cargarUso();
-    pintarChips();
+    cargarUso(); // repinta: placeholder y luego el orden definitivo
     actualizarSelectorCategoria();
     actualizarBotones();
   }
@@ -285,6 +284,13 @@ export function abrirMovimientoForm({
 
   const chips = el("div", { class: "mov-chips" });
   let usoPorCategoria = {};
+  // El orden de las tarjetas rápidas depende de `usoCategorias` (RPC async).
+  // `usoListo` evita el primer render con orden provisional: hasta que el uso
+  // llega (o vence la espera) se muestra un placeholder y luego se pinta una
+  // sola vez con el orden definitivo. `usoSecuencia` descarta respuestas
+  // obsoletas si se cambia de tipo mientras una carga está en vuelo.
+  let usoListo = false;
+  let usoSecuencia = 0;
 
   function categoriasDelTipo() {
     return categorias
@@ -361,6 +367,19 @@ export function abrirMovimientoForm({
   function pintarChips() {
     limpiar(chips);
     const lista = categoriasDelTipo();
+
+    // Mientras no llega el uso, placeholder del mismo tamaño (evita el
+    // reordenamiento visible cuando la RPC responde).
+    if (!usoListo) {
+      for (let i = 0; i < Math.min(4, lista.length); i++) {
+        chips.append(el("span", { class: "mov-chip mov-chip--esqueleto", "aria-hidden": "true" }));
+      }
+      chips.append(
+        chipAccion("mov-chip--nueva-tile", mas, ["Nueva categoría"], abrirNuevaCategoria)
+      );
+      return;
+    }
+
     for (const c of lista.slice(0, 4)) chips.append(chip(c));
     if (categoriaId && !lista.slice(0, 4).some((c) => c.id === categoriaId)) {
       const sel = lista.find((c) => c.id === categoriaId);
@@ -734,16 +753,36 @@ export function abrirMovimientoForm({
   });
 
   function cargarUso() {
+    const token = ++usoSecuencia;
+    usoListo = false;
+    usoPorCategoria = {};
+    pintarChips(); // placeholder mientras carga
+
+    const marcarListo = () => {
+      if (token !== usoSecuencia || usoListo) return;
+      usoListo = true;
+      pintarChips();
+    };
+    // Reserva: si la RPC tarda demasiado o falla, no dejar el placeholder fijo.
+    const reserva = setTimeout(marcarListo, 1500);
+
     usoCategorias(tipoActual, modo)
       .then((rows) => {
-        usoPorCategoria = Object.fromEntries(rows.map((r) => [r.categoria_id, Number(r.n)]));
-        pintarChips();
+        if (token === usoSecuencia) {
+          usoPorCategoria = Object.fromEntries(rows.map((r) => [r.categoria_id, Number(r.n)]));
+        }
       })
-      .catch(() => pintarChips());
+      .catch(() => {
+        /* sin datos de uso: se ordena por orden y nombre */
+      })
+      .then(() => {
+        if (token !== usoSecuencia) return;
+        clearTimeout(reserva);
+        marcarListo();
+      });
   }
 
   cargarUso();
-  pintarChips();
   actualizarSelectorCategoria();
   pintarComprobante();
   actualizarBotones();

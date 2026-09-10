@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="es" data-tema="claro">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Harness MovimientoForm</title>
+  <link rel="stylesheet" href="/app.css" />
+</head>
+<body>
+  <div id="app"></div>
+  <div style="padding:16px;display:flex;gap:8px">
+    <button id="abrir">Abrir formulario</button>
+  </div>
+  <script type="module">
+    import { abrirMovimientoForm } from "/src/ui/movimientoForm.js";
+
+    const categorias = [
+      { id: "alim",  nombre: "Alimentos",   tipo: "gasto",   modo: "real", color: "#e67e22", icono: "restaurant",       orden: 0 },
+      { id: "trans", nombre: "Transporte",  tipo: "gasto",   modo: "real", color: "#3498db", icono: "directions_car",   orden: 1 },
+      { id: "hogar", nombre: "Hogar",       tipo: "gasto",   modo: "real", color: "#9b59b6", icono: "home",             orden: 2 },
+      { id: "salud", nombre: "Salud",       tipo: "gasto",   modo: "real", color: "#e74c3c", icono: "health_and_safety",orden: 3 },
+      { id: "ocio",  nombre: "Ocio",        tipo: "gasto",   modo: "real", color: "#1abc9c", icono: "sports_esports",   orden: 4 },
+      { id: "ropa",  nombre: "Ropa",        tipo: "gasto",   modo: "real", color: "#f1c40f", icono: "checkroom",        orden: 5 },
+      { id: "sueldo",nombre: "Sueldo",      tipo: "ingreso", modo: "real", color: "#1b7f4d", icono: "payments",         orden: 0 },
+    ];
+
+    const open = () => abrirMovimientoForm({ modo: "real", categorias, onGuardado: () => console.log("guardado") });
+    document.getElementById("abrir").onclick = open;
+    open();
+  </script>
+</body>
+</html>

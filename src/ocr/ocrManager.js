@@ -3,14 +3,15 @@ import { parsearTransferencia } from "./transferenciaParser.js";
 import { parsearCompra } from "./purchaseExtractor.js";
 import { parsearComprobanteTabular } from "./comprobanteTabularParser.js";
 
-// Los comprobantes de POS (ej. TUU) anteponen el proveedor al nombre del
-// comercio ("TUU*ALMACEN DON JUAN") — se saca ese prefijo y se deja solo
-// el nombre real.
-const PREFIJO_PROVEEDOR_REGEX = /^\s*TUU\s*\*\s*/i;
+// Los agregadores de pago (TUU, Mercado Pago, etc.) anteponen su marca y un
+// asterisco al nombre real del comercio: "TUU*ALMACEN DON JUAN",
+// "MERCADOPAGO*ZORROCHISMITO", "SP *SPOTIFY". Nos quedamos con lo que va
+// después del "*" — el prefijo de la marca no es el comercio.
+const PREFIJO_AGREGADOR_REGEX = /^\s*[A-Za-z][A-Za-z0-9]+(?:\s+[A-Za-z0-9]+)?\s*\*\s*/;
 
 function limpiarComercio(comercio) {
   if (!comercio) return comercio;
-  return comercio.replace(PREFIJO_PROVEEDOR_REGEX, "").trim() || null;
+  return comercio.replace(PREFIJO_AGREGADOR_REGEX, "").trim() || null;
 }
 
 // { lineas, bloques } ya construidos por construirBloques(). Devuelve

@@ -74,6 +74,24 @@ describe("analizarComprobante", () => {
     expect(r.fecha.getMinutes()).toBe(30);
   });
 
+  it("recibo Google Wallet: saca el prefijo 'MERCADOPAGO*' y re-arma el nombre cortado en dos líneas", () => {
+    const bloques = [
+      bloque("MERCADOPAGO*ZORROCHIS", 210, 245, 35),
+      bloque("MITO", 250, 285, 35),
+      bloque("CLP3,750", 340, 400, 55),
+      bloque("miércoles, 9 de sept a las 21:10", 470, 495),
+      bloque("Nombre del estado de cuenta", 1100, 1120),
+      bloque("MERCADOPAGO*ZORROCHISMITO", 1125, 1145),
+    ];
+    const lineas = bloques.flatMap((b) => b.lines).sort((a, b) => a.top - b.top);
+
+    const r = analizarComprobante({ lineas, bloques });
+
+    expect(r.tipo).toBe("compra");
+    expect(r.comercio).toBe("ZORROCHISMITO");
+    expect(r.monto).toBe(3750);
+  });
+
   it("degrada a compra si el clasificador dice transferencia pero el parser específico no encuentra suficientes keywords", () => {
     // Menos de 2 keywords del set (más chico) de transferenciaParser, pero
     // >= 2 del set (más amplio) de documentTypeDetector.

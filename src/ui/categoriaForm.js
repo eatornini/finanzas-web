@@ -88,25 +88,51 @@ export function abrirCategoriaForm({
   ]);
   modo.value = categoria?.modo || modoInicial;
 
-  // --- Color: fila de círculos, el elegido con anillo del propio color ---
-  const swatches = el(
-    "div",
-    { class: "cat-swatches" },
-    PALETA.map((c) => {
-      const b = el("button", { type: "button", class: "cat-swatch", "aria-label": c });
-      b.style.background = c;
-      b.style.setProperty("--swatch-color", c);
-      b.dataset.color = c;
-      b.addEventListener("click", () => {
-        estado.color = c;
-        sincronizarColor();
-      });
-      return b;
-    })
+  // --- Color: fila de círculos + selector personalizado al final ---
+  // El elegido lleva un anillo de su propio color.
+  const botonesPaleta = PALETA.map((c) => {
+    const b = el("button", { type: "button", class: "cat-swatch", "aria-label": c });
+    b.style.background = c;
+    b.style.setProperty("--swatch-color", c);
+    b.dataset.color = c;
+    b.addEventListener("click", () => {
+      estado.color = c;
+      sincronizarColor();
+    });
+    return b;
+  });
+
+  // Último "círculo": abre el selector de color nativo. El <input type=color>
+  // se superpone transparente para que el sistema ancle el picker aquí.
+  const inputColorCustom = el("input", {
+    type: "color",
+    class: "cat-swatch-custom-input",
+    "aria-label": "Elegir un color personalizado",
+    value: /^#[0-9a-fA-F]{6}$/.test(estado.color) ? estado.color : "#3498db",
+  });
+  inputColorCustom.addEventListener("input", () => {
+    estado.color = inputColorCustom.value;
+    sincronizarColor();
+  });
+  const swatchCustom = el(
+    "span",
+    { class: "cat-swatch cat-swatch--custom", title: "Color personalizado" },
+    [inputColorCustom]
   );
+
+  const swatches = el("div", { class: "cat-swatches" }, [...botonesPaleta, swatchCustom]);
+
   function sincronizarColor() {
-    for (const b of swatches.children) {
+    const esCustom = !PALETA.includes(estado.color);
+    for (const b of botonesPaleta) {
       b.classList.toggle("activo", b.dataset.color === estado.color);
+    }
+    swatchCustom.classList.toggle("activo", esCustom);
+    if (esCustom) {
+      swatchCustom.style.setProperty("--swatch-color", estado.color);
+      swatchCustom.style.background = estado.color;
+    } else {
+      swatchCustom.style.background = "";
     }
   }
 

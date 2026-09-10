@@ -188,6 +188,79 @@ function esBloqueSecundario(block) {
   return false;
 }
 
+// Google Wallet incluye al pie el campo "Nombre del estado de cuenta" con el
+// identificador completo del comercio en UNA sola línea (ej.
+// "MERCADOPAGO*ZORROCHISMITO"), sin el corte de línea que sí tiene el título
+// de arriba. Es la fuente más confiable cuando está presente.
+const ESTADO_CUENTA_REGEX = /nombre del estado de cuenta/i;
+
+function lineaEsRuido(texto) {
+  const lower = texto.toLowerCase();
+  if (EXCLUSION_WORDS.some((w) => lower.includes(w))) return true;
+  // Solo dígitos y separadores (ID de transacción, montos, fechas sueltas).
+  if (/^[\d\s.:,\-/]+$/.test(texto)) return true;
+  return false;
+}
+
+function extractComercioDesdeEstadoCuenta(lines) {
+  const idx = lines.findIndex((l) => ESTADO_CUENTA_REGEX.test(l.text));
+  if (idx === -1) return null;
+
+  // Etiqueta y valor en la misma línea ("Nombre del estado de cuenta FOO").
+  const enLinea = lines[idx].text.replace(ESTADO_CUENTA_REGEX, "").trim();
+  if (enLinea && !lineaEsRuido(enLinea)) return enLinea;
+
+  for (let i = idx + 1; i < lines.length; i++) {
+    const texto = lines[i].text.trim();
+    if (!texto) continue;
+    return lineaEsRuido(texto) ? null : texto;
+  }
+  return null;
+}
+
+function haySolapamientoHorizontal(a, b) {
+  const izq = Math.max(a.left, b.left);
+  const der = Math.min(a.right, b.right);
+  const menorAncho = Math.min(a.right - a.left, b.right - b.left);
+  return menorAncho > 0 && (der - izq) / menorAncho >= 0.3;
+}
+
+// El nombre del comercio puede quedar cortado en 2+ líneas que Tesseract
+// separa en párrafos distintos (ej. "MERCADOPAGO*ZORROCHIS" arriba y "MITO"
+// abajo). Se re-arma sumando los bloques que quedan justo debajo del elegido,
+// con altura de fuente parecida y solapados en horizontal. Sin este paso, un
+// bloque de 4 letras como "MITO" lo descarta contieneTextoExcluido() como ruido.
+function fusionarBloquesContinuacion(bestBlock, blocks, montoBlock) {
+  const alturaBest = Math.max(...bestBlock.lines.map((l) => l.height));
+  const usados = new Set([bestBlock]);
+  const lineas = [...bestBlock.lines];
+  let bottomActual = bestBlock.bottom;
+
+  let seguir = true;
+  while (seguir) {
+    seguir = false;
+    for (const block of blocks) {
+      if (usados.has(block) || block === montoBlock) continue;
+      if (montoBlock && block.bottom > montoBlock.top) continue;
+      const gap = block.top - bottomActual;
+      if (gap < -alturaBest * 0.5 || gap > alturaBest * 0.9) continue;
+      const alturaBlock = Math.max(...block.lines.map((l) => l.height));
+      const ratio = alturaBlock / alturaBest;
+      if (ratio < 0.6 || ratio > 1.6) continue;
+      if (!haySolapamientoHorizontal(bestBlock, block)) continue;
+      if (esBloqueMonetario(block) || esBloqueSecundario(block)) continue;
+      const texto = block.lines.map((l) => l.text).join(" ").toLowerCase();
+      if (EXCLUSION_WORDS.some((w) => texto.includes(w))) continue;
+      usados.add(block);
+      lineas.push(...block.lines);
+      bottomActual = block.bottom;
+      seguir = true;
+    }
+  }
+
+  return lineas.sort((a, b) => a.top - b.top);
+}
+
 function extractComercio(blocks, montoBlock, imageHeight) {
   if (!montoBlock) return null;
   const statusBarThreshold = Math.min(100, Math.max(50, Math.trunc(imageHeight * 0.08)));
@@ -214,7 +287,8 @@ function extractComercio(blocks, montoBlock, imageHeight) {
   );
   const bestBlock = conClave[0].block;
 
-  const name = bestBlock.lines.map((l) => l.text.trim()).join(" ").trim();
+  const lineasNombre = fusionarBloquesContinuacion(bestBlock, blocks, montoBlock);
+  const name = lineasNombre.map((l) => l.text.trim()).join(" ").trim();
   return name || null;
 }
 
@@ -225,6 +299,7 @@ export function parsearCompra(lineas, bloques) {
   const imageHeight = bloques.length ? Math.max(...bloques.map((b) => b.bottom)) : 0;
   const [monto, montoBlock] = extractMonto(bloques);
   const [fecha] = extractFechaHora(lineas);
-  const comercio = extractComercio(bloques, montoBlock, imageHeight);
+  const comercio =
+    extractComercioDesdeEstadoCuenta(lineas) ?? extractComercio(bloques, montoBlock, imageHeight);
   return { comercio, monto, fecha };
 }

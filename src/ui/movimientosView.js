@@ -438,33 +438,45 @@ function fila(m, recargar, error, modo, asegurarCategorias) {
   }
 
   const claseFila =
-    `fila tipo-${m.tipo}` +
+    `fila fila--editable tipo-${m.tipo}` +
     (modo === "estimado" && m.pagado ? " fila-pagada" : "") +
     (inactivo ? " fila--inactiva" : "");
 
-  return el("div", { class: claseFila }, [
-    iconoFila,
-    el("div", { class: "fila-principal" }, [
-      el("span", { class: "fila-nombre-linea" }, [
-        el("span", {
-          class: "nombre",
-          text: m.nombre,
-          role: "button",
-          tabindex: "0",
-          "aria-label": `Editar ${m.nombre}`,
-          onClick: abrirEdicion,
-          onKeydown: (ev) => {
-            if (ev.key === "Enter" || ev.key === " ") {
-              ev.preventDefault();
-              abrirEdicion();
-            }
-          },
-        }),
-        inactivo ? el("span", { class: "badge-inactivo", text: "Inactivo" }) : null,
+  // Toda la fila abre la edición. Se ignoran los clics que nacen en los
+  // controles propios (activar/desactivar, borrar, badge Pagado/Pendiente),
+  // que tienen su propia acción.
+  const esControl = (nodo) => nodo instanceof Element && nodo.closest(".acciones, .mov-badge-estado");
+
+  return el(
+    "div",
+    {
+      class: claseFila,
+      role: "button",
+      tabindex: "0",
+      "aria-label": `Editar ${m.nombre}`,
+      onClick: (ev) => {
+        if (esControl(ev.target)) return;
+        abrirEdicion();
+      },
+      onKeydown: (ev) => {
+        if (ev.target !== ev.currentTarget) return;
+        if (ev.key === "Enter" || ev.key === " ") {
+          ev.preventDefault();
+          abrirEdicion();
+        }
+      },
+    },
+    [
+      iconoFila,
+      el("div", { class: "fila-principal" }, [
+        el("span", { class: "fila-nombre-linea" }, [
+          el("span", { class: "nombre", text: m.nombre }),
+          inactivo ? el("span", { class: "badge-inactivo", text: "Inactivo" }) : null,
+        ]),
       ]),
-    ]),
-    el("span", { class: "fila-meta" }, metaHijos),
-    el("div", { class: "acciones" }, controles),
-    el("span", { class: "monto", text: `${signo} ${formatoCLP(m.monto)}` }),
-  ]);
+      el("span", { class: "fila-meta" }, metaHijos),
+      el("div", { class: "acciones" }, controles),
+      el("span", { class: "monto", text: `${signo} ${formatoCLP(m.monto)}` }),
+    ]
+  );
 }
