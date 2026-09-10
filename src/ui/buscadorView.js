@@ -170,7 +170,7 @@ export async function montarBuscador(contenedor, { modo }) {
         ]),
         el("span", { class: "fila-meta" }, [
           el("span", { class: "cat", text: cat }),
-          el("span", { class: "fecha", text: (m.fecha || "").slice(0, 10) }),
+          el("span", { class: "fecha", text: m.fecha_local || (m.fecha || "").slice(0, 10) }),
         ]),
         el("span", { class: "monto", text: `${signo} ${formatoCLP(m.monto)}` }),
       ]

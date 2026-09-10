@@ -6,7 +6,10 @@ export function agruparPorFecha(movimientos) {
   const grupos = [];
   const indice = new Map();
   for (const m of movimientos) {
-    const clave = (m.fecha || "").slice(0, 10);
+    // fecha_local es el día en zona chilena (lo calcula el servidor); usar
+    // m.fecha acá agruparía mal los movimientos de las 21:00+ porque el
+    // timestamptz ya está en UTC y su parte de fecha cae al día siguiente.
+    const clave = m.fecha_local || (m.fecha || "").slice(0, 10);
     let grupo = indice.get(clave);
     if (!grupo) {
       grupo = { clave, movimientos: [] };

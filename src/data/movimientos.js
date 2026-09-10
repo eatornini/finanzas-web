@@ -3,7 +3,7 @@ import { verificar } from "./_helpers.js";
 
 export const SELECT =
   "id, nombre, monto, tipo, modo, pagado, activo, recurrente, frecuencia, " +
-  "categoria_id, fecha, detalle, " +
+  "categoria_id, fecha, fecha_local, detalle, " +
   "categoria:categorias(nombre, color, icono, emoji)";
 
 export async function listarMovimientos({ desde, hasta, modo }) {

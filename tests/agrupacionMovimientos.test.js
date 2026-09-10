@@ -6,16 +6,32 @@ describe("agruparPorFecha", () => {
     expect(agruparPorFecha([])).toEqual([]);
   });
 
-  it("agrupa por los primeros 10 caracteres de fecha, preservando el orden de entrada", () => {
+  it("agrupa por fecha_local, preservando el orden de entrada", () => {
     const movs = [
-      { id: 1, fecha: "2026-09-04T10:00:00" },
-      { id: 2, fecha: "2026-09-04T15:00:00" },
-      { id: 3, fecha: "2026-09-03T09:00:00" },
+      { id: 1, fecha_local: "2026-09-04", fecha: "2026-09-04T10:00:00" },
+      { id: 2, fecha_local: "2026-09-04", fecha: "2026-09-04T15:00:00" },
+      { id: 3, fecha_local: "2026-09-03", fecha: "2026-09-03T09:00:00" },
     ];
     const grupos = agruparPorFecha(movs);
     expect(grupos.map((g) => g.clave)).toEqual(["2026-09-04", "2026-09-03"]);
     expect(grupos[0].movimientos.map((m) => m.id)).toEqual([1, 2]);
     expect(grupos[1].movimientos.map((m) => m.id)).toEqual([3]);
+  });
+
+  it("usa fecha_local y no la parte UTC de fecha para movimientos nocturnos", () => {
+    // 21:10 en Chile (UTC-3) => 00:10 UTC del día siguiente. Debe agrupar
+    // bajo el día chileno (fecha_local), no bajo el día UTC.
+    const movs = [
+      { id: 1, fecha_local: "2026-09-09", fecha: "2026-09-10T00:10:00.000Z" },
+    ];
+    const grupos = agruparPorFecha(movs);
+    expect(grupos.map((g) => g.clave)).toEqual(["2026-09-09"]);
+  });
+
+  it("cae a los primeros 10 caracteres de fecha si falta fecha_local", () => {
+    const movs = [{ id: 1, fecha: "2026-09-04T10:00:00" }];
+    const grupos = agruparPorFecha(movs);
+    expect(grupos.map((g) => g.clave)).toEqual(["2026-09-04"]);
   });
 });
 

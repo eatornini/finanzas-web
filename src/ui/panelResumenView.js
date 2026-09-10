@@ -219,7 +219,7 @@ function tarjetaActividad(movimientos) {
         icono,
         el("div", { class: "actividad-info" }, [
           el("span", { class: "actividad-nombre", text: m.nombre }),
-          el("span", { class: "actividad-fecha", text: (m.fecha || "").slice(0, 10) }),
+          el("span", { class: "actividad-fecha", text: m.fecha_local || (m.fecha || "").slice(0, 10) }),
         ]),
         el("span", {
           class: `actividad-monto ${m.tipo === "ingreso" ? "valor-ingreso" : "valor-gasto"}`,
