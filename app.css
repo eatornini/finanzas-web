@@ -24,8 +24,8 @@
        desplazamiento, para que quede pegado al contorno del campo. */
     --anillo-focus: 0 0 0 2px color-mix(in srgb, var(--acento) 22%, transparent);
 
-    --ingreso: #17994f;
-    --gasto: #d0342c;
+    --ingreso: #08A74F;
+    --gasto: #FC1C27;
     --estimado: #0966DF;
     --estimado-fg: #ffffff;
     --pendiente: #a56a12;
@@ -76,8 +76,8 @@
       --acento-fg: #0b0b0c;
       --acento-tenue: color-mix(in srgb, #5b9bd8 18%, transparent);
 
-      --ingreso: #46c98a;
-      --gasto: #f27a72;
+      --ingreso: #08A74F;
+      --gasto: #FC1C27;
       --estimado: #0966DF;
       --estimado-fg: #0b0b0c;
       --pendiente: #e0a44a;
@@ -99,8 +99,8 @@
     --acento-fg: #0b0b0c;
     --acento-tenue: color-mix(in srgb, #5b9bd8 18%, transparent);
 
-    --ingreso: #46c98a;
-    --gasto: #f27a72;
+    --ingreso: #08A74F;
+    --gasto: #FC1C27;
     --estimado: #0966DF;
     --estimado-fg: #0b0b0c;
     --pendiente: #e0a44a;
@@ -911,8 +911,8 @@
   }
 
   .selector-modo button.activo {
-    background: var(--estimado);
-    color: var(--estimado-fg);
+    background: var(--acento);
+    color: var(--acento-fg);
   }
 
   .selector-modo button:first-child.activo {
@@ -1655,45 +1655,114 @@
   }
 
   /* --- Lista de movimientos --- */
-  .lista-movimientos {
+  /* No hay tarjeta contenedora general: cada grupo (fecha o categoría) es su
+     propia tarjeta independiente. Este contenedor solo las apila con aire
+     entre medio. */
+  .lista-grupos {
+    gap: var(--esp-5);
+  }
+
+  /* Tarjeta de un grupo: hereda borde/fondo/sombra/redondeo de .panel-tarjeta;
+     acá solo se ajusta el padding para que el encabezado y las filas respiren
+     sin quedar tan sueltos como una tarjeta de formulario. */
+  .lista-grupo {
+    padding: var(--esp-3) var(--esp-4) var(--esp-4);
     display: flex;
     flex-direction: column;
   }
 
+  /* Encabezado del grupo dentro de su tarjeta: fecha/categoría + total del
+     día, con un respiro antes de la primera fila. */
+  .lista-grupo .lista-grupo-titulo {
+    margin: 0 0 var(--esp-2);
+    padding: var(--esp-1) var(--esp-2);
+  }
+
+  /* Dentro de la tarjeta de grupo las filas son renglones planos: sin
+     borde/fondo/redondeo propios (eso lo aporta la tarjeta). Se separan
+     con una línea sutil entre sí. */
+  .lista-grupo .fila {
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    padding-left: var(--esp-2);
+    padding-right: var(--esp-2);
+  }
+
+  .lista-grupo .fila + .fila {
+    border-top: 1px solid var(--borde);
+  }
+
+  .lista-grupo .fila:hover {
+    background: var(--bg-sutil);
+  }
+
+  /* Selector Todos/Gastos/Ingresos: control segmentado compacto, alineado a
+     la izquierda, FUERA de la tarjeta. No ocupa todo el ancho (ni en móvil). */
   .tabs-vista {
-    margin-bottom: var(--esp-4);
+    display: flex;
+    align-self: flex-start;
+    max-width: 100%;
   }
 
   .tabs-vista button {
     white-space: nowrap;
   }
 
-  @media (max-width: 560px) {
-    .tabs-vista {
-      display: flex;
+  /* --- Encabezado de la pantalla Movimientos (sobre el fondo, sin tarjeta) --- */
+  .movimientos-encabezado {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--esp-3) var(--esp-4);
+  }
+
+  .movimientos-encabezado-id {
+    min-width: 0;
+  }
+
+  .movimientos-titulo {
+    display: flex;
+    align-items: center;
+    gap: var(--esp-2);
+    margin: 0;
+    font-size: var(--txt-xl);
+    font-weight: var(--peso-bold);
+    line-height: 1.15;
+  }
+
+  .movimientos-titulo-icono {
+    display: flex;
+    align-items: center;
+    flex: none;
+    color: var(--acento);
+  }
+
+  .movimientos-titulo-icono svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .movimientos-sub {
+    margin: 4px 0 0;
+    color: var(--fg-tenue);
+    font-size: var(--txt-sm);
+  }
+
+  @media (max-width: 720px) {
+    .movimientos-encabezado .lista-acciones {
       width: 100%;
     }
 
-    .tabs-vista button {
+    .movimientos-encabezado .campo-busqueda {
       flex: 1;
+      min-width: 0;
     }
-  }
 
-  .lista-cabecera {
-    position: relative;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--esp-3);
-    margin-bottom: var(--esp-4);
-  }
-
-  .lista-titulo {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--esp-3);
+    .movimientos-encabezado .campo-busqueda input {
+      width: 100%;
+    }
   }
 
   /* --- Botón flotante "Agregar movimiento" --- */
@@ -1748,13 +1817,6 @@
       width: 24px;
       height: 24px;
     }
-  }
-
-  .lista-cabecera h3 {
-    display: flex;
-    align-items: center;
-    gap: var(--esp-2);
-    margin-bottom: 0;
   }
 
   .badge {
@@ -1926,7 +1988,7 @@
   }
 
   .contador-lista {
-    margin: var(--esp-4) 0 0;
+    margin: 0;
     color: var(--fg-tenue);
     font-size: var(--txt-sm);
   }
@@ -2395,6 +2457,66 @@
     margin-bottom: var(--esp-3);
   }
 
+  /* "Color de acento": descripción a la izquierda, círculos predefinidos +
+     selector personalizado a la derecha. */
+  .config-color {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--esp-4);
+  }
+
+  .config-color-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .config-color-titulo {
+    font-weight: var(--peso-medio);
+  }
+
+  .config-color-ayuda {
+    font-size: var(--txt-xs);
+    color: var(--fg-tenue);
+  }
+
+  .config-color-control {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--esp-3);
+  }
+
+  .config-color .cat-swatches {
+    justify-content: flex-end;
+  }
+
+  .config-color-pie {
+    display: flex;
+    align-items: center;
+    gap: var(--esp-3);
+  }
+
+  .config-color-hex {
+    font-size: var(--txt-sm);
+    font-variant-numeric: tabular-nums;
+    color: var(--fg-tenue);
+  }
+
+  @media (max-width: 640px) {
+    .config-color-control {
+      align-items: flex-start;
+      width: 100%;
+    }
+
+    .config-color .cat-swatches {
+      justify-content: flex-start;
+    }
+  }
+
   .comparativa-tarjetas {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -2529,67 +2651,154 @@
     }
   }
 
-  .resumen-lista {
-    display: flex;
-    flex-direction: column;
-    gap: var(--esp-2);
-  }
-
-  .resumen-fila {
+  /* --- Tarjeta "Saldo disponible" (bloque flotante del panel lateral) --- */
+  .saldo-cabecera {
     display: flex;
     align-items: center;
-    gap: var(--esp-3);
-    padding: var(--esp-2) var(--esp-3);
-    border-radius: var(--r-md);
+    gap: var(--esp-2);
+    margin-bottom: var(--esp-3);
   }
 
-  .resumen-fila--destacada {
-    background: var(--acento-tenue);
-  }
-
-  .resumen-icono {
+  .saldo-cabecera-icono {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 32px;
-    height: 32px;
+    width: 28px;
+    height: 28px;
     flex: none;
-    border-radius: 50%;
+    border-radius: var(--r-sm);
+    background: var(--acento-tenue);
+    color: var(--acento);
   }
 
-  .resumen-icono svg {
+  .saldo-cabecera-icono svg {
     width: 16px;
     height: 16px;
   }
 
-  .resumen-icono--ingreso {
-    background: color-mix(in srgb, var(--ingreso) 16%, transparent);
-    color: var(--ingreso);
+  .saldo-cabecera-titulo {
+    flex: 1;
+    min-width: 0;
+    font-weight: var(--peso-bold);
+    color: var(--fg);
   }
 
-  .resumen-icono--gasto {
-    background: color-mix(in srgb, var(--gasto) 16%, transparent);
-    color: var(--gasto);
+  .saldo-cabecera-periodo {
+    color: var(--fg-tenue);
+    font-size: var(--txt-xs);
+    white-space: nowrap;
   }
 
-  .resumen-icono--balance {
-    background: color-mix(in srgb, var(--acento) 16%, transparent);
+  .saldo-cabecera .boton-ojo {
+    flex: none;
+  }
+
+  .saldo-hero {
+    display: flex;
+    align-items: center;
+    gap: var(--esp-3);
+    padding: var(--esp-5) var(--esp-3);
+    border-radius: var(--r-lg);
+    background: var(--acento-tenue);
+  }
+
+  .saldo-hero-icono {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    flex: none;
     color: var(--acento);
   }
 
-  .resumen-etiqueta {
+  .saldo-hero-icono svg {
+    width: 32px;
+    height: 32px;
+  }
+
+  .saldo-hero-txt {
     flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: var(--esp-1);
+  }
+
+  .saldo-hero-etiqueta {
     color: var(--fg-tenue);
-    font-size: var(--txt-sm);
+    font-size: var(--txt-xs);
   }
 
-  .resumen-fila--destacada .resumen-etiqueta {
-    color: var(--fg);
-    font-weight: var(--peso-medio);
+  .saldo-hero-valor {
+    font-size: var(--txt-xl);
+    font-weight: var(--peso-bold);
+    line-height: 1.15;
+    font-variant-numeric: tabular-nums;
   }
 
-  .resumen-valor {
-    font-size: var(--txt-sm);
+  .saldo-hero-desc {
+    color: var(--fg-tenue);
+    font-size: var(--txt-xs);
+  }
+
+  .saldo-mini-fila {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--esp-3);
+    margin-top: var(--esp-3);
+  }
+
+  .saldo-mini {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: var(--esp-1);
+    padding: var(--esp-3);
+    border-radius: var(--r-md);
+  }
+
+  .saldo-mini--ingreso {
+    background: color-mix(in srgb, var(--ingreso) 12%, transparent);
+  }
+
+  .saldo-mini--gasto {
+    background: color-mix(in srgb, var(--gasto) 12%, transparent);
+  }
+
+  .saldo-mini-icono {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    flex: none;
+    border-radius: 50%;
+  }
+
+  .saldo-mini-icono svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  .saldo-mini-icono--ingreso {
+    background: color-mix(in srgb, var(--ingreso) 22%, transparent);
+    color: var(--ingreso);
+  }
+
+  .saldo-mini-icono--gasto {
+    background: color-mix(in srgb, var(--gasto) 22%, transparent);
+    color: var(--gasto);
+  }
+
+  .saldo-mini-etiqueta {
+    color: var(--fg-tenue);
+    font-size: var(--txt-xs);
+  }
+
+  .saldo-mini-valor {
     font-weight: var(--peso-bold);
     font-variant-numeric: tabular-nums;
   }

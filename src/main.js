@@ -1,4 +1,5 @@
 import { iniciarRouter } from "./ui/router.js";
+import { aplicarAcentoGuardado } from "./ui/acento.js";
 
 window.addEventListener("error", (e) => {
   console.error("Error no controlado:", e.error);
@@ -6,6 +7,9 @@ window.addEventListener("error", (e) => {
 window.addEventListener("unhandledrejection", (e) => {
   console.error("Promesa rechazada sin manejar:", e.reason);
 });
+
+// Antes del primer render para que aplique también en el login.
+aplicarAcentoGuardado();
 
 iniciarRouter();
 

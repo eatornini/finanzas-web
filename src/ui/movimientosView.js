@@ -2,22 +2,25 @@ import { el, limpiar } from "./dom.js";
 import { listarMovimientos, actualizarMovimiento, eliminarMovimiento } from "../data/movimientos.js";
 import { listarCategorias } from "../data/categorias.js";
 import { basura, lupaIcono, embudoIcono, chevronAbajo, check, mas, cerrarIcono, intercambioIcono } from "./iconos.js";
-import { iconoTitulo } from "./tituloVista.js";
 import { colorMovimiento } from "./iconosCategoria.js";
 import { nodoIconoCategoria } from "./iconoCategoria.js";
 import { montarPanelResumen } from "./panelResumenView.js";
 import { abrirMovimientoForm } from "./movimientoForm.js";
 import { filtrarParaCalculos, calcularTotales } from "../logic/totales.js";
 import { agruparPorFecha, agruparPorCategoria } from "../logic/agrupacionMovimientos.js";
-import { etiquetaDia } from "../logic/periodos.js";
+import { etiquetaDia, etiquetaPeriodo } from "../logic/periodos.js";
 import { formatoCLP } from "../logic/dinero.js";
 import { prefs } from "../prefs.js";
 
-export async function montarMovimientos(contenedor, { rango, modo, tipo, categoriaInicial = null }) {
+export async function montarMovimientos(
+  contenedor,
+  { rango, modo, tipo, fechaRef, categoriaInicial = null }
+) {
   limpiar(contenedor);
 
   const error = el("p", { class: "error", role: "alert" });
   const badge = el("span", { class: "badge", text: "0" });
+  const subtitulo = el("p", { class: "movimientos-sub" });
   const buscador = el("input", {
     class: "buscador",
     type: "search",
@@ -132,8 +135,17 @@ export async function montarMovimientos(contenedor, { rango, modo, tipo, categor
       },
     })
   );
+  // Subtítulo del encabezado: se adapta al período y a la pestaña activa.
+  function textoSubtitulo() {
+    const periodo = etiquetaPeriodo(fechaRef, tipo);
+    const estim = modo === "estimado" ? " estimados" : "";
+    if (vista === "gasto") return `Tus gastos${estim} de ${periodo}.`;
+    if (vista === "ingreso") return `Tus ingresos${estim} de ${periodo}.`;
+    return `Todos tus movimientos de ${periodo}.`;
+  }
   function sincronizarVista() {
     botonesVista.forEach((b, i) => b.classList.toggle("activo", opcionesVista[i].valor === vista));
+    subtitulo.textContent = textoSubtitulo();
   }
   sincronizarVista();
   const tabsVista = el("div", { class: "selector-tipo tabs-vista" }, botonesVista);
@@ -146,7 +158,7 @@ export async function montarMovimientos(contenedor, { rango, modo, tipo, categor
     [mas(), el("span", { class: "fab-agregar-texto", text: "Agregar" })]
   );
 
-  const lista = el("div", { class: "lista" });
+  const lista = el("div", { class: "lista lista-grupos" });
   const contador = el("p", { class: "contador-lista" });
 
   // Solo mobile (CSS): balance del período arriba de todo, además del panel
@@ -157,23 +169,36 @@ export async function montarMovimientos(contenedor, { rango, modo, tipo, categor
     balanceMovilValor,
   ]);
 
-  const tarjetaLista = el("section", { class: "panel-tarjeta lista-movimientos" }, [
-    el("div", { class: "lista-cabecera" }, [
-      el("div", { class: "lista-titulo" }, [el("h3", {}, [iconoTitulo(intercambioIcono), "Movimientos ", badge])]),
-      el("div", { class: "lista-acciones" }, [
-        el("div", { class: "campo-busqueda" }, [lupaIcono(), buscador]),
-        btnFiltros,
-        backdropFiltros,
-        panelFiltros,
+  // Encabezado de la página: vive sobre el fondo general, FUERA de la tarjeta.
+  // A la izquierda: icono + título + contador + subtítulo. A la derecha:
+  // buscador + botón "Filtros".
+  const encabezado = el("header", { class: "movimientos-encabezado" }, [
+    el("div", { class: "movimientos-encabezado-id" }, [
+      el("h2", { class: "movimientos-titulo" }, [
+        el("span", { class: "movimientos-titulo-icono" }, [intercambioIcono()]),
+        el("span", { class: "movimientos-titulo-texto", text: "Movimientos" }),
+        badge,
       ]),
+      subtitulo,
     ]),
+    el("div", { class: "lista-acciones" }, [
+      el("div", { class: "campo-busqueda" }, [lupaIcono(), buscador]),
+      btnFiltros,
+      backdropFiltros,
+      panelFiltros,
+    ]),
+  ]);
+
+  // Cada grupo (fecha o categoría) se pinta como su propia tarjeta
+  // independiente dentro de `lista`; no hay una tarjeta contenedora general.
+  const principal = el("div", { class: "movimientos-principal" }, [
+    encabezado,
+    balanceMovil,
     tabsVista,
     error,
     lista,
     contador,
   ]);
-
-  const principal = el("div", { class: "movimientos-principal" }, [balanceMovil, tarjetaLista]);
   const aside = el("aside", { class: "panel-lateral" });
   contenedor.append(el("div", { class: "vista-movimientos" }, [principal, aside]), btnAgregar);
 
@@ -288,8 +313,9 @@ export async function montarMovimientos(contenedor, { rango, modo, tipo, categor
       balanceMovilValor.textContent = prefs.get("ocultarTotal") ? "*****" : formatoCLP(balance);
       montarPanelResumen(aside, todos, paraTotales, {
         tipo,
+        fechaRef,
         onCategoria: (catId) =>
-          montarMovimientos(contenedor, { rango, modo, tipo, categoriaInicial: catId }),
+          montarMovimientos(contenedor, { rango, modo, tipo, fechaRef, categoriaInicial: catId }),
       });
     } catch (e) {
       todos = [];
@@ -338,22 +364,39 @@ export async function montarMovimientos(contenedor, { rango, modo, tipo, categor
       return [...grupos].sort((a, b) => dir * (totalGrupo(a) - totalGrupo(b)));
     }
 
+    // Cada grupo es una tarjeta propia: encabezado (fecha/categoría + total)
+    // y, debajo, sus movimientos. Sin tarjeta contenedora general.
+    function pintarGrupo(claveGrupo, etiqueta, movimientosGrupo) {
+      const { btn, colapsado } = grupoHeader(claveGrupo, etiqueta, movimientosGrupo);
+      const tarjeta = el("section", { class: "panel-tarjeta lista-grupo" }, [btn]);
+      if (!colapsado) {
+        for (const m of movimientosGrupo) {
+          tarjeta.append(fila(m, recargar, error, modo, asegurarCategorias));
+        }
+      }
+      lista.append(tarjeta);
+    }
+
     badge.textContent = String(todos.length);
     if (todos.length === 0) {
-      lista.append(el("p", { class: "vacio", text: "No hay movimientos en este período." }));
+      lista.append(
+        el("section", { class: "panel-tarjeta" }, [
+          el("p", { class: "vacio", text: "No hay movimientos en este período." }),
+        ])
+      );
     } else if (filtrados.length === 0) {
-      lista.append(el("p", { class: "vacio", text: "Ningún movimiento coincide con la búsqueda." }));
+      lista.append(
+        el("section", { class: "panel-tarjeta" }, [
+          el("p", { class: "vacio", text: "Ningún movimiento coincide con la búsqueda." }),
+        ])
+      );
     } else if (modo === "estimado") {
       for (const grupo of ordenarGruposPorMonto(agruparPorCategoria(filtrados))) {
-        const { btn, colapsado } = grupoHeader(`estimado:${grupo.clave}`, grupo.nombre, grupo.movimientos);
-        lista.append(btn);
-        if (!colapsado) for (const m of grupo.movimientos) lista.append(fila(m, recargar, error, modo, asegurarCategorias));
+        pintarGrupo(`estimado:${grupo.clave}`, grupo.nombre, grupo.movimientos);
       }
     } else {
       for (const grupo of ordenarGruposPorMonto(agruparPorFecha(filtrados))) {
-        const { btn, colapsado } = grupoHeader(`real:${grupo.clave}`, etiquetaDia(grupo.clave), grupo.movimientos);
-        lista.append(btn);
-        if (!colapsado) for (const m of grupo.movimientos) lista.append(fila(m, recargar, error, modo, asegurarCategorias));
+        pintarGrupo(`real:${grupo.clave}`, etiquetaDia(grupo.clave), grupo.movimientos);
       }
     }
     contador.textContent = `Mostrando ${filtrados.length} de ${todos.length} movimientos`;

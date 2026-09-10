@@ -10,36 +10,31 @@ import {
   billeteraIcono,
   ojoIcono,
   ojoTachadoIcono,
-  tendenciaCombinadaIcono,
   graficoTortaIcono,
   reloj3Icono,
 } from "./iconos.js";
 import { iconoMovimiento, colorMovimiento, iconoSemanticoCategoria } from "./iconosCategoria.js";
 import { iconoTitulo } from "./tituloVista.js";
+import { etiquetaPeriodo } from "../logic/periodos.js";
 
 const PALETA_DONA = [
   "#c0392b", "#2563a8", "#a56a12", "#6b46c1", "#1b7f4d", "#c2185b", "#00796b",
 ];
 
-function tituloPeriodo(tipo) {
-  if (tipo === "semana") return "Resumen de la semana";
-  if (tipo === "año") return "Resumen del año";
-  return "Resumen del mes";
-}
-
 function valorOculto(valor) {
   return prefs.get("ocultarTotal") ? "*****" : formatoCLP(valor);
 }
 
-function filaResumen(icono, claseIcono, etiqueta, valor, claseValor, destacar) {
-  return el("div", { class: `resumen-fila${destacar ? " resumen-fila--destacada" : ""}` }, [
-    el("span", { class: `resumen-icono ${claseIcono}` }, [icono()]),
-    el("span", { class: "resumen-etiqueta", text: etiqueta }),
-    el("span", { class: `resumen-valor ${claseValor}`, text: valorOculto(valor) }),
+// Tarjeta mini de Ingresos / Gastos (fondo tintado del color, icono, valor).
+function miniSaldo(fabricaIcono, clase, etiqueta, valor, claseValor) {
+  return el("div", { class: `saldo-mini saldo-mini--${clase}` }, [
+    el("span", { class: `saldo-mini-icono saldo-mini-icono--${clase}` }, [fabricaIcono()]),
+    el("span", { class: "saldo-mini-etiqueta", text: etiqueta }),
+    el("span", { class: `saldo-mini-valor ${claseValor}`, text: valorOculto(valor) }),
   ]);
 }
 
-function tarjetaResumen(titulo, movimientos, onToggleOcultar) {
+function tarjetaResumen(periodoTexto, movimientos, onToggleOcultar) {
   const { ingresos, gastos, balance } = calcularTotales(movimientos);
   const oculto = prefs.get("ocultarTotal");
   const btnOjo = el(
@@ -53,15 +48,28 @@ function tarjetaResumen(titulo, movimientos, onToggleOcultar) {
     },
     [oculto ? ojoTachadoIcono() : ojoIcono()]
   );
-  return el("section", { class: "panel-tarjeta" }, [
-    el("div", { class: "panel-tarjeta-cabecera" }, [
-      el("h3", {}, [iconoTitulo(tendenciaCombinadaIcono), titulo]),
+
+  return el("section", { class: "panel-tarjeta tarjeta-saldo" }, [
+    el("div", { class: "saldo-cabecera" }, [
+      el("span", { class: "saldo-cabecera-icono" }, [billeteraIcono()]),
+      el("span", { class: "saldo-cabecera-titulo", text: "Saldo disponible" }),
+      el("span", { class: "saldo-cabecera-periodo", text: periodoTexto }),
       btnOjo,
     ]),
-    el("div", { class: "resumen-lista" }, [
-      filaResumen(flechaArribaCirculo, "resumen-icono--ingreso", "Ingresos", ingresos, "valor-ingreso"),
-      filaResumen(flechaAbajoCirculo, "resumen-icono--gasto", "Gastos", gastos, "valor-gasto"),
-      filaResumen(billeteraIcono, "resumen-icono--balance", "Balance", balance, "valor-balance", true),
+    el("div", { class: "saldo-hero" }, [
+      el("span", { class: "saldo-hero-icono" }, [billeteraIcono()]),
+      el("div", { class: "saldo-hero-txt" }, [
+        el("span", { class: "saldo-hero-etiqueta", text: "Saldo disponible" }),
+        el("span", {
+          class: `saldo-hero-valor ${balance >= 0 ? "valor-balance" : "valor-gasto"}`,
+          text: valorOculto(balance),
+        }),
+        el("span", { class: "saldo-hero-desc", text: "Ingresos – Gastos del período" }),
+      ]),
+    ]),
+    el("div", { class: "saldo-mini-fila" }, [
+      miniSaldo(flechaArribaCirculo, "ingreso", "Ingresos", ingresos, "valor-ingreso"),
+      miniSaldo(flechaAbajoCirculo, "gasto", "Gastos", gastos, "valor-gasto"),
     ]),
   ]);
 }
@@ -237,14 +245,24 @@ function tarjetaActividad(movimientos) {
   ]);
 }
 
-export function montarPanelResumen(contenedor, movimientosTodos, movimientosParaTotales, { tipo, onCategoria }) {
+export function montarPanelResumen(
+  contenedor,
+  movimientosTodos,
+  movimientosParaTotales,
+  { tipo, fechaRef, onCategoria }
+) {
   limpiar(contenedor);
   function toggleOcultar() {
     prefs.set("ocultarTotal", !prefs.get("ocultarTotal"));
-    montarPanelResumen(contenedor, movimientosTodos, movimientosParaTotales, { tipo, onCategoria });
+    montarPanelResumen(contenedor, movimientosTodos, movimientosParaTotales, {
+      tipo,
+      fechaRef,
+      onCategoria,
+    });
   }
+  const periodoTexto = fechaRef ? etiquetaPeriodo(fechaRef, tipo) : "";
   contenedor.append(
-    tarjetaResumen(tituloPeriodo(tipo), movimientosParaTotales, toggleOcultar),
+    tarjetaResumen(periodoTexto, movimientosParaTotales, toggleOcultar),
     tarjetaDona(movimientosParaTotales, onCategoria),
     tarjetaActividad(movimientosTodos)
   );

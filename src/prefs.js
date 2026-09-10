@@ -12,6 +12,8 @@ function hoyISO() {
 const DEFS = {
   modo: { tipo: "str", def: "real" },
   tema: { tipo: "str", def: "auto" },
+  // Color de acento (#rrggbb). Por defecto el mismo que define app.css.
+  acento: { tipo: "str", def: "#0966DF" },
   // Última vista abierta en el shell (movimientos | resumen | categorias |
   // buscar | reportes | configuracion). Se valida contra VISTAS al leerla.
   vistaActiva: { tipo: "str", def: "movimientos" },
