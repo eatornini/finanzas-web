@@ -42,7 +42,7 @@
     --r-lg: 14px;
     --r-pill: 999px;
 
-    --txt-xs: 0.75rem;
+    --txt-xs: 0.85rem;
     --txt-sm: 0.8125rem;
     --txt-base: 13px;
     --txt-lg: 16px;
@@ -4167,6 +4167,9 @@
     .login-form-col {
       order: initial;
       justify-self: end;
+      /* Compensa el peso visual del formulario y su texto legal para que la
+         tarjeta de acceso quede ligeramente por encima del centro. */
+      transform: translateY(calc(var(--esp-6) * -2));
     }
   }
 
@@ -4213,10 +4216,9 @@
   }
 
   .login-hero {
-    /* Separa el título/descripción (y con él, las features que vienen
-       después en el flujo) de la marca de arriba, sin tocar la posición
-       de esta última. */
-    margin-top: var(--esp-6);
+    /* Baja el título/descripción y las ventajas que siguen en el flujo, sin
+       alterar la posición de la marca. */
+    margin-top: calc(var(--esp-6) * 3);
   }
 
   .login-hero-titulo {
@@ -4302,6 +4304,7 @@
     width: 100%;
     max-width: 420px;
     height: 360px;
+    left: -34px;
   }
 
   .login-ilu-grafico {
