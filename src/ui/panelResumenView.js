@@ -1,6 +1,6 @@
 // Panel lateral de la vista Movimientos: resumen del período, gastos por
-// categoría (gráfico de dona con CSS) y actividad reciente.
-import { el, elSvg, limpiar } from "./dom.js";
+// categoría (lista con barras horizontales) y actividad reciente.
+import { el, limpiar } from "./dom.js";
 import { calcularTotales } from "../logic/totales.js";
 import { formatoCLP } from "../logic/dinero.js";
 import { prefs } from "../prefs.js";
@@ -89,127 +89,74 @@ function agruparPorCategoria(movimientos) {
   return [...grupos.values()].sort((a, b) => b.total - a.total);
 }
 
-function tarjetaDona(movimientos, onCategoria) {
+function tarjetaCategorias(movimientos, onCategoria, irA) {
   const grupos = agruparPorCategoria(movimientos);
   const total = grupos.reduce((s, g) => s + g.total, 0);
-  const oculto = prefs.get("ocultarTotal");
+
+  const verTodas =
+    typeof irA === "function"
+      ? el("button", {
+          class: "enlace-ver",
+          type: "button",
+          text: "Ver todas →",
+          onClick: () => irA("categorias"),
+        })
+      : null;
+
+  const cabecera = el("div", { class: "resumen-card-head" }, [
+    el("div", { class: "resumen-card-head-txt" }, [
+      el("h3", {}, [iconoTitulo(graficoTortaIcono), "Gastos por categoría"]),
+    ]),
+    verTodas,
+  ]);
 
   if (total <= 0) {
     return el("section", { class: "panel-tarjeta" }, [
-      el("h3", {}, [iconoTitulo(graficoTortaIcono), "Gastos por categoría"]),
+      cabecera,
       el("p", { class: "vacio", text: "Sin gastos en este período." }),
     ]);
   }
 
-  // Sector resaltado al click/tap (índice en `grupos`, o null = ninguno).
-  // Solo cambia el resaltado y el centro de la dona; no navega (a diferencia
-  // del click en un ítem de la leyenda, que sigue haciendo drill-down).
-  let segmentoActivo = null;
   const colorDe = (i, g) => g.color || PALETA_DONA[i % PALETA_DONA.length];
 
-  const dona = el("div", { class: "dona" });
-  const centro = el("div", { class: "dona-centro" });
-  const leyenda = el("ul", { class: "dona-leyenda" });
-
-  function alternar(i) {
-    segmentoActivo = segmentoActivo === i ? null : i;
-    pintar();
-  }
-
-  function pintar() {
-    limpiar(centro);
-    if (segmentoActivo !== null && grupos[segmentoActivo]) {
-      const g = grupos[segmentoActivo];
-      const pct = Math.round((g.total / total) * 100);
-      centro.append(
-        el("span", { class: "dona-total", text: oculto ? "*****" : formatoCLP(g.total) }),
-        el("span", { class: "dona-etiqueta", text: `${g.nombre} · ${pct}%` })
-      );
-    } else {
-      centro.append(
-        el("span", { class: "dona-total", text: oculto ? "*****" : formatoCLP(total) }),
-        el("span", { class: "dona-etiqueta", text: "Total" })
-      );
-    }
-
-    limpiar(dona);
-    const grupoSvg = elSvg("g", { transform: "rotate(-90 50 50)" });
-    let acumulado = 0;
-    grupos.forEach((g, i) => {
-      const pct = (g.total / total) * 100;
-      const clases = ["dona-segmento"];
-      if (segmentoActivo === i) clases.push("dona-segmento--activo");
-      else if (segmentoActivo !== null) clases.push("dona-segmento--atenuado");
-      grupoSvg.append(
-        elSvg("circle", {
-          cx: "50",
-          cy: "50",
-          r: "40",
-          "stroke-width": "20",
-          fill: "none",
-          pathLength: "100",
-          "stroke-dasharray": `${pct} ${100 - pct}`,
-          "stroke-dashoffset": String(-acumulado),
-          stroke: colorDe(i, g),
-          class: clases.join(" "),
-          tabindex: "0",
-          role: "button",
-          "aria-label": `${g.nombre}: ${formatoCLP(g.total)} (${Math.round(pct)}%)`,
-          onClick: () => alternar(i),
-          onKeydown: (ev) => {
-            if (ev.key === "Enter" || ev.key === " ") {
-              ev.preventDefault();
-              alternar(i);
-            }
-          },
-        })
-      );
-      acumulado += pct;
-    });
-    dona.append(elSvg("svg", { viewBox: "0 0 100 100", class: "dona-svg" }, [grupoSvg]), centro);
-
-    limpiar(leyenda);
-    grupos.slice(0, 5).forEach((g, i) => {
+  const lista = el(
+    "ul",
+    { class: "cat-barras-lista" },
+    grupos.slice(0, 5).map((g, i) => {
       const pct = Math.round((g.total / total) * 100);
       const color = colorDe(i, g);
       // Icono semántico en el color pleno de la categoría (complementa el
       // color, no lo reemplaza); si la categoría no matchea ninguna regla,
-      // se mantiene el punto de color de siempre.
+      // se muestra un punto de color en su lugar.
       const fabricaIcono = iconoSemanticoCategoria(g.nombre);
-      let marcador;
-      if (fabricaIcono) {
-        marcador = el("span", { class: "dona-icono" }, [fabricaIcono()]);
-        marcador.style.color = color;
-      } else {
-        marcador = el("span", { class: "dona-punto" });
-        marcador.style.background = color;
-      }
+      const marcador = el("span", { class: "cat-barras-icono" }, fabricaIcono ? [fabricaIcono()] : []);
+      marcador.style.color = color;
+      marcador.style.background = fabricaIcono
+        ? `color-mix(in srgb, ${color} 16%, transparent)`
+        : color;
+
+      const relleno = el("span", { class: "cat-barras-relleno" });
+      relleno.style.width = `${pct}%`;
+      relleno.style.background = color;
+
       const boton = el(
         "button",
-        {
-          class: "dona-item" + (segmentoActivo === i ? " dona-item--activo" : ""),
-          type: "button",
-          onClick: () => onCategoria && onCategoria(g.categoriaId),
-        },
+        { class: "cat-barras-item", type: "button", onClick: () => onCategoria && onCategoria(g.categoriaId) },
         [
-          marcador,
-          el("span", { class: "dona-nombre", text: g.nombre }),
-          el("span", {
-            class: "dona-pct",
-            text: oculto ? `(${pct}%)` : `${formatoCLP(g.total)} (${pct}%)`,
-          }),
+          el("div", { class: "cat-barras-fila" }, [
+            marcador,
+            el("span", { class: "cat-barras-nombre", text: g.nombre }),
+            el("span", { class: "cat-barras-monto", text: valorOculto(g.total) }),
+            el("span", { class: "cat-barras-pct", text: `${pct}%` }),
+          ]),
+          el("span", { class: "cat-barras-pista" }, [relleno]),
         ]
       );
-      leyenda.append(el("li", {}, [boton]));
-    });
-  }
+      return el("li", {}, [boton]);
+    })
+  );
 
-  pintar();
-
-  return el("section", { class: "panel-tarjeta" }, [
-    el("h3", {}, [iconoTitulo(graficoTortaIcono), "Gastos por categoría"]),
-    el("div", { class: "dona-fila" }, [dona, leyenda]),
-  ]);
+  return el("section", { class: "panel-tarjeta" }, [cabecera, lista]);
 }
 
 function tarjetaActividad(movimientos) {
@@ -251,7 +198,7 @@ export function montarPanelResumen(
   contenedor,
   movimientosTodos,
   movimientosParaTotales,
-  { tipo, fechaRef, onCategoria }
+  { tipo, fechaRef, onCategoria, irA }
 ) {
   limpiar(contenedor);
   function toggleOcultar() {
@@ -260,12 +207,13 @@ export function montarPanelResumen(
       tipo,
       fechaRef,
       onCategoria,
+      irA,
     });
   }
   const periodoTexto = fechaRef ? etiquetaPeriodo(fechaRef, tipo) : "";
   contenedor.append(
     tarjetaResumen(periodoTexto, movimientosParaTotales, toggleOcultar),
-    tarjetaDona(movimientosParaTotales, onCategoria),
+    tarjetaCategorias(movimientosParaTotales, onCategoria, irA),
     tarjetaActividad(movimientosTodos)
   );
 }

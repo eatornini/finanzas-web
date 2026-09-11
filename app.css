@@ -1736,7 +1736,19 @@
     gap: var(--esp-3) var(--esp-4);
   }
 
+  /* Agrupa el buscador/filtros con el botón "Agregar" a la derecha del
+     encabezado, en la misma fila que el título en escritorio. */
+  .movimientos-encabezado-acciones {
+    display: flex;
+    align-items: center;
+    gap: var(--esp-3);
+  }
+
   @media (max-width: 720px) {
+    .movimientos-encabezado-acciones {
+      width: 100%;
+    }
+
     .movimientos-principal .lista-acciones {
       width: 100%;
     }
@@ -1856,6 +1868,12 @@
 
   .login-campo-caja input:autofill {
     color: var(--fg);
+  }
+
+  /* Solo ícono (embudo), sin texto "Filtros": botón cuadrado. */
+  .boton--filtros {
+    padding: var(--esp-2);
+    aspect-ratio: 1;
   }
 
   .boton--filtros svg {
@@ -2827,12 +2845,6 @@
     color: var(--acento);
   }
 
-  .dona-fila {
-    display: flex;
-    align-items: center;
-    gap: var(--esp-4);
-  }
-
   .dona {
     position: relative;
     width: 92px;
@@ -2887,44 +2899,91 @@
     color: var(--fg-tenue);
   }
 
-  .dona-leyenda {
+  /* --- "Gastos por categoría" (panel lateral): lista de barras
+     horizontales, sin dona. Cada categoría conserva su color propio
+     (icono + relleno de la barra) sobre una pista neutra. --- */
+  .cat-barras-lista {
     list-style: none;
     margin: 0;
     padding: 0;
     display: flex;
     flex-direction: column;
-    gap: var(--esp-2);
-    flex: 1;
-    min-width: 0;
+    gap: var(--esp-3);
   }
 
-  .dona-leyenda li {
+  .cat-barras-item {
     display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 6px;
+    width: 100%;
+    border: none;
+    background: transparent;
+    padding: 0;
+    text-align: left;
+  }
+
+  .cat-barras-fila {
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr) auto auto;
     align-items: center;
     gap: var(--esp-2);
-    font-size: var(--txt-sm);
   }
 
-  .dona-punto {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
+.cat-barras-icono {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
     flex: none;
+    border-radius: 50%;
+    position: relative;
+    top: 9px;
+}
+
+  .cat-barras-icono svg {
+    width: 16px;
+    height: 16px;
   }
 
-  .dona-nombre {
-    flex: 1;
+  .cat-barras-nombre {
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    color: var(--fg);
+    font-size: var(--txt-sm);
+    font-weight: var(--peso-medio);
   }
 
-  .dona-pct {
+  .cat-barras-monto {
+    font-weight: var(--peso-semibold);
+    font-size: var(--txt-sm);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+
+  .cat-barras-pct {
+    min-width: 2.5em;
     color: var(--fg-tenue);
     font-size: var(--txt-xs);
-    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+
+  .cat-barras-pista {
+    height: 6px;
+    border-radius: var(--r-pill);
+    background: var(--bg-sutil);
+    overflow: hidden;
+    margin-left: calc(28px + var(--esp-2));
+  }
+
+  .cat-barras-relleno {
+    display: block;
+    height: 100%;
+    border-radius: var(--r-pill);
   }
 
   .actividad-lista {
@@ -3798,27 +3857,6 @@
   .menu-mes-item--peligro {
     color: var(--gasto);
   }
-  .dona-item {
-    display: flex;
-    align-items: center;
-    gap: var(--esp-2);
-    width: 100%;
-    background: transparent;
-    border: 0;
-    padding: var(--esp-1) 0;
-    cursor: pointer;
-    color: inherit;
-    text-align: left;
-    font: inherit;
-  }
-  .dona-item:hover {
-    color: var(--acento);
-  }
-  .dona-item--activo {
-    color: var(--acento);
-    font-weight: var(--peso-semibold);
-  }
-
   /* --- Shell: toggle "incluir inactivos" --- */
   .boton--chip {
     padding: var(--esp-1) var(--esp-3);
@@ -3885,7 +3923,7 @@
     display: flex;
     align-items: center;
     gap: var(--esp-2);
-    font-size: var(--txt-xl);
+    font-size: 20px;
     font-weight: var(--peso-bold);
     line-height: 1.15;
   }
@@ -3921,20 +3959,6 @@
     font-size: var(--txt-sm);
     font-weight: var(--peso-semibold);
     color: var(--fg);
-  }
-
-  /* Marcador con icono semántico en la leyenda de "Gastos por categoría"
-     (reemplaza el punto solo cuando hay icono; el color va en el trazo). */
-  .dona-icono {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex: none;
-  }
-
-  .dona-icono svg {
-    width: 16px;
-    height: 16px;
   }
 
   /* --- Acceso: registro / recuperación / cuenta pendiente --- */
@@ -4205,6 +4229,21 @@
       margin-right: 0;
     }
 
+    /* Nudge solo de escritorio: alinea la marca con la ilustración de al
+       lado, como en la referencia. En mobile no aplica (la marca es el
+       primer ítem de la columna, sin nada que alinear). */
+    .login-marca {
+      position: relative;
+      top: 66px;
+    }
+
+    /* Baja el título/descripción y las ventajas que siguen en el flujo,
+       sin alterar la posición de la marca. Solo aplica en escritorio: en
+       mobile el espaciado ya lo da el gap entre secciones apiladas. */
+    .login-hero {
+      margin-top: calc(var(--esp-6) * 3);
+    }
+
     .login-ilu-col {
       order: initial;
     }
@@ -4222,8 +4261,6 @@
     display: flex;
     align-items: center;
     gap: var(--esp-3);
-    position: relative;
-    top: 66px;
 }
 
   .login-marca-logo {
@@ -4262,12 +4299,6 @@
     font-size: var(--txt-lg);
     font-weight: 500;
 }
-
-  .login-hero {
-    /* Baja el título/descripción y las ventajas que siguen en el flujo, sin
-       alterar la posición de la marca. */
-    margin-top: calc(var(--esp-6) * 3);
-  }
 
   .login-hero-titulo {
     margin: 0;
@@ -4397,14 +4428,14 @@ color-mix(in srgb, var(--acento) 16%, transparent);
     left: 161px;
 }
 
-  .login-ilu-tarjeta--balance {
+.login-ilu-tarjeta--balance {
     top: 0;
-    left: 0;
+    left: 28px;
     display: flex;
     align-items: center;
     gap: var(--esp-3);
     padding: var(--esp-3) var(--esp-4);
-  }
+}
 
   .login-ilu-balance-icono {
     display: flex;

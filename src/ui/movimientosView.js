@@ -15,7 +15,7 @@ import { tituloVista } from "./tituloVista.js";
 
 export async function montarMovimientos(
   contenedor,
-  { rango, modo, tipo, fechaRef, categoriaInicial = null }
+  { rango, modo, tipo, fechaRef, categoriaInicial = null, irA }
 ) {
   limpiar(contenedor);
 
@@ -27,11 +27,11 @@ export async function montarMovimientos(
     type: "search",
     placeholder: "Buscar…",
   });
-  const btnFiltros = el("button", { class: "boton--filtros" }, [
-    embudoIcono(),
-    "Filtros",
-    chevronAbajo(),
-  ]);
+  const btnFiltros = el(
+    "button",
+    { class: "boton--filtros", "aria-label": "Filtros" },
+    [embudoIcono()]
+  );
   const panelFiltros = el("div", {
     class: "panel-filtros",
     role: "dialog",
@@ -179,26 +179,24 @@ export async function montarMovimientos(
 
   // Encabezado de la página: vive sobre el fondo general, FUERA de la tarjeta.
   // A la izquierda: icono + título + contador + subtítulo. A la derecha,
-  // alineado con el título (igual que "+ Nueva categoría" en Categorías):
-  // el botón "Agregar".
+  // en la misma fila: buscador, filtros y el botón "Agregar" al final.
   const encabezado = el("header", { class: "movimientos-encabezado" }, [
     tituloVista(intercambioIcono, ["Movimientos", badge], subtitulo),
-    btnAgregar,
-  ]);
-
-  // Fila propia para buscador + filtros, debajo del encabezado.
-  const filaAcciones = el("div", { class: "lista-acciones" }, [
-    el("div", { class: "campo-busqueda" }, [lupaIcono(), buscador]),
-    btnFiltros,
-    backdropFiltros,
-    panelFiltros,
+    el("div", { class: "movimientos-encabezado-acciones" }, [
+      el("div", { class: "lista-acciones" }, [
+        el("div", { class: "campo-busqueda" }, [lupaIcono(), buscador]),
+        btnFiltros,
+        backdropFiltros,
+        panelFiltros,
+      ]),
+      btnAgregar,
+    ]),
   ]);
 
   // Cada grupo (fecha o categoría) se pinta como su propia tarjeta
   // independiente dentro de `lista`; no hay una tarjeta contenedora general.
   const principal = el("div", { class: "movimientos-principal" }, [
     encabezado,
-    filaAcciones,
     balanceMovil,
     tabsVista,
     error,
@@ -321,7 +319,8 @@ export async function montarMovimientos(
         tipo,
         fechaRef,
         onCategoria: (catId) =>
-          montarMovimientos(contenedor, { rango, modo, tipo, fechaRef, categoriaInicial: catId }),
+          montarMovimientos(contenedor, { rango, modo, tipo, fechaRef, categoriaInicial: catId, irA }),
+        irA,
       });
     } catch (e) {
       todos = [];
