@@ -45,7 +45,7 @@
     --txt-xs: 0.75rem;
     --txt-sm: 0.8125rem;
     --txt-base: 13px;
-    --txt-lg: 1.25rem;
+    --txt-lg: 16px;
     --txt-xl: 1.75rem;
 
     --sombra-1: 0 1px 2px rgba(20, 20, 30, 0.05);
@@ -54,6 +54,10 @@
     --ancho-cuerpo: 1180px;
     --ancho-sidebar: 260px;
     --ancho-lateral: 320px;
+    /* Alto real de .topbar (padding vertical + el más alto de sus
+       controles, los .boton--icono de 34px) + su borde inferior. Sirve
+       para anclar debajo de ella cualquier otro elemento sticky. */
+    --alto-topbar: calc(34px + var(--esp-4) * 2 + 1px);
 
     --peso-normal: 400;
     --peso-medio: 500;
@@ -260,11 +264,22 @@
     display: flex;
     flex-direction: column;
     gap: var(--esp-5);
+    /* Queda fijo mientras la lista de movimientos (hermano en el grid)
+       scrollea: se pega justo debajo de .topbar (que también es sticky,
+       top:0) para no quedar tapado por su fondo opaco. */
+    position: sticky;
+    top: var(--alto-topbar);
   }
 
   @media (max-width: 1080px) {
     .vista-movimientos {
       grid-template-columns: 1fr;
+    }
+
+    /* En una sola columna el panel vuelve a fluir bajo la lista: fijarlo
+       aquí lo dejaría pegado arriba tapando el contenido de abajo. */
+    .panel-lateral {
+      position: static;
     }
   }
 
@@ -659,7 +674,8 @@
      interno no tiene borde). El focus se pinta sobre todo el contenedor
      para que abarque icono + input, no solo el <input>. */
   .campo-busqueda:focus-within,
-  .input-monto:focus-within {
+  .input-monto:focus-within,
+  .login-campo-caja:focus-within {
     border-color: var(--acento);
     box-shadow: var(--anillo-focus);
   }
@@ -669,7 +685,9 @@
   .campo-busqueda input:focus,
   .campo-busqueda input:focus-visible,
   .input-monto input:focus,
-  .input-monto input:focus-visible {
+  .input-monto input:focus-visible,
+  .login-campo-caja input:focus,
+  .login-campo-caja input:focus-visible {
     outline: none;
     border-color: transparent;
     box-shadow: none;
@@ -1718,38 +1736,6 @@
     gap: var(--esp-3) var(--esp-4);
   }
 
-  .movimientos-encabezado-id {
-    min-width: 0;
-  }
-
-  .movimientos-titulo {
-    display: flex;
-    align-items: center;
-    gap: var(--esp-2);
-    margin: 0;
-    font-size: var(--txt-xl);
-    font-weight: var(--peso-bold);
-    line-height: 1.15;
-  }
-
-  .movimientos-titulo-icono {
-    display: flex;
-    align-items: center;
-    flex: none;
-    color: var(--acento);
-  }
-
-  .movimientos-titulo-icono svg {
-    width: 22px;
-    height: 22px;
-  }
-
-  .movimientos-sub {
-    margin: 4px 0 0;
-    color: var(--fg-tenue);
-    font-size: var(--txt-sm);
-  }
-
   @media (max-width: 720px) {
     .movimientos-encabezado .lista-acciones {
       width: 100%;
@@ -1840,7 +1826,8 @@
     gap: var(--esp-2);
   }
 
-  .campo-busqueda {
+  .campo-busqueda,
+  .login-campo-caja {
     display: flex;
     align-items: center;
     gap: var(--esp-2);
@@ -1851,7 +1838,8 @@
     color: var(--fg-tenue);
   }
 
-  .campo-busqueda svg {
+  .campo-busqueda svg,
+  .login-campo-caja svg {
     width: 16px;
     height: 16px;
     flex: none;
@@ -1861,6 +1849,34 @@
     border: none;
     padding: var(--esp-2) 0;
     width: 200px;
+  }
+
+  .login-campo-caja input {
+    border: none;
+    padding: var(--esp-3) 0;
+    width: 100%;
+    flex: 1;
+    min-width: 0;
+    background: transparent;
+  }
+
+  /* El autocompletado del navegador (usuario/contraseña guardados) pinta su
+     propio fondo y fuerza un color de texto grisáceo vía -webkit-text-fill-
+     color, ignorando nuestro `color`. Lo neutralizamos: el fondo queda
+     igual al del campo (var(--bg)) y el texto vuelve a ser var(--fg) —
+     negro en modo claro, blanco en modo oscuro. */
+  .login-campo-caja input:-webkit-autofill,
+  .login-campo-caja input:-webkit-autofill:hover,
+  .login-campo-caja input:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--fg);
+    -webkit-box-shadow: 0 0 0 1000px var(--bg) inset;
+    box-shadow: 0 0 0 1000px var(--bg) inset;
+    caret-color: var(--fg);
+    transition: background-color 9999s ease-in-out 0s;
+  }
+
+  .login-campo-caja input:autofill {
+    color: var(--fg);
   }
 
   .boton--filtros svg {
@@ -2219,6 +2235,25 @@
     display: flex;
     gap: var(--esp-1);
     align-items: center;
+  }
+
+  /* Los botones de acción (activar/desactivar, borrar) solo aparecen al
+     pasar el mouse sobre el movimiento — bajan el ruido visual de la lista.
+     Solo en dispositivos con hover real: en touch (`hover: none`) quedan
+     siempre visibles, porque ahí no existe un "pasar el mouse" que los
+     revele. El foco por teclado también los revela, para no romper el
+     acceso sin mouse. */
+  @media (hover: hover) {
+    .fila .acciones .boton--icono {
+      opacity: 0;
+      transition: opacity 0.15s ease;
+    }
+
+    .fila:hover .acciones .boton--icono,
+    .fila:focus-within .acciones .boton--icono,
+    .fila .acciones .boton--icono:focus-visible {
+      opacity: 1;
+    }
   }
 
   .fila.tipo-ingreso .monto {
@@ -2636,11 +2671,6 @@
 
   .panel-lateral .panel-tarjeta h3 {
     margin-bottom: var(--esp-3);
-    font-size: var(--txt-xs);
-    font-weight: var(--peso-semibold);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    color: var(--fg-tenue);
   }
 
   @media (max-width: 720px) {
@@ -3289,14 +3319,6 @@
     flex-wrap: wrap;
     margin-bottom: var(--esp-5);
   }
-  .categorias-cabecera-texto .vista-titulo {
-    margin-bottom: 4px;
-  }
-  .categorias-subtitulo {
-    margin: 0;
-    color: var(--fg-tenue);
-    font-size: var(--txt-sm);
-  }
   .categorias-cabecera .boton--primario {
     flex: none;
   }
@@ -3815,34 +3837,68 @@
 
   /* --- Iconografía de títulos (sistema Lucide, coherente en toda la app) --- */
 
-  /* Encabezado principal de pantalla: icono + título, sin alterar el tamaño
-     ni el peso del <h2> (los define @layer base). */
+  /* Encabezado principal de pantalla (NIVEL 1): icono lineal en contenedor
+     azul suave + título + subtítulo opcional debajo (NIVEL 2). Referencia
+     visual: encabezado de la pantalla Resumen. Mismo patrón en toda la app. */
   .vista-titulo {
     display: flex;
     align-items: center;
     gap: var(--esp-3);
     margin-bottom: var(--esp-4);
+    min-width: 0;
   }
 
-  /* La vista de configuración ya separa sus bloques con `gap`; evitar el
-     doble margen bajo el título. */
-  .config-vista .vista-titulo {
+  /* Contextos donde el propio contenedor ya separa sus bloques con `gap` o
+     donde el título comparte fila con otro elemento: evitar el doble margen
+     bajo el título. */
+  .config-vista .vista-titulo,
+  .resumen-header .vista-titulo,
+  .movimientos-encabezado .vista-titulo,
+  .categorias-cabecera-texto .vista-titulo {
     margin-bottom: 0;
   }
 
   .vista-titulo-icono {
     display: flex;
     align-items: center;
+    justify-content: center;
     flex: none;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--r-md);
     color: var(--acento);
+    background: color-mix(in srgb, var(--acento) 12%, transparent);
   }
 
   .vista-titulo-icono svg {
-    width: 22px;
-    height: 22px;
+    width: 24px;
+    height: 24px;
   }
 
-  /* Icono pequeño antepuesto a un título de panel/tarjeta (h3). */
+  .vista-titulo-cuerpo {
+    min-width: 0;
+  }
+
+  /* Título de pantalla: 24-26px aprox., 600-700, color principal. Fila
+     flex para poder intercalar un badge (ej. contador de movimientos). */
+  .vista-titulo-txt {
+    display: flex;
+    align-items: center;
+    gap: var(--esp-2);
+    font-size: var(--txt-xl);
+    font-weight: var(--peso-bold);
+    line-height: 1.15;
+  }
+
+  /* Subtítulo de pantalla (NIVEL 2): secundario, no compite con el título. */
+  .vista-titulo-sub {
+    margin: 3px 0 0;
+    color: var(--fg-tenue);
+    font-size: var(--txt-sm);
+    font-weight: var(--peso-normal);
+  }
+
+  /* Icono pequeño antepuesto a un título de bloque/tarjeta (h3, NIVEL 3). */
   .titulo-icono {
     display: inline-flex;
     align-items: center;
@@ -3851,23 +3907,20 @@
   }
 
   .titulo-icono svg {
-    width: 20px;
-    height: 20px;
+    width: 17px;
+    height: 17px;
   }
 
-  /* Cualquier h3 con icono se vuelve una fila alineada (el h2 de pantalla
-     ya lo hace vía .vista-titulo). */
+  /* Título de bloque (NIVEL 3): compacto, sin mayúsculas, sin contenedor de
+     icono. Cualquier h3 con icono se vuelve una fila alineada (el h2 de
+     pantalla ya lo hace vía .vista-titulo). */
   h3:has(.titulo-icono) {
     display: flex;
     align-items: center;
     gap: var(--esp-2);
-  }
-
-  /* En el panel lateral los h3 son etiquetas pequeñas en mayúsculas: el
-     icono acompaña en tamaño secundario para no dominar. */
-  .panel-lateral .titulo-icono svg {
-    width: 15px;
-    height: 15px;
+    font-size: var(--txt-sm);
+    font-weight: var(--peso-semibold);
+    color: var(--fg);
   }
 
   /* Marcador con icono semántico en la leyenda de "Gastos por categoría"
@@ -3931,6 +3984,70 @@
     gap: var(--esp-2);
   }
 
+  /* --- Campo con label + icono embebido (email/contraseña) --- */
+  .login-campo {
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-1);
+  }
+
+  .login-campo-label {
+    font-size: var(--txt-sm);
+    font-weight: var(--peso-medio);
+    color: var(--fg);
+  }
+
+  .login-campo-toggle {
+    flex: none;
+    border: none;
+    background: transparent;
+    padding: var(--esp-1);
+    color: var(--fg-tenue);
+  }
+
+  .login-campo-toggle:hover:not(:disabled) {
+    background: transparent;
+    color: var(--fg);
+  }
+
+  .login-campo-toggle svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .login-olvido {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: calc(var(--esp-2) * -1);
+  }
+
+  .login-boton-primario svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  /* --- Divisor "¿No tienes una cuenta?" + botón secundario --- */
+  .login-divisor {
+    display: flex;
+    align-items: center;
+    gap: var(--esp-2);
+    margin-top: var(--esp-2);
+    font-size: var(--txt-sm);
+    color: var(--fg-tenue);
+  }
+
+  .login-divisor::before,
+  .login-divisor::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--borde);
+  }
+
+  .login-boton-secundario {
+    width: 100%;
+  }
+
   .login-enlace {
     border: none;
     background: transparent;
@@ -3946,8 +4063,8 @@
   }
 
   /* =========================================================
-     Acceso — composición de dos áreas: identidad + formulario
-     (.login-pagina la usa solo el login; cuenta pendiente y
+     Acceso — composición de tres columnas: identidad + ilustración +
+     formulario (.login-pagina la usa solo el login; cuenta pendiente y
      recuperación siguen montando .login suelta y centrada.)
      ========================================================= */
   .login-pagina {
@@ -3958,9 +4075,8 @@
     justify-content: center;
     gap: var(--esp-6);
     padding: var(--esp-6) var(--esp-5);
-    background:
-      radial-gradient(
-        1100px 560px at 8% -12%,
+    background: radial-gradient(
+        1100px 560px at 31% -12%,
         color-mix(in srgb, var(--acento) 14%, var(--bg-pagina)) 0%,
         transparent 60%
       ),
@@ -3972,12 +4088,33 @@
       var(--bg-pagina);
   }
 
+  /* En pantallas angostas las tres columnas se apilan en una sola: primero
+     identidad, después el formulario y al final la ilustración (si hay
+     espacio), vía `order` — sin forzar nunca las 3 columnas en mobile. */
+  .login-identidad {
+    order: 1;
+    width: 100%;
+    max-width: 440px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-5);
+  }
+
   .login-form-col {
+    order: 2;
     width: 100%;
     max-width: 440px;
     display: flex;
     flex-direction: column;
     gap: var(--esp-4);
+  }
+
+  .login-ilu-col {
+    order: 3;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   /* Dentro de la composición el ancho/centrado lo maneja .login-form-col. */
@@ -3987,60 +4124,49 @@
     width: 100%;
   }
 
-  /* Marca compacta sobre el formulario: solo cuando el panel de identidad
-     de la izquierda está oculto (pantallas angostas). */
-  .login-mini-marca {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--esp-2);
-    font-weight: var(--peso-bold);
-    font-size: var(--txt-lg);
-    color: var(--fg);
+  .login-legal {
+    margin: 0;
+    text-align: center;
+    font-size: var(--txt-xs);
+    color: var(--fg-tenue);
   }
 
-  .login-mini-marca-logo {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 34px;
-    height: 34px;
-    flex: none;
-    border-radius: var(--r-md);
-    color: var(--acento-fg);
-    background: var(--acento);
+  .login-legal-enlace {
+    color: var(--acento);
+    font-weight: var(--peso-medio);
   }
 
-  .login-mini-marca-logo svg {
-    width: 20px;
-    height: 20px;
-  }
-
-  .login-aside {
-    display: none;
-  }
-
-  @media (min-width: 960px) {
+  /* A partir de acá hay espacio real para las tres columnas lado a lado:
+     identidad | ilustración | formulario, como en la referencia. */
+  @media (min-width: 1180px) {
     .login-pagina {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(0, 420px);
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 440px);
       align-items: center;
-      gap: clamp(2rem, 5vw, 5rem);
-      max-width: 1120px;
+      gap: clamp(2rem, 4vw, 4rem);
+      max-width: 1360px;
       margin: 0 auto;
       padding: var(--esp-6);
     }
 
-    .login-mini-marca {
-      display: none;
+    .login-identidad {
+      order: initial;
+      max-width: 420px;
+      justify-self: start;
+      /* La ilustración y el formulario quedan centrados en su fila (herencia
+         de .login-pagina), pero el bloque de marca/título/features arranca
+         pegado arriba, como en la referencia. */
+      align-self: start;
+      margin-top: var(--esp-6);
     }
 
-    .login-aside {
-      display: flex;
-      flex-direction: column;
-      gap: var(--esp-5);
+    .login-ilu-col {
+      order: initial;
+    }
+
+    .login-form-col {
+      order: initial;
       justify-self: end;
-      max-width: 520px;
     }
   }
 
@@ -4054,18 +4180,20 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 48px;
-    height: 48px;
+    width: 72px;
+    height: 72px;
     flex: none;
     border-radius: var(--r-lg);
-    color: var(--acento-fg);
+    /* Fijo en blanco (no var(--acento-fg)): ese token es casi negro en modo
+       oscuro, pensado para botones de acento, no para este ícono. */
+    color: #fff;
     background: var(--acento);
     box-shadow: 0 8px 20px color-mix(in srgb, var(--acento) 30%, transparent);
   }
 
   .login-marca-logo svg {
-    width: 26px;
-    height: 26px;
+    width: 40px;
+    height: 40px;
   }
 
   .login-marca-txt {
@@ -4075,13 +4203,20 @@
   }
 
   .login-marca-nombre {
-    font-size: var(--txt-xl);
+    font-size: clamp(1.75rem, 2vw, 2.25rem);
     font-weight: var(--peso-bold);
   }
 
   .login-marca-tagline {
     color: var(--fg-tenue);
-    font-size: var(--txt-sm);
+    font-size: var(--txt-lg);
+  }
+
+  .login-hero {
+    /* Separa el título/descripción (y con él, las features que vienen
+       después en el flujo) de la marca de arriba, sin tocar la posición
+       de esta última. */
+    margin-top: var(--esp-6);
   }
 
   .login-hero-titulo {
@@ -4160,14 +4295,13 @@
     font-size: var(--txt-sm);
   }
 
-  /* --- Ilustración financiera (decorativa, sin imágenes) --- */
+  /* --- Ilustración financiera (decorativa, sin imágenes) ---
+     Vive centrada dentro de .login-ilu-col, su propia columna. */
   .login-ilu {
     position: relative;
     width: 100%;
     max-width: 420px;
     height: 360px;
-    margin-top: var(--esp-4);
-    align-self: center;
   }
 
   .login-ilu-grafico {
@@ -4471,42 +4605,6 @@
     justify-content: space-between;
     gap: var(--esp-4);
     flex-wrap: wrap;
-  }
-
-  .resumen-header-id {
-    display: flex;
-    align-items: center;
-    gap: var(--esp-3);
-    min-width: 0;
-  }
-
-  .resumen-header-icono {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex: none;
-    width: 44px;
-    height: 44px;
-    border-radius: var(--r-md);
-    color: var(--acento);
-    background: color-mix(in srgb, var(--acento) 12%, transparent);
-  }
-
-  .resumen-header-icono svg {
-    width: 24px;
-    height: 24px;
-  }
-
-  .resumen-header-titulo {
-    font-size: var(--txt-xl);
-    font-weight: var(--peso-bold);
-    line-height: 1.1;
-  }
-
-  .resumen-header-sub {
-    margin: 3px 0 0;
-    color: var(--fg-tenue);
-    font-size: var(--txt-sm);
   }
 
   .resumen-header-lado {

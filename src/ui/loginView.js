@@ -2,7 +2,6 @@ import { el, limpiar } from "./dom.js";
 import { iniciarSesion, registrarse, enviarResetPassword } from "../auth.js";
 import { validarRegistro } from "../logic/cuentas.js";
 import {
-  billeteraIcono,
   graficoIcono,
   graficoTortaIcono,
   escudoIcono,
@@ -11,29 +10,31 @@ import {
   saludPulsoIcono,
   alcanciaIcono,
   flechaArribaCirculo,
+  sobreIcono,
+  candadoIcono,
+  ojoIcono,
+  ojoTachadoIcono,
+  usuarioMasIcono,
+  flechaDer,
+  logoAppIcono,
 } from "./iconos.js";
 
 // Vista de acceso con tres modos dentro de la misma tarjeta .login:
 //   login    → email + contraseña
 //   registro → crear cuenta (queda pendiente de aprobación)
 //   reset    → pedir enlace de recuperación por email
-// La tarjeta del formulario vive en la columna derecha de una composición de
-// dos áreas (.login-pagina); a la izquierda va la identidad de Finanzas + una
-// ilustración financiera construida con HTML/CSS (sin imágenes).
+// En escritorio, .login-pagina compone tres columnas independientes:
+// identidad de Finanzas | ilustración financiera (HTML/CSS, sin imágenes) |
+// tarjeta del formulario. En pantallas angostas se apilan verticalmente.
 export function montarLogin(contenedor) {
   limpiar(contenedor);
 
   const form = el("form", { class: "login" });
   contenedor.append(
     el("div", { class: "login-pagina" }, [
-      ladoIdentidad(),
-      el("div", { class: "login-form-col" }, [
-        el("div", { class: "login-mini-marca" }, [
-          el("span", { class: "login-mini-marca-logo" }, [billeteraIcono()]),
-          el("span", { text: "Finanzas" }),
-        ]),
-        form,
-      ]),
+      columnaIdentidad(),
+      columnaIlustracion(),
+      el("div", { class: "login-form-col" }, [form, pieLegal()]),
     ])
   );
 
@@ -51,8 +52,42 @@ export function montarLogin(contenedor) {
 
   // --- helpers de construcción -------------------------------------------------
 
-  function campo(props) {
-    return el("input", { required: "true", ...props });
+  let idSeqCampo = 0;
+
+  // Campo con label arriba + icono embebido dentro del borde del input.
+  // Si type es "password" agrega un botón de mostrar/ocultar contraseña.
+  function campoConIcono({ label, fabricaIcono, type, placeholder, autocomplete }) {
+    const id = `login-campo-${++idSeqCampo}`;
+    const input = el("input", {
+      id,
+      type,
+      placeholder,
+      autocomplete,
+      required: "true",
+    });
+    const hijos = [el("span", { class: "login-campo-icono" }, [fabricaIcono()]), input];
+
+    if (type === "password") {
+      const toggle = el(
+        "button",
+        { type: "button", class: "login-campo-toggle", "aria-label": "Mostrar contraseña" },
+        [ojoIcono()]
+      );
+      toggle.addEventListener("click", () => {
+        const visible = input.type === "text";
+        input.type = visible ? "password" : "text";
+        limpiar(toggle);
+        toggle.append(visible ? ojoIcono() : ojoTachadoIcono());
+        toggle.setAttribute("aria-label", visible ? "Mostrar contraseña" : "Ocultar contraseña");
+      });
+      hijos.push(toggle);
+    }
+
+    const campo = el("div", { class: "login-campo" }, [
+      el("label", { for: id, class: "login-campo-label", text: label }),
+      el("div", { class: "login-campo-caja" }, hijos),
+    ]);
+    return { campo, input };
   }
 
   function enlace(texto, destino) {
@@ -67,8 +102,31 @@ export function montarLogin(contenedor) {
     });
   }
 
-  function botonEnvio(texto) {
-    return el("button", { type: "submit", class: "boton--primario", text: texto });
+  function botonEnvio(texto, fabricaIcono) {
+    const hijos = [el("span", { text: texto })];
+    if (fabricaIcono) hijos.push(fabricaIcono());
+    return el("button", { type: "submit", class: "boton--primario login-boton-primario" }, hijos);
+  }
+
+  // Botón secundario con contorno ("Crear cuenta" / "Iniciar sesión") bajo
+  // un divisor con texto, como cierre alternativo del formulario.
+  function pieAlternativo(pregunta, textoBoton, fabricaIcono, destino) {
+    const hijos = [];
+    if (fabricaIcono) hijos.push(fabricaIcono());
+    hijos.push(el("span", { text: textoBoton }));
+    const boton = el(
+      "button",
+      { type: "button", class: "boton--secundario login-boton-secundario" },
+      hijos
+    );
+    boton.addEventListener("click", () => {
+      modo = destino;
+      render();
+    });
+    return [
+      el("div", { class: "login-divisor" }, [el("span", { text: pregunta })]),
+      boton,
+    ];
   }
 
   const error = el("p", { class: "error", role: "alert" });
@@ -79,10 +137,16 @@ export function montarLogin(contenedor) {
     aviso.textContent = "";
   }
 
-  function setCargando(boton, activo, textoBase) {
+  function setCargando(boton, activo, textoBase, fabricaIcono) {
     cargando = activo;
     boton.disabled = activo;
-    boton.textContent = activo ? "Un momento…" : textoBase;
+    limpiar(boton);
+    if (activo) {
+      boton.append(el("span", { text: "Un momento…" }));
+      return;
+    }
+    boton.append(el("span", { text: textoBase }));
+    if (fabricaIcono) boton.append(fabricaIcono());
   }
 
   // --- render por modo -------------------------------------------------------
@@ -96,49 +160,83 @@ export function montarLogin(contenedor) {
   }
 
   function pintarLogin() {
-    const email = campo({ type: "email", placeholder: "Email", autocomplete: "username" });
-    const pass = campo({ type: "password", placeholder: "Contraseña", autocomplete: "current-password" });
-    const boton = botonEnvio("Entrar");
+    const { campo: campoEmail, input: email } = campoConIcono({
+      label: "Correo electrónico",
+      fabricaIcono: sobreIcono,
+      type: "email",
+      placeholder: "tu@email.com",
+      autocomplete: "username",
+    });
+    const { campo: campoPass, input: pass } = campoConIcono({
+      label: "Contraseña",
+      fabricaIcono: candadoIcono,
+      type: "password",
+      placeholder: "••••••••",
+      autocomplete: "current-password",
+    });
+    const boton = botonEnvio("Entrar", flechaDer);
     form.append(
       el("h1", { text: "Bienvenido de vuelta" }),
       el("p", { class: "login-nota", text: "Inicia sesión en tu cuenta para continuar." }),
-      email,
-      pass,
+      campoEmail,
+      campoPass,
+      el("div", { class: "login-olvido" }, [enlace("¿Olvidaste tu contraseña?", "reset")]),
       boton,
       error,
-      el("div", { class: "login-cambiar" }, [
-        enlace("¿Olvidaste tu contraseña?", "reset"),
-        enlace("Crear cuenta", "registro"),
-      ])
+      ...pieAlternativo("¿No tienes una cuenta?", "Crear cuenta", usuarioMasIcono, "registro")
     );
     campos = { email, pass, boton };
   }
 
   function pintarRegistro() {
-    const email = campo({ type: "email", placeholder: "Email", autocomplete: "username" });
-    const pass = campo({ type: "password", placeholder: "Contraseña", autocomplete: "new-password" });
-    const pass2 = campo({ type: "password", placeholder: "Repetir contraseña", autocomplete: "new-password" });
+    const { campo: campoEmail, input: email } = campoConIcono({
+      label: "Correo electrónico",
+      fabricaIcono: sobreIcono,
+      type: "email",
+      placeholder: "tu@email.com",
+      autocomplete: "username",
+    });
+    const { campo: campoPass, input: pass } = campoConIcono({
+      label: "Contraseña",
+      fabricaIcono: candadoIcono,
+      type: "password",
+      placeholder: "••••••••",
+      autocomplete: "new-password",
+    });
+    const { campo: campoPass2, input: pass2 } = campoConIcono({
+      label: "Repetir contraseña",
+      fabricaIcono: candadoIcono,
+      type: "password",
+      placeholder: "••••••••",
+      autocomplete: "new-password",
+    });
     const boton = botonEnvio("Crear cuenta");
     form.append(
       el("h1", { text: "Crear cuenta" }),
-      email,
-      pass,
-      pass2,
+      campoEmail,
+      campoPass,
+      campoPass2,
       boton,
       error,
       aviso,
-      el("div", { class: "login-cambiar" }, [enlace("Ya tengo cuenta", "login")])
+      ...pieAlternativo("¿Ya tienes cuenta?", "Iniciar sesión", null, "login")
     );
     campos = { email, pass, pass2, boton };
   }
 
   function pintarReset() {
-    const email = campo({ type: "email", placeholder: "Email", autocomplete: "username" });
+    const { campo: campoEmail, input: email } = campoConIcono({
+      label: "Correo electrónico",
+      fabricaIcono: sobreIcono,
+      type: "email",
+      placeholder: "tu@email.com",
+      autocomplete: "username",
+    });
     const boton = botonEnvio("Enviarme el enlace");
     form.append(
       el("h1", { text: "Recuperar contraseña" }),
       el("p", { class: "login-nota", text: "Te enviaremos un enlace para crear una contraseña nueva." }),
-      email,
+      campoEmail,
       boton,
       error,
       aviso,
@@ -158,7 +256,7 @@ export function montarLogin(contenedor) {
       // El router reacciona vía alCambiarSesion.
     } catch (e) {
       error.textContent = "No se pudo iniciar sesión. Revisa tus datos.";
-      setCargando(boton, false, "Entrar");
+      setCargando(boton, false, "Entrar", flechaDer);
     }
   }
 
@@ -209,12 +307,16 @@ export function montarLogin(contenedor) {
   render();
 }
 
-// --- Columna de identidad (solo visible en pantallas anchas) ----------------
+// --- Las tres columnas de la página de acceso -------------------------------
+// En escritorio (.login-pagina en grid) quedan una al lado de otra:
+// identidad | ilustración | formulario. En pantallas angostas (flex column)
+// se apilan con orden identidad → formulario → ilustración vía `order` en
+// el CSS, así el login queda arriba y la ilustración es lo último.
 
-function ladoIdentidad() {
-  return el("aside", { class: "login-aside", "aria-hidden": "true" }, [
+function columnaIdentidad() {
+  return el("div", { class: "login-identidad", "aria-hidden": "true" }, [
     el("div", { class: "login-marca" }, [
-      el("span", { class: "login-marca-logo" }, [billeteraIcono()]),
+      el("span", { class: "login-marca-logo" }, [logoAppIcono()]),
       el("div", { class: "login-marca-txt" }, [
         el("span", { class: "login-marca-nombre", text: "Finanzas" }),
         el("span", { class: "login-marca-tagline", text: "Controla tu dinero, vive tranquilo" }),
@@ -233,7 +335,23 @@ function ladoIdentidad() {
       featureItem(graficoTortaIcono, "violeta", "Organiza", "Crea tus propias categorías"),
       featureItem(escudoIcono, "verde", "Más tranquilidad", "Toma el control de tu futuro"),
     ]),
-    ilustracionFinanzas(),
+  ]);
+}
+
+function columnaIlustracion() {
+  return el("div", { class: "login-ilu-col", "aria-hidden": "true" }, [ilustracionFinanzas()]);
+}
+
+// Texto legal bajo la tarjeta del formulario. Son spans con el color de
+// enlace (no <a>) porque todavía no existen páginas de términos/privacidad;
+// es solo el cierre visual que muestra la referencia de diseño.
+function pieLegal() {
+  return el("p", { class: "login-legal" }, [
+    el("span", { text: "Al continuar, aceptas nuestros " }),
+    el("span", { class: "login-legal-enlace", text: "Términos de uso" }),
+    el("span", { text: " y " }),
+    el("span", { class: "login-legal-enlace", text: "Política de privacidad" }),
+    el("span", { text: "." }),
   ]);
 }
 

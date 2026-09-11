@@ -224,6 +224,13 @@ export function abrirMovimientoForm({
       monto.value = montoOcr;
     }
     if (!fechaTocada || fecha.value === ultimoOcr.fecha) {
+      // El campo vive dentro del panel "Más opciones", que en alta arranca
+      // colapsado (grid-template-rows: 0fr + visibility: hidden). Si se le
+      // asigna el valor mientras está oculto, varios navegadores móviles no
+      // repintan el <input type="datetime-local"> y el campo queda en
+      // blanco aunque su valor interno sea correcto. Por eso, si el OCR
+      // encontró una fecha, se abre el panel antes de escribirla.
+      if (fechaOcr) setAvanzado(true);
       fecha.value = fechaOcr;
     }
     if (!detalle.value.trim() || detalle.value === ultimoOcr.detalle) {

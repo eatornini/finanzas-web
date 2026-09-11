@@ -11,6 +11,7 @@ import { agruparPorFecha, agruparPorCategoria } from "../logic/agrupacionMovimie
 import { etiquetaDia, etiquetaPeriodo } from "../logic/periodos.js";
 import { formatoCLP } from "../logic/dinero.js";
 import { prefs } from "../prefs.js";
+import { tituloVista } from "./tituloVista.js";
 
 export async function montarMovimientos(
   contenedor,
@@ -20,7 +21,7 @@ export async function montarMovimientos(
 
   const error = el("p", { class: "error", role: "alert" });
   const badge = el("span", { class: "badge", text: "0" });
-  const subtitulo = el("p", { class: "movimientos-sub" });
+  const subtitulo = el("p", {});
   const buscador = el("input", {
     class: "buscador",
     type: "search",
@@ -173,14 +174,7 @@ export async function montarMovimientos(
   // A la izquierda: icono + título + contador + subtítulo. A la derecha:
   // buscador + botón "Filtros".
   const encabezado = el("header", { class: "movimientos-encabezado" }, [
-    el("div", { class: "movimientos-encabezado-id" }, [
-      el("h2", { class: "movimientos-titulo" }, [
-        el("span", { class: "movimientos-titulo-icono" }, [intercambioIcono()]),
-        el("span", { class: "movimientos-titulo-texto", text: "Movimientos" }),
-        badge,
-      ]),
-      subtitulo,
-    ]),
+    tituloVista(intercambioIcono, ["Movimientos", badge], subtitulo),
     el("div", { class: "lista-acciones" }, [
       el("div", { class: "campo-busqueda" }, [lupaIcono(), buscador]),
       btnFiltros,

@@ -41,11 +41,7 @@ export function montarCategorias(contenedor) {
 
   const cabecera = el("div", { class: "categorias-cabecera" }, [
     el("div", { class: "categorias-cabecera-texto" }, [
-      tituloVista(etiquetasIcono, "Categorías"),
-      el("p", {
-        class: "categorias-subtitulo",
-        text: "Organiza tus movimientos según tus necesidades.",
-      }),
+      tituloVista(etiquetasIcono, "Categorías", "Organiza tus movimientos según tus necesidades."),
     ]),
     btnNueva,
   ]);

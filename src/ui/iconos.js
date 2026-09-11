@@ -49,6 +49,18 @@ export const ojoTachadoIcono = () =>
     "M9.9 4.5A9.6 9.6 0 0 1 12 4c6.5 0 10 8 10 8a17.7 17.7 0 0 1-2.4 3.4",
     "M6.6 6.6A17.8 17.8 0 0 0 2 12s3.5 7 10 7a9.7 9.7 0 0 0 4.1-.9",
   ]);
+// Lucide: mail — icono embebido en el campo "Correo electrónico" del login.
+export const sobreIcono = () =>
+  svg([
+    "M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z",
+    "m22 6-10 7L2 6",
+  ]);
+// Lucide: lock — icono embebido en los campos de contraseña del login.
+export const candadoIcono = () =>
+  svg([
+    "M5 11h14a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1z",
+    "M8 11V7a4 4 0 0 1 8 0v4",
+  ]);
 
 // --- Iconos añadidos para el rediseño ---
 export const listaIcono = () =>

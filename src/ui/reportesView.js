@@ -5,8 +5,8 @@ import { formatoCLP } from "../logic/dinero.js";
 import { prefs } from "../prefs.js";
 import { periodoAnterior, rangoPeriodo, etiquetaPeriodo, etiquetaCorta } from "../logic/periodos.js";
 import { fechasTendencia, calcularVariacion } from "../logic/reportes.js";
-import { reporteIcono } from "./iconos.js";
-import { tituloVista } from "./tituloVista.js";
+import { reporteIcono, graficoIcono, tendenciaCombinadaIcono } from "./iconos.js";
+import { tituloVista, iconoTitulo } from "./tituloVista.js";
 
 function valorOculto(valor) {
   return prefs.get("ocultarTotal") ? "*****" : formatoCLP(valor);
@@ -105,7 +105,7 @@ export async function montarReportes(contenedor, { rango, tipo, fechaRef, modo }
   const comparativa = el("section", { class: "panel-tarjeta" });
   const tendencia = el("section", { class: "panel-tarjeta" });
   contenedor.append(
-    tituloVista(reporteIcono, "Reportes"),
+    tituloVista(reporteIcono, "Reportes", "Analiza y compara la evolución de tus finanzas."),
     el("div", { class: "reportes-vista" }, [comparativa, tendencia]),
     error
   );
@@ -138,7 +138,10 @@ export async function montarReportes(contenedor, { rango, tipo, fechaRef, modo }
 
     limpiar(comparativa);
     comparativa.append(
-      el("h3", { text: `${etiquetaPeriodo(fechaRef, tipo)} vs. ${etiquetaPeriodo(fechaAnterior, tipo)}` }),
+      el("h3", {}, [
+        iconoTitulo(graficoIcono),
+        `${etiquetaPeriodo(fechaRef, tipo)} vs. ${etiquetaPeriodo(fechaAnterior, tipo)}`,
+      ]),
       el("div", { class: "comparativa-tarjetas" }, [
         tarjetaComparativa("Ingresos", actual.ingresos, anterior.ingresos, "ingreso"),
         tarjetaComparativa("Gastos", actual.gastos, anterior.gastos, "gasto", true),
@@ -169,6 +172,9 @@ export async function montarReportes(contenedor, { rango, tipo, fechaRef, modo }
     });
 
     limpiar(tendencia);
-    tendencia.append(el("h3", { text: "Tendencia" }), construirGraficoTendencia(serie));
+    tendencia.append(
+      el("h3", {}, [iconoTitulo(tendenciaCombinadaIcono), "Tendencia"]),
+      construirGraficoTendencia(serie)
+    );
   }
 }

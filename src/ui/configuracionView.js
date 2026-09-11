@@ -87,7 +87,7 @@ export function montarConfiguracion(contenedor) {
 
   contenedor.append(
     el("div", { class: "config-vista" }, [
-      tituloVista(engranajeIcono, "Configuración"),
+      tituloVista(engranajeIcono, "Configuración", "Personaliza las opciones de tu cuenta."),
       el("section", { class: "panel-tarjeta" }, [
         el("h3", {}, [iconoTitulo(intercambioIcono), "Movimientos"]),
         el("label", { class: "campo campo--check", for: "config-inactivos" }, [

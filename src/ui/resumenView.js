@@ -22,7 +22,7 @@ import {
   flechaAbajoCirculo,
   billeteraIcono,
 } from "./iconos.js";
-import { iconoTitulo } from "./tituloVista.js";
+import { tituloVista, iconoTitulo } from "./tituloVista.js";
 import { nodoIconoCategoria } from "./iconoCategoria.js";
 import { colorMovimiento } from "./iconosCategoria.js";
 import { periodoSiguiente, rangoPeriodo, etiquetaPeriodo } from "../logic/periodos.js";
@@ -98,16 +98,11 @@ function formatoPct(n) {
 
 function bloqueEncabezado(tipo, fechaRef, rango, acciones) {
   return el("header", { class: "resumen-header" }, [
-    el("div", { class: "resumen-header-id" }, [
-      el("span", { class: "resumen-header-icono" }, [tendenciaCombinadaIcono()]),
-      el("div", { class: "resumen-header-txt" }, [
-        el("h2", { class: "resumen-header-titulo", text: "Resumen" }),
-        el("p", {
-          class: "resumen-header-sub",
-          text: `Una visión general de tus finanzas ${sufijoPeriodo(tipo)}.`,
-        }),
-      ]),
-    ]),
+    tituloVista(
+      tendenciaCombinadaIcono,
+      "Resumen",
+      `Una visión general de tus finanzas ${sufijoPeriodo(tipo)}.`
+    ),
     el("div", { class: "resumen-header-lado" }, [
       acciones,
       el("div", { class: "resumen-header-fecha" }, [

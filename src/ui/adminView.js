@@ -60,7 +60,7 @@ export async function montarAdmin(contenedor) {
   sincronizarFiltro();
 
   contenedor.append(
-    tituloVista(escudoIcono, "Administración"),
+    tituloVista(escudoIcono, "Administración", "Gestiona usuarios y opciones administrativas."),
     error,
     aviso,
     cajaStats,
