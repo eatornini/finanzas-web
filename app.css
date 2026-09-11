@@ -3945,6 +3945,422 @@
     text-decoration: underline;
   }
 
+  /* =========================================================
+     Acceso — composición de dos áreas: identidad + formulario
+     (.login-pagina la usa solo el login; cuenta pendiente y
+     recuperación siguen montando .login suelta y centrada.)
+     ========================================================= */
+  .login-pagina {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--esp-6);
+    padding: var(--esp-6) var(--esp-5);
+    background:
+      radial-gradient(
+        1100px 560px at 8% -12%,
+        color-mix(in srgb, var(--acento) 14%, var(--bg-pagina)) 0%,
+        transparent 60%
+      ),
+      radial-gradient(
+        900px 520px at 105% 112%,
+        color-mix(in srgb, var(--acento) 9%, var(--bg-pagina)) 0%,
+        transparent 55%
+      ),
+      var(--bg-pagina);
+  }
+
+  .login-form-col {
+    width: 100%;
+    max-width: 440px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-4);
+  }
+
+  /* Dentro de la composición el ancho/centrado lo maneja .login-form-col. */
+  .login-pagina .login {
+    margin: 0;
+    max-width: none;
+    width: 100%;
+  }
+
+  /* Marca compacta sobre el formulario: solo cuando el panel de identidad
+     de la izquierda está oculto (pantallas angostas). */
+  .login-mini-marca {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--esp-2);
+    font-weight: var(--peso-bold);
+    font-size: var(--txt-lg);
+    color: var(--fg);
+  }
+
+  .login-mini-marca-logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    flex: none;
+    border-radius: var(--r-md);
+    color: var(--acento-fg);
+    background: var(--acento);
+  }
+
+  .login-mini-marca-logo svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .login-aside {
+    display: none;
+  }
+
+  @media (min-width: 960px) {
+    .login-pagina {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 420px);
+      align-items: center;
+      gap: clamp(2rem, 5vw, 5rem);
+      max-width: 1120px;
+      margin: 0 auto;
+      padding: var(--esp-6);
+    }
+
+    .login-mini-marca {
+      display: none;
+    }
+
+    .login-aside {
+      display: flex;
+      flex-direction: column;
+      gap: var(--esp-5);
+      justify-self: end;
+      max-width: 520px;
+    }
+  }
+
+  .login-marca {
+    display: flex;
+    align-items: center;
+    gap: var(--esp-3);
+  }
+
+  .login-marca-logo {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    flex: none;
+    border-radius: var(--r-lg);
+    color: var(--acento-fg);
+    background: var(--acento);
+    box-shadow: 0 8px 20px color-mix(in srgb, var(--acento) 30%, transparent);
+  }
+
+  .login-marca-logo svg {
+    width: 26px;
+    height: 26px;
+  }
+
+  .login-marca-txt {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+  }
+
+  .login-marca-nombre {
+    font-size: var(--txt-xl);
+    font-weight: var(--peso-bold);
+  }
+
+  .login-marca-tagline {
+    color: var(--fg-tenue);
+    font-size: var(--txt-sm);
+  }
+
+  .login-hero-titulo {
+    margin: 0;
+    font-size: clamp(1.8rem, 3vw, 2.4rem);
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+  }
+
+  .login-hero-sub {
+    margin: var(--esp-3) 0 0;
+    max-width: 42ch;
+    color: var(--fg-tenue);
+    font-size: var(--txt-base);
+    line-height: 1.6;
+  }
+
+  .login-features {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-4);
+  }
+
+  .login-feature {
+    display: flex;
+    align-items: center;
+    gap: var(--esp-3);
+  }
+
+  .login-feature-icono {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    flex: none;
+    border-radius: 50%;
+  }
+
+  .login-feature-icono svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .login-feature--azul .login-feature-icono {
+    color: var(--acento);
+    background: color-mix(in srgb, var(--acento) 15%, transparent);
+  }
+
+  .login-feature--violeta .login-feature-icono {
+    color: #7c5cff;
+    background: color-mix(in srgb, #7c5cff 15%, transparent);
+  }
+
+  .login-feature--verde .login-feature-icono {
+    color: var(--ingreso);
+    background: color-mix(in srgb, var(--ingreso) 15%, transparent);
+  }
+
+  .login-feature-txt {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.3;
+  }
+
+  .login-feature-titulo {
+    font-weight: var(--peso-semibold);
+    font-size: var(--txt-base);
+  }
+
+  .login-feature-desc {
+    color: var(--fg-tenue);
+    font-size: var(--txt-sm);
+  }
+
+  /* --- Ilustración financiera (decorativa, sin imágenes) --- */
+  .login-ilu {
+    position: relative;
+    width: 100%;
+    max-width: 420px;
+    height: 360px;
+    margin-top: var(--esp-4);
+    align-self: center;
+  }
+
+  .login-ilu-grafico {
+    position: absolute;
+    left: 14%;
+    right: 2%;
+    top: 48px;
+    height: 228px;
+    display: flex;
+    align-items: flex-end;
+    gap: 4%;
+    padding: var(--esp-4);
+    border-radius: var(--r-lg);
+    background: var(--bg-elevado);
+    border: 1px solid var(--borde);
+    box-shadow: 0 20px 45px color-mix(in srgb, var(--acento) 12%, transparent);
+  }
+
+  .login-ilu-barra {
+    flex: 1;
+    min-width: 0;
+    border-radius: 6px 6px 3px 3px;
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--acento) 45%, var(--bg-elevado)) 0%,
+      color-mix(in srgb, var(--acento) 14%, var(--bg-elevado)) 100%
+    );
+  }
+
+  .login-ilu-barra:nth-child(even) {
+    opacity: 0.55;
+  }
+
+  .login-ilu-tarjeta {
+    position: absolute;
+    border-radius: var(--r-lg);
+    background: var(--bg-elevado);
+    border: 1px solid var(--borde);
+    box-shadow: 0 16px 40px color-mix(in srgb, var(--acento) 16%, transparent);
+  }
+
+  .login-ilu-tarjeta--balance {
+    top: 0;
+    left: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--esp-3);
+    padding: var(--esp-3) var(--esp-4);
+  }
+
+  .login-ilu-balance-icono {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    flex: none;
+    border-radius: 50%;
+    color: var(--ingreso);
+    background: color-mix(in srgb, var(--ingreso) 16%, transparent);
+  }
+
+  .login-ilu-balance-icono svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .login-ilu-balance-txt {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.25;
+  }
+
+  .login-ilu-balance-label {
+    color: var(--fg-tenue);
+    font-size: var(--txt-xs);
+  }
+
+  .login-ilu-balance-valor {
+    font-size: var(--txt-lg);
+    font-weight: var(--peso-bold);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .login-ilu-tarjeta--cats {
+    right: 0;
+    bottom: 0;
+    width: 76%;
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-2);
+    padding: var(--esp-4);
+  }
+
+  .login-ilu-cat {
+    display: grid;
+    grid-template-columns: 30px 1fr auto;
+    align-items: center;
+    gap: var(--esp-3);
+  }
+
+  .login-ilu-cat-icono {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    flex: none;
+    border-radius: 50%;
+  }
+
+  .login-ilu-cat-icono svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .login-ilu-cat--alimentos .login-ilu-cat-icono {
+    color: #e0a44a;
+    background: color-mix(in srgb, #e0a44a 18%, transparent);
+  }
+
+  .login-ilu-cat--transporte .login-ilu-cat-icono {
+    color: var(--gasto);
+    background: color-mix(in srgb, var(--gasto) 16%, transparent);
+  }
+
+  .login-ilu-cat--salud .login-ilu-cat-icono {
+    color: #c2185b;
+    background: color-mix(in srgb, #c2185b 16%, transparent);
+  }
+
+  .login-ilu-cat--ahorro .login-ilu-cat-icono {
+    color: var(--ingreso);
+    background: color-mix(in srgb, var(--ingreso) 16%, transparent);
+  }
+
+  .login-ilu-cat-nombre {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: var(--txt-sm);
+    font-weight: var(--peso-medio);
+  }
+
+  .login-ilu-cat-monto {
+    font-size: var(--txt-sm);
+    font-weight: var(--peso-bold);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .login-ilu-cat-monto--neg {
+    color: var(--gasto);
+  }
+
+  .login-ilu-cat-monto--pos {
+    color: var(--ingreso);
+  }
+
+  .login-ilu-chispa {
+    position: absolute;
+    top: 4px;
+    right: 12%;
+    width: 42px;
+    height: 42px;
+  }
+
+  .login-ilu-chispa i {
+    position: absolute;
+    width: 4px;
+    height: 16px;
+    border-radius: var(--r-pill);
+    background: var(--acento);
+  }
+
+  .login-ilu-chispa i:nth-child(1) {
+    left: 2px;
+    top: 16px;
+    transform: rotate(-42deg);
+  }
+
+  .login-ilu-chispa i:nth-child(2) {
+    left: 50%;
+    top: 0;
+    margin-left: -2px;
+  }
+
+  .login-ilu-chispa i:nth-child(3) {
+    right: 2px;
+    top: 16px;
+    transform: rotate(42deg);
+  }
+
   /* --- Panel de administración --- */
   .admin-lista {
     display: flex;

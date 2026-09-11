@@ -1,16 +1,41 @@
 import { el, limpiar } from "./dom.js";
 import { iniciarSesion, registrarse, enviarResetPassword } from "../auth.js";
 import { validarRegistro } from "../logic/cuentas.js";
+import {
+  billeteraIcono,
+  graficoIcono,
+  graficoTortaIcono,
+  escudoIcono,
+  utensiliosIcono,
+  carroIcono,
+  saludPulsoIcono,
+  alcanciaIcono,
+  flechaArribaCirculo,
+} from "./iconos.js";
 
 // Vista de acceso con tres modos dentro de la misma tarjeta .login:
 //   login    → email + contraseña
 //   registro → crear cuenta (queda pendiente de aprobación)
 //   reset    → pedir enlace de recuperación por email
+// La tarjeta del formulario vive en la columna derecha de una composición de
+// dos áreas (.login-pagina); a la izquierda va la identidad de Finanzas + una
+// ilustración financiera construida con HTML/CSS (sin imágenes).
 export function montarLogin(contenedor) {
   limpiar(contenedor);
 
   const form = el("form", { class: "login" });
-  contenedor.append(form);
+  contenedor.append(
+    el("div", { class: "login-pagina" }, [
+      ladoIdentidad(),
+      el("div", { class: "login-form-col" }, [
+        el("div", { class: "login-mini-marca" }, [
+          el("span", { class: "login-mini-marca-logo" }, [billeteraIcono()]),
+          el("span", { text: "Finanzas" }),
+        ]),
+        form,
+      ]),
+    ])
+  );
 
   let modo = location.hash === "#registro" ? "registro" : "login";
   let cargando = false;
@@ -75,7 +100,8 @@ export function montarLogin(contenedor) {
     const pass = campo({ type: "password", placeholder: "Contraseña", autocomplete: "current-password" });
     const boton = botonEnvio("Entrar");
     form.append(
-      el("h1", { text: "Finanzas" }),
+      el("h1", { text: "Bienvenido de vuelta" }),
+      el("p", { class: "login-nota", text: "Inicia sesión en tu cuenta para continuar." }),
       email,
       pass,
       boton,
@@ -181,4 +207,80 @@ export function montarLogin(contenedor) {
   }
 
   render();
+}
+
+// --- Columna de identidad (solo visible en pantallas anchas) ----------------
+
+function ladoIdentidad() {
+  return el("aside", { class: "login-aside", "aria-hidden": "true" }, [
+    el("div", { class: "login-marca" }, [
+      el("span", { class: "login-marca-logo" }, [billeteraIcono()]),
+      el("div", { class: "login-marca-txt" }, [
+        el("span", { class: "login-marca-nombre", text: "Finanzas" }),
+        el("span", { class: "login-marca-tagline", text: "Controla tu dinero, vive tranquilo" }),
+      ]),
+    ]),
+    el("div", { class: "login-hero" }, [
+      el("h2", { class: "login-hero-titulo", text: "Tus finanzas en un solo lugar" }),
+      el("p", {
+        class: "login-hero-sub",
+        text:
+          "Registra tus gastos, organiza tus categorías y toma mejores decisiones para alcanzar tus objetivos.",
+      }),
+    ]),
+    el("ul", { class: "login-features" }, [
+      featureItem(graficoIcono, "azul", "Control total", "Visualiza tus ingresos y gastos"),
+      featureItem(graficoTortaIcono, "violeta", "Organiza", "Crea tus propias categorías"),
+      featureItem(escudoIcono, "verde", "Más tranquilidad", "Toma el control de tu futuro"),
+    ]),
+    ilustracionFinanzas(),
+  ]);
+}
+
+function featureItem(fabricaIcono, tono, titulo, desc) {
+  return el("li", { class: `login-feature login-feature--${tono}` }, [
+    el("span", { class: "login-feature-icono" }, [fabricaIcono()]),
+    el("div", { class: "login-feature-txt" }, [
+      el("span", { class: "login-feature-titulo", text: titulo }),
+      el("span", { class: "login-feature-desc", text: desc }),
+    ]),
+  ]);
+}
+
+// Composición financiera: gráfico de barras de fondo + tarjetas flotantes
+// ("Balance del mes" y categorías) ligeramente superpuestas. Puramente
+// decorativa y construida con nodos, sin imágenes.
+function ilustracionFinanzas() {
+  const alturas = [40, 58, 48, 76, 44, 92, 60, 100];
+  const barras = alturas.map((h) => {
+    const b = el("span", { class: "login-ilu-barra" });
+    b.style.height = `${h}%`;
+    return b;
+  });
+
+  return el("div", { class: "login-ilu", "aria-hidden": "true" }, [
+    el("span", { class: "login-ilu-chispa" }, [el("i"), el("i"), el("i")]),
+    el("div", { class: "login-ilu-grafico" }, barras),
+    el("div", { class: "login-ilu-tarjeta login-ilu-tarjeta--balance" }, [
+      el("span", { class: "login-ilu-balance-icono" }, [flechaArribaCirculo()]),
+      el("div", { class: "login-ilu-balance-txt" }, [
+        el("span", { class: "login-ilu-balance-label", text: "Balance del mes" }),
+        el("span", { class: "login-ilu-balance-valor", text: "$102.112" }),
+      ]),
+    ]),
+    el("div", { class: "login-ilu-tarjeta login-ilu-tarjeta--cats" }, [
+      catFila(utensiliosIcono, "alimentos", "Alimentos", "- $42.830", "neg"),
+      catFila(carroIcono, "transporte", "Transporte", "- $20.000", "neg"),
+      catFila(saludPulsoIcono, "salud", "Salud", "- $15.500", "neg"),
+      catFila(alcanciaIcono, "ahorro", "Ahorro", "+ $50.000", "pos"),
+    ]),
+  ]);
+}
+
+function catFila(fabricaIcono, tono, nombre, monto, signo) {
+  return el("div", { class: `login-ilu-cat login-ilu-cat--${tono}` }, [
+    el("span", { class: "login-ilu-cat-icono" }, [fabricaIcono()]),
+    el("span", { class: "login-ilu-cat-nombre", text: nombre }),
+    el("span", { class: `login-ilu-cat-monto login-ilu-cat-monto--${signo}`, text: monto }),
+  ]);
 }
