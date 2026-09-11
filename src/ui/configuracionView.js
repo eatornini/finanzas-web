@@ -90,7 +90,7 @@ export function montarConfiguracion(contenedor) {
       tituloVista(engranajeIcono, "Configuración", "Personaliza las opciones de tu cuenta."),
       el("section", { class: "panel-tarjeta" }, [
         el("h3", {}, [iconoTitulo(intercambioIcono), "Movimientos"]),
-        el("label", { class: "campo campo--check", for: "config-inactivos" }, [
+        el("label", { class: "campo campo--check mov-opcion-switch", for: "config-inactivos" }, [
           chkInactivos,
           "Incluir movimientos inactivos en los cálculos de Estimado",
         ]),

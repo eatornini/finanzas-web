@@ -13,7 +13,7 @@ import {
   graficoTortaIcono,
   reloj3Icono,
 } from "./iconos.js";
-import { iconoMovimiento, colorMovimiento, iconoSemanticoCategoria } from "./iconosCategoria.js";
+import { iconoSemanticoCategoria } from "./iconosCategoria.js";
 import { iconoTitulo } from "./tituloVista.js";
 import { etiquetaPeriodo } from "../logic/periodos.js";
 
@@ -218,16 +218,18 @@ function tarjetaActividad(movimientos) {
     "ul",
     { class: "actividad-lista" },
     recientes.map((m) => {
-      const color = colorMovimiento(m);
-      const icono = el("span", { class: "actividad-icono" }, [iconoMovimiento(m)]);
-      icono.style.background = color;
-      icono.style.color = "#fff";
+      const esIngreso = m.tipo === "ingreso";
+      const icono = el(
+        "span",
+        { class: `actividad-icono actividad-icono--${esIngreso ? "ingreso" : "gasto"}` },
+        [esIngreso ? flechaArribaCirculo() : flechaAbajoCirculo()]
+      );
       const signo = m.tipo === "ingreso" ? "+" : "−";
       return el("li", {}, [
         icono,
         el("div", { class: "actividad-info" }, [
           el("span", { class: "actividad-nombre", text: m.nombre }),
-          el("span", { class: "actividad-fecha", text: m.fecha_local || (m.fecha || "").slice(0, 10) }),
+          el("span", { class: "actividad-categoria", text: m.categoria ? m.categoria.nombre : "Sin categoría" }),
         ]),
         el("span", {
           class: `actividad-monto ${m.tipo === "ingreso" ? "valor-ingreso" : "valor-gasto"}`,

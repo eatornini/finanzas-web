@@ -35,7 +35,7 @@ export async function montarBuscador(contenedor, { modo }) {
   });
 
   contenedor.append(
-    tituloVista(lupaIcono, "Buscar"),
+    tituloVista(lupaIcono, "Buscar", "Encuentra rápidamente los movimientos que necesitas."),
     el("section", { class: "panel-tarjeta" }, [
       el("div", { class: "buscador-cabecera" }, [
         el("div", { class: "campo-busqueda" }, [lupaIcono(), buscador]),

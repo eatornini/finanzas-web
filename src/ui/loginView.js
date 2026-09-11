@@ -323,7 +323,7 @@ function columnaIdentidad() {
       ]),
     ]),
     el("div", { class: "login-hero" }, [
-      el("h2", { class: "login-hero-titulo", text: "Tus finanzas en un solo lugar" }),
+      el("h2", { class: "login-hero-titulo" }, ["Tus finanzas", el("br"), "en un solo lugar"]),
       el("p", {
         class: "login-hero-sub",
         text:

@@ -151,11 +151,18 @@ export async function montarMovimientos(
   sincronizarVista();
   const tabsVista = el("div", { class: "selector-tipo tabs-vista" }, botonesVista);
 
-  // Flotante y siempre visible; "Cargar comprobante" (con OCR) vive ahora
-  // solo dentro del propio modal de alta (movimientoForm.js ya lo trae).
+  // En escritorio vive dentro del encabezado (ver `encabezado` más abajo);
+  // en móvil el propio CSS lo vuelve flotante circular en la esquina
+  // inferior derecha. "Cargar comprobante" (con OCR) vive ahora solo dentro
+  // del propio modal de alta (movimientoForm.js ya lo trae).
   const btnAgregar = el(
     "button",
-    { class: "fab-agregar", type: "button", "aria-label": "Agregar movimiento", onClick: () => abrirModalNuevo() },
+    {
+      class: "boton--primario fab-agregar",
+      type: "button",
+      "aria-label": "Agregar movimiento",
+      onClick: () => abrirModalNuevo(),
+    },
     [mas(), el("span", { class: "fab-agregar-texto", text: "Agregar" })]
   );
 
@@ -171,22 +178,27 @@ export async function montarMovimientos(
   ]);
 
   // Encabezado de la página: vive sobre el fondo general, FUERA de la tarjeta.
-  // A la izquierda: icono + título + contador + subtítulo. A la derecha:
-  // buscador + botón "Filtros".
+  // A la izquierda: icono + título + contador + subtítulo. A la derecha,
+  // alineado con el título (igual que "+ Nueva categoría" en Categorías):
+  // el botón "Agregar".
   const encabezado = el("header", { class: "movimientos-encabezado" }, [
     tituloVista(intercambioIcono, ["Movimientos", badge], subtitulo),
-    el("div", { class: "lista-acciones" }, [
-      el("div", { class: "campo-busqueda" }, [lupaIcono(), buscador]),
-      btnFiltros,
-      backdropFiltros,
-      panelFiltros,
-    ]),
+    btnAgregar,
+  ]);
+
+  // Fila propia para buscador + filtros, debajo del encabezado.
+  const filaAcciones = el("div", { class: "lista-acciones" }, [
+    el("div", { class: "campo-busqueda" }, [lupaIcono(), buscador]),
+    btnFiltros,
+    backdropFiltros,
+    panelFiltros,
   ]);
 
   // Cada grupo (fecha o categoría) se pinta como su propia tarjeta
   // independiente dentro de `lista`; no hay una tarjeta contenedora general.
   const principal = el("div", { class: "movimientos-principal" }, [
     encabezado,
+    filaAcciones,
     balanceMovil,
     tabsVista,
     error,
@@ -194,7 +206,7 @@ export async function montarMovimientos(
     contador,
   ]);
   const aside = el("aside", { class: "panel-lateral" });
-  contenedor.append(el("div", { class: "vista-movimientos" }, [principal, aside]), btnAgregar);
+  contenedor.append(el("div", { class: "vista-movimientos" }, [principal, aside]));
 
   let categorias = [];
   let todos = [];

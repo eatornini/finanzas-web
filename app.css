@@ -33,7 +33,7 @@
     --esp-1: 2px;
     --esp-2: 8px;
     --esp-3: 12px;
-    --esp-4: 10px;
+    --esp-4: 15px;
     --esp-5: 15px;
     --esp-6: 32px;
 
@@ -462,20 +462,20 @@
 
   .boton--primario {
     background: var(--acento);
-    border-color: var(--acento);
+    border-color: transparent;
     color: var(--acento-fg);
     padding: var(--esp-3) var(--esp-4);
     font-size: var(--txt-base);
     font-weight: var(--peso-semibold);
-    box-shadow: 0 1px 2px color-mix(in srgb, var(--acento) 35%, transparent);
+    box-shadow: 0 2px 6px color-mix(in srgb, var(--acento) 25%, transparent);
   }
 
   button.boton--primario:hover:not(:disabled) {
-    filter: brightness(1.08);
+    background: color-mix(in srgb, var(--acento) 90%, black);
   }
 
   button.boton--primario:active:not(:disabled) {
-    filter: brightness(0.95);
+    background: color-mix(in srgb, var(--acento) 85%, black);
     transform: translateY(1px);
   }
 
@@ -496,7 +496,7 @@
     flex: none;
     width: 44px;
     padding: 0;
-    border-radius: var(--r-md);
+  
   }
 
   /* --- Encabezado de sección del formulario de movimiento --- */
@@ -1737,48 +1737,25 @@
   }
 
   @media (max-width: 720px) {
-    .movimientos-encabezado .lista-acciones {
+    .movimientos-principal .lista-acciones {
       width: 100%;
     }
 
-    .movimientos-encabezado .campo-busqueda {
+    .movimientos-principal .campo-busqueda {
       flex: 1;
       min-width: 0;
     }
 
-    .movimientos-encabezado .campo-busqueda input {
+    .movimientos-principal .campo-busqueda input {
       width: 100%;
     }
   }
 
-  /* --- Botón flotante "Agregar movimiento" --- */
-  .fab-agregar {
-    position: fixed;
-    right: var(--esp-5);
-    bottom: var(--esp-5);
-    z-index: 30;
-    display: inline-flex;
-    align-items: center;
-    gap: var(--esp-2);
-    padding: var(--esp-3) var(--esp-5);
-    border: none;
-    border-radius: var(--r-pill);
-    background: var(--acento);
-    color: var(--acento-fg);
-    font-size: var(--txt-base);
-    font-weight: var(--peso-semibold);
-    box-shadow: var(--sombra-popover);
-  }
-
-  .fab-agregar:hover {
-    filter: brightness(1.08);
-  }
-
-  .fab-agregar:active {
-    filter: brightness(0.95);
-    transform: translateY(1px);
-  }
-
+  /* --- Botón "Agregar": mismo aspecto que ".boton--primario" (igual que
+     "+ Nueva categoría" en Categorías) en escritorio, junto al título; en
+     móvil se vuelve flotante y circular (ver media query) para no estorbar
+     el scroll vertical. Esta clase solo aporta lo que ".boton--primario"
+     no cubre: tamaño del ícono y el comportamiento flotante en móvil. */
   .fab-agregar svg {
     width: 20px;
     height: 20px;
@@ -1786,8 +1763,10 @@
 
   @media (max-width: 720px) {
     .fab-agregar {
+      position: fixed;
       right: var(--esp-4);
       bottom: calc(var(--esp-4) + env(safe-area-inset-bottom, 0px));
+      z-index: 30;
       width: 56px;
       height: 56px;
       padding: 0;
@@ -4042,9 +4021,18 @@
     margin-top: calc(var(--esp-2) * -1);
   }
 
+.login-boton-primario {
+    height: 48px;
+    border-radius: 12px;
+    padding: 0 var(--esp-5);
+    font-size: 15px;
+    font-weight: var(--peso-bold);
+    box-shadow: 0 4px 10px color-mix(in srgb, var(--acento) 25%, transparent);
+}
+
   .login-boton-primario svg {
-    width: 18px;
-    height: 18px;
+    width: 20px;
+    height: 20px;
   }
 
   /* --- Divisor "¿No tienes una cuenta?" + botón secundario --- */
@@ -4109,16 +4097,21 @@
       var(--bg-pagina);
   }
 
-  /* En pantallas angostas las tres columnas se apilan en una sola: primero
-     identidad, después el formulario y al final la ilustración (si hay
-     espacio), vía `order` — sin forzar nunca las 3 columnas en mobile. */
+  /* En pantallas angostas no se apila el bloque de identidad completo:
+     `.login-identidad` desaparece como caja (display: contents) y sus tres
+     hijos (marca, hero, features) pasan a ser ítems directos de
+     `.login-pagina`, cada uno con su propio `order`. Así el orden mobile
+     queda: marca → formulario → hero/features → ilustración, sin tocar el
+     layout de escritorio (que resetea todo esto a los 1180px). */
   .login-identidad {
+    display: contents;
+  }
+
+  .login-marca {
     order: 1;
     width: 100%;
     max-width: 440px;
-    display: flex;
-    flex-direction: column;
-    gap: var(--esp-5);
+    margin: 0 auto;
   }
 
   .login-form-col {
@@ -4130,8 +4123,24 @@
     gap: var(--esp-4);
   }
 
-  .login-ilu-col {
+  .login-hero {
     order: 3;
+    width: 100%;
+    max-width: 440px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .login-features {
+    order: 4;
+    width: 100%;
+    max-width: 440px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .login-ilu-col {
+    order: 5;
     width: 100%;
     display: flex;
     align-items: center;
@@ -4171,7 +4180,9 @@
     }
 
     .login-identidad {
-      order: initial;
+      display: flex;
+      flex-direction: column;
+      gap: var(--esp-5);
       max-width: 420px;
       justify-self: start;
       /* La ilustración y el formulario quedan centrados en su fila (herencia
@@ -4179,6 +4190,19 @@
          pegado arriba, como en la referencia. */
       align-self: start;
       margin-top: var(--esp-6);
+    }
+
+    /* De vuelta a hijos normales de `.login-identidad` (ya no ítems sueltos
+       de `.login-pagina`): se cancelan el `order` y los anchos fijos que
+       solo hacían falta en mobile. */
+    .login-marca,
+    .login-hero,
+    .login-features {
+      order: initial;
+      width: auto;
+      max-width: none;
+      margin-left: 0;
+      margin-right: 0;
     }
 
     .login-ilu-col {
@@ -4263,11 +4287,11 @@
 
   .login-features {
     list-style: none;
-    margin: 0;
+    margin: var(--esp-5) 0 0;
     padding: 0;
     display: flex;
     flex-direction: column;
-    gap: var(--esp-4);
+    gap: var(--esp-5);
   }
 
   .login-feature {
@@ -4332,12 +4356,12 @@
     left: -34px;
   }
 
-  .login-ilu-grafico {
+ .login-ilu-grafico {
     position: absolute;
     left: 14%;
     right: 2%;
     top: 48px;
-    height: 228px;
+    height: 190px;
     display: flex;
     align-items: flex-end;
     gap: 4%;
@@ -4346,7 +4370,7 @@
     background: var(--bg-elevado);
     border: 1px solid var(--borde);
     box-shadow: 0 20px 45px color-mix(in srgb, var(--acento) 12%, transparent);
-  }
+}
 
   .login-ilu-barra {
     flex: 1;
@@ -4363,13 +4387,15 @@
     opacity: 0.55;
   }
 
-  .login-ilu-tarjeta {
+.login-ilu-tarjeta {
     position: absolute;
     border-radius: var(--r-lg);
     background: var(--bg-elevado);
     border: 1px solid var(--borde);
-    box-shadow: 0 16px 40px color-mix(in srgb, var(--acento) 16%, transparent);
-  }
+    box-shadow: 0 16px 40px 
+color-mix(in srgb, var(--acento) 16%, transparent);
+    left: 161px;
+}
 
   .login-ilu-tarjeta--balance {
     top: 0;
@@ -4414,15 +4440,16 @@
     font-variant-numeric: tabular-nums;
   }
 
-  .login-ilu-tarjeta--cats {
+.login-ilu-tarjeta--cats {
     right: 0;
     bottom: 0;
-    width: 76%;
+    width: 64%;
     display: flex;
     flex-direction: column;
     gap: var(--esp-2);
     padding: var(--esp-4);
-  }
+    /* position: absolute; */
+}
 
   .login-ilu-cat {
     display: grid;
@@ -4489,13 +4516,14 @@
     color: var(--ingreso);
   }
 
-  .login-ilu-chispa {
+.login-ilu-chispa {
     position: absolute;
     top: 4px;
     right: 12%;
     width: 42px;
     height: 42px;
-  }
+    display: none;
+}
 
   .login-ilu-chispa i {
     position: absolute;
