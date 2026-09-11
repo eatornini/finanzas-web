@@ -45,7 +45,7 @@
     --txt-xs: 0.85rem;
     --txt-sm: 0.8125rem;
     --txt-base: 13px;
-    --txt-lg: 16px;
+    --txt-lg: 17px;
     --txt-xl: 1.75rem;
 
     --sombra-1: 0 1px 2px rgba(20, 20, 30, 0.05);
@@ -1692,7 +1692,7 @@
   /* Encabezado del grupo dentro de su tarjeta: fecha/categoría + total del
      día, con un respiro antes de la primera fila. */
   .lista-grupo .lista-grupo-titulo {
-    margin: 0 0 var(--esp-2);
+    /*margin: 0 0 var(--esp-2); */
     padding: var(--esp-1) var(--esp-2);
   }
 
@@ -2016,6 +2016,8 @@
   }
 
   .lista-grupo-titulo {
+    display: flex;
+    align-items: center;
     justify-content: flex-start;
     width: 100%;
     margin: var(--esp-2) 0 0;
@@ -2697,7 +2699,7 @@
     height: 28px;
     flex: none;
     border-radius: var(--r-sm);
-    background: var(--acento-tenue);
+    /* --- background: var(--acento-tenue); --- */
     color: var(--acento);
   }
 
@@ -2713,11 +2715,12 @@
     color: var(--fg);
   }
 
-  .saldo-cabecera-periodo {
+.saldo-cabecera-periodo {
     color: var(--fg-tenue);
     font-size: var(--txt-xs);
     white-space: nowrap;
-  }
+    display: none;
+}
 
   .saldo-cabecera .boton-ojo {
     flex: none;
@@ -2975,6 +2978,18 @@
     height: 16px;
   }
 
+  /* El indicador comunica el tipo de movimiento: ingreso hacia arriba en
+     verde, gasto hacia abajo en rojo. */
+  .actividad-icono--ingreso {
+    background: color-mix(in srgb, var(--ingreso) 18%, transparent);
+    color: var(--ingreso);
+  }
+
+  .actividad-icono--gasto {
+    background: color-mix(in srgb, var(--gasto) 18%, transparent);
+    color: var(--gasto);
+  }
+
   .actividad-info {
     display: flex;
     flex-direction: column;
@@ -2991,7 +3006,7 @@
     white-space: nowrap;
   }
 
-  .actividad-fecha {
+  .actividad-categoria {
     font-size: var(--txt-xs);
     color: var(--fg-tenue);
   }
@@ -3397,6 +3412,12 @@
     flex: none;
     width: auto;
     min-width: 140px;
+    appearance: none;
+    padding-right: calc(var(--esp-4) + 16px);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%234b5563' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.75'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E");
+    background-position: right var(--esp-3) center;
+    background-repeat: no-repeat;
+    background-size: 16px;
   }
 
   .categorias-cuerpo {
@@ -4076,7 +4097,7 @@
     gap: var(--esp-6);
     padding: var(--esp-6) var(--esp-5);
     background: radial-gradient(
-        1100px 560px at 31% -12%,
+        1100px 560px at 31% -26%,
         color-mix(in srgb, var(--acento) 14%, var(--bg-pagina)) 0%,
         transparent 60%
       ),
@@ -4173,11 +4194,13 @@
     }
   }
 
-  .login-marca {
+.login-marca {
     display: flex;
     align-items: center;
     gap: var(--esp-3);
-  }
+    position: relative;
+    top: 66px;
+}
 
   .login-marca-logo {
     display: flex;
@@ -4210,10 +4233,11 @@
     font-weight: var(--peso-bold);
   }
 
-  .login-marca-tagline {
+.login-marca-tagline {
     color: var(--fg-tenue);
     font-size: var(--txt-lg);
-  }
+    font-weight: 500;
+}
 
   .login-hero {
     /* Baja el título/descripción y las ventajas que siguen en el flujo, sin
@@ -4228,13 +4252,14 @@
     letter-spacing: -0.01em;
   }
 
-  .login-hero-sub {
+.login-hero-sub {
     margin: var(--esp-3) 0 0;
     max-width: 42ch;
     color: var(--fg-tenue);
-    font-size: var(--txt-base);
+    font-size: 16px;
     line-height: 1.6;
-  }
+    font-weight: 500;
+}
 
   .login-features {
     list-style: none;
@@ -4255,15 +4280,15 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 40px;
-    height: 40px;
+    width: 48px;
+    height: 48px;
     flex: none;
     border-radius: 50%;
   }
 
   .login-feature-icono svg {
-    width: 20px;
-    height: 20px;
+    width: 24px;
+    height: 24px;
   }
 
   .login-feature--azul .login-feature-icono {
@@ -4289,13 +4314,13 @@
 
   .login-feature-titulo {
     font-weight: var(--peso-semibold);
-    font-size: var(--txt-base);
+    font-size: var(--txt-lg);
   }
 
-  .login-feature-desc {
+ .login-feature-desc {
     color: var(--fg-tenue);
-    font-size: var(--txt-sm);
-  }
+    font-size: 14px;
+}
 
   /* --- Ilustración financiera (decorativa, sin imágenes) ---
      Vive centrada dentro de .login-ilu-col, su propia columna. */
