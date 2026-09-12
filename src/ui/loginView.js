@@ -28,6 +28,9 @@ import {
 // tarjeta del formulario. En pantallas angostas se apilan verticalmente.
 export function montarLogin(contenedor) {
   limpiar(contenedor);
+  // Pantalla de acceso siempre en modo claro, sin importar el tema guardado
+  // o el del sistema. El shell restaura el tema real al iniciar sesión.
+  document.documentElement.dataset.tema = "claro";
 
   const form = el("form", { class: "login" });
   contenedor.append(

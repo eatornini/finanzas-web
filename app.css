@@ -4234,7 +4234,7 @@
        primer ítem de la columna, sin nada que alinear). */
     .login-marca {
       position: relative;
-      top: 66px;
+      top: 30px;
     }
 
     /* Baja el título/descripción y las ventajas que siguen en el flujo,
@@ -4251,9 +4251,6 @@
     .login-form-col {
       order: initial;
       justify-self: end;
-      /* Compensa el peso visual del formulario y su texto legal para que la
-         tarjeta de acceso quede ligeramente por encima del centro. */
-      transform: translateY(calc(var(--esp-6) * -2));
     }
   }
 

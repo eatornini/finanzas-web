@@ -20,6 +20,7 @@ import {
   tiendaIcono,
   dolarCirculoIcono,
   lupaIcono,
+  check,
 } from "./iconos.js";
 import { subirComprobante, urlComprobante, eliminarComprobante } from "../data/storage.js";
 import { reconocerImagen } from "../ocr/tesseractWorker.js";
@@ -524,12 +525,11 @@ export function abrirMovimientoForm({
   // por el atributo form= — así el clic sigue disparando el mismo submit
   // de siempre aunque el botón ya no esté anidado adentro. Sin botón
   // Cancelar: la "X" de la cabecera ya cierra el modal.
-  const btnGuardar = el("button", {
-    type: "submit",
-    form: "form-movimiento",
-    class: "boton--primario",
-    text: "Guardar",
-  });
+  const btnGuardar = el(
+    "button",
+    { type: "submit", form: "form-movimiento", class: "boton--primario" },
+    [check(), el("span", { text: "Guardar" })]
+  );
 
   function formValido() {
     return Boolean(nombre.value.trim()) && parseCLP(monto.value) > 0 && Boolean(categoriaId);
