@@ -37,11 +37,6 @@ const MESES_ABBR = [
   "ene", "feb", "mar", "abr", "may", "jun",
   "jul", "ago", "sep", "oct", "nov", "dic",
 ];
-const MESES_LARGO = [
-  "enero", "febrero", "marzo", "abril", "mayo", "junio",
-  "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
-];
-
 // Paleta de respaldo para el donut cuando una categoría no define color.
 const PALETA_DONA = [
   "#1b7f4d", "#0966DF", "#e0a44a", "#c0392b", "#6b46c1", "#c2185b", "#00796b", "#8a8f98",
@@ -65,22 +60,6 @@ function delPeriodo(tipo) {
   return "del mes";
 }
 
-// Rango legible del período: "1 al 30 de septiembre de 2026" (y variantes
-// entre meses o años distintos).
-function rangoLegible(desde, hasta) {
-  const a = new Date(`${desde}T12:00:00`);
-  const b = new Date(`${hasta}T12:00:00`);
-  const da = a.getDate();
-  const db = b.getDate();
-  const ma = MESES_LARGO[a.getMonth()];
-  const mb = MESES_LARGO[b.getMonth()];
-  const ya = a.getFullYear();
-  const yb = b.getFullYear();
-  if (ya !== yb) return `${da} de ${ma} de ${ya} al ${db} de ${mb} de ${yb}`;
-  if (a.getMonth() !== b.getMonth()) return `${da} de ${ma} al ${db} de ${mb} de ${yb}`;
-  return `${da} al ${db} de ${ma} de ${yb}`;
-}
-
 // "8 sep 2026" a partir de "YYYY-MM-DD" (o timestamp, se recorta).
 function fechaCorta(valor) {
   const s = String(valor || "").slice(0, 10);
@@ -96,29 +75,14 @@ function formatoPct(n) {
 
 // --- Piezas de UI -----------------------------------------------------------
 
-function bloqueEncabezado(tipo, fechaRef, rango, acciones) {
+function bloqueEncabezado(tipo, acciones) {
   return el("header", { class: "resumen-header" }, [
     tituloVista(
       tendenciaCombinadaIcono,
       "Resumen",
       `Una visión general de tus finanzas ${sufijoPeriodo(tipo)}.`
     ),
-    el("div", { class: "resumen-header-lado" }, [
-      acciones,
-      el("div", { class: "resumen-header-fecha" }, [
-        el("span", { class: "resumen-header-fecha-icono" }, [calendarioIcono()]),
-        el("div", { class: "resumen-header-fecha-txt" }, [
-          el("span", {
-            class: "resumen-header-fecha-periodo",
-            text: etiquetaPeriodo(fechaRef, tipo),
-          }),
-          el("span", {
-            class: "resumen-header-fecha-rango",
-            text: rangoLegible(rango.desde, rango.hasta),
-          }),
-        ]),
-      ]),
-    ]),
+    el("div", { class: "resumen-header-lado" }, [acciones]),
   ]);
 }
 
@@ -166,42 +130,7 @@ function barraComparativa(etiqueta, valor, maxValor, claseRelleno) {
   ]);
 }
 
-// Nota contextual del período (solo datos del período actual, sin históricos).
-function notaBalance(ingresos, gastos, tipo) {
-  if (ingresos <= 0 && gastos <= 0) return null;
-  const oculto = prefs.get("ocultarTotal");
-  const balance = ingresos - gastos;
-  let clase = "resumen-vs-nota--pos";
-  let titulo;
-  let detalle;
-
-  if (balance > 0) {
-    titulo = `Tu balance ${sufijoPeriodo(tipo)} es positivo.`;
-    detalle =
-      ingresos > 0
-        ? `Has retenido el ${formatoPct((balance / ingresos) * 100)} de tus ingresos.`
-        : "Registraste gastos pero ningún ingreso en este período.";
-  } else if (balance < 0) {
-    clase = "resumen-vs-nota--neg";
-    titulo = `Tu balance ${sufijoPeriodo(tipo)} es negativo.`;
-    detalle = oculto
-      ? "Gastaste más de lo que ingresaste."
-      : `Gastaste ${formatoCLP(-balance)} más de lo que ingresaste.`;
-  } else {
-    titulo = "Ingresos y gastos quedaron parejos.";
-    detalle = "Tu balance de este período es cero.";
-  }
-
-  return el("div", { class: `resumen-vs-nota ${clase}` }, [
-    el("span", { class: "resumen-vs-nota-icono" }, [graficoTortaIcono()]),
-    el("div", {}, [
-      el("span", { class: "resumen-vs-nota-titulo", text: titulo }),
-      el("span", { class: "resumen-vs-nota-detalle", text: detalle }),
-    ]),
-  ]);
-}
-
-function seccionIngresoGasto(ingresos, gastos, enPeriodo, tipo, titulo) {
+function seccionIngresoGasto(ingresos, gastos, enPeriodo, titulo) {
   const max = Math.max(ingresos, gastos, 0);
   const main =
     max > 0
@@ -214,12 +143,145 @@ function seccionIngresoGasto(ingresos, gastos, enPeriodo, tipo, titulo) {
   const cuerpo = el("div", { class: "resumen-vs-cuerpo" }, [
     el("div", { class: "resumen-vs-main" }, [main]),
   ]);
-  const nota = notaBalance(ingresos, gastos, tipo);
-  if (nota) cuerpo.append(nota);
 
   return el("section", { class: "panel-tarjeta resumen-vs" }, [
     tarjetaHead(graficoIcono, titulo, `Comparación de tus ingresos y gastos en ${enPeriodo}.`),
     cuerpo,
+  ]);
+}
+
+function ymdLocal(d) {
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${d.getFullYear()}-${mm}-${dd}`;
+}
+
+// Semanas de calendario (lunes a domingo) dentro del rango del mes, tal
+// como se ven las filas de un calendario mensual: la primera y la última
+// quedan recortadas si el mes no empieza en lunes ni termina en domingo.
+function semanasDelMes(desde, hasta) {
+  const fin = new Date(`${hasta}T12:00:00`);
+  const semanas = [];
+  let cursor = new Date(`${desde}T12:00:00`);
+  while (cursor <= fin) {
+    const dow = (cursor.getDay() + 6) % 7; // 0 = lunes
+    const finSemana = new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate() + (6 - dow));
+    const finTramo = finSemana < fin ? finSemana : fin;
+    semanas.push({ desde: ymdLocal(cursor), hasta: ymdLocal(finTramo), total: 0 });
+    cursor = new Date(finTramo.getFullYear(), finTramo.getMonth(), finTramo.getDate() + 1);
+  }
+  return semanas;
+}
+
+function etiquetaSemana(semana) {
+  const a = new Date(`${semana.desde}T12:00:00`);
+  const b = new Date(`${semana.hasta}T12:00:00`);
+  const mes = MESES_ABBR[b.getMonth()];
+  return a.getDate() === b.getDate() ? `${a.getDate()} ${mes}` : `${a.getDate()}–${b.getDate()} ${mes}`;
+}
+
+// Agrupa los gastos del mes por semana de calendario (lunes a domingo).
+function agruparGastosPorSemana(movimientos, rango) {
+  const semanas = semanasDelMes(rango.desde, rango.hasta);
+  for (const m of movimientos) {
+    if (m.tipo !== "gasto") continue;
+    const fecha = String(m.fecha_local || m.fecha).slice(0, 10);
+    const semana = semanas.find((s) => fecha >= s.desde && fecha <= s.hasta);
+    if (semana) semana.total += Number(m.monto) || 0;
+  }
+  return semanas;
+}
+
+// "futura": todavía no empieza (sin datos, no cuenta para mayor/menor).
+// "en_curso": hoy cae dentro de la semana (gasto acumulado a la fecha).
+// "pasada": semana ya terminada, con datos definitivos.
+function estadoSemana(semana, hoy) {
+  if (hoy < semana.desde) return "futura";
+  if (hoy <= semana.hasta) return "en_curso";
+  return "pasada";
+}
+
+// Solo tiene sentido cuando el período mostrado es un mes calendario
+// completo (varias semanas) — en vista semana o año no hay nada que agrupar.
+function seccionGastosSemana(movimientos, rango, enPeriodo) {
+  const hoy = ymdLocal(new Date());
+  const semanas = agruparGastosPorSemana(movimientos, rango).map((s) => ({
+    ...s,
+    estado: estadoSemana(s, hoy),
+  }));
+  const sub = `Distribución de tus gastos durante ${enPeriodo}.`;
+  const cabecera = tarjetaHead(calendarioIcono, "Gastos por semana", sub);
+
+  // Solo semanas ya empezadas (en curso o pasadas) cuentan como "con datos":
+  // una semana futura no tiene gasto real que mostrar, solo ausencia de dato.
+  const conDatos = semanas.filter((s) => s.estado !== "futura");
+  const totalMes = conDatos.reduce((sum, s) => sum + s.total, 0);
+
+  if (conDatos.length === 0 || totalMes <= 0) {
+    return el("section", { class: "panel-tarjeta resumen-semanas" }, [
+      cabecera,
+      el("p", { class: "vacio", text: "Sin gastos en este período." }),
+    ]);
+  }
+
+  const maxTotal = Math.max(...conDatos.map((s) => s.total));
+  const minTotal = Math.min(...conDatos.map((s) => s.total));
+  const mayor = conDatos.find((s) => s.total === maxTotal);
+  // "Menor gasto" solo aporta cuando hay más de una semana con datos y
+  // realmente existe variación — si no, sería igual (y redundante) al mayor.
+  const menor = conDatos.length >= 2 && minTotal < maxTotal
+    ? conDatos.find((s) => s.total === minTotal)
+    : null;
+
+  const filas = semanas.map((s) => {
+    const etiquetaNodo = el("span", { class: "resumen-semanas-rango", text: etiquetaSemana(s) });
+
+    if (s.estado === "futura") {
+      return el("div", { class: "resumen-semanas-fila resumen-semanas-fila--futura" }, [
+        etiquetaNodo,
+        el("span", { class: "resumen-semanas-estado", text: "Aún no disponible" }),
+      ]);
+    }
+
+    const esPico = s.total === maxTotal;
+    const anchoBarra = maxTotal > 0 ? Math.max((s.total / maxTotal) * 100, s.total > 0 ? 4 : 1) : 1;
+    const relleno = el("span", {
+      class: `resumen-semanas-barra-relleno${esPico ? " resumen-semanas-barra-relleno--pico" : ""}`,
+    });
+    relleno.style.width = `${anchoBarra}%`;
+    const pct = totalMes > 0 ? Math.round((s.total / totalMes) * 100) : 0;
+
+    return el("div", { class: `resumen-semanas-fila${esPico ? " resumen-semanas-fila--pico" : ""}` }, [
+      etiquetaNodo,
+      el("div", { class: "resumen-semanas-barra-pista" }, [relleno]),
+      el("span", { class: "resumen-semanas-monto", text: valorOculto(s.total) }),
+      s.estado === "en_curso"
+        ? el("span", { class: "resumen-semanas-pct resumen-semanas-pct--curso", text: "En curso" })
+        : el("span", { class: "resumen-semanas-pct", text: `${pct}%` }),
+    ]);
+  });
+
+  const destacadas = el(
+    "div",
+    { class: "resumen-semanas-destacadas" },
+    [
+      el("span", { class: "resumen-semanas-destacada" }, [
+        el("span", { class: "resumen-semanas-destacada-etq", text: "Mayor gasto" }),
+        `: ${etiquetaSemana(mayor)} · ${valorOculto(mayor.total)}`,
+      ]),
+      menor
+        ? el("span", { class: "resumen-semanas-destacada" }, [
+            el("span", { class: "resumen-semanas-destacada-etq", text: "Menor gasto" }),
+            `: ${etiquetaSemana(menor)} · ${valorOculto(menor.total)}`,
+          ])
+        : null,
+    ].filter(Boolean)
+  );
+
+  return el("section", { class: "panel-tarjeta resumen-semanas" }, [
+    cabecera,
+    el("div", { class: "resumen-semanas-lista" }, filas),
+    destacadas,
   ]);
 }
 
@@ -293,54 +355,20 @@ function seccionGastosCategoria(movimientos, enPeriodo) {
     return card;
   }
 
-  const LIMITE = 6;
-  const hayResto = grupos.length > LIMITE + 1;
-  let expandido = false;
-
-  const btnVer = hayResto
-    ? el("button", {
-        class: "enlace-ver",
-        type: "button",
-        onClick: () => {
-          expandido = !expandido;
-          pintar();
-        },
-      })
-    : null;
-
   const cuerpo = el("div", { class: "resumen-gastos-cat-fila" });
-  card.append(tarjetaHead(graficoTortaIcono, "Gastos por categoría", sub, btnVer), cuerpo);
-
-  function filasAMostrar() {
-    if (expandido || !hayResto) return grupos;
-    const top = grupos.slice(0, LIMITE);
-    const resto = grupos.slice(LIMITE);
-    return [
-      ...top,
-      {
-        clave: "otros",
-        nombre: "Otros",
-        categoria: null,
-        color: "#8a8f98",
-        total: resto.reduce((s, g) => s + g.total, 0),
-        esOtros: true,
-      },
-    ];
-  }
+  card.append(tarjetaHead(graficoTortaIcono, "Gastos por categoría", sub), cuerpo);
 
   function pintar() {
     limpiar(cuerpo);
-    if (btnVer) btnVer.textContent = expandido ? "Ver menos" : "Ver todas →";
-    const filas = filasAMostrar();
 
     const lista = el(
       "ul",
       { class: "resumen-gastos-cat-lista" },
-      filas.map((g, i) => {
+      grupos.map((g, i) => {
         const pct = Math.round((g.total / total) * 100);
         const color = g.color || PALETA_DONA[i % PALETA_DONA.length];
         const icono = el("span", { class: "resumen-gastos-cat-icono" }, [
-          g.esOtros ? puntosIcono() : nodoIconoCategoria(g.categoria, g.nombre),
+          nodoIconoCategoria(g.categoria, g.nombre),
         ]);
         icono.style.background = `color-mix(in srgb, ${color} 16%, transparent)`;
         icono.style.color = color;
@@ -353,7 +381,7 @@ function seccionGastosCategoria(movimientos, enPeriodo) {
       })
     );
 
-    cuerpo.append(lista, donutGastos(filas, total));
+    cuerpo.append(lista, donutGastos(grupos, total));
   }
 
   pintar();
@@ -506,7 +534,7 @@ export async function montarResumen(contenedor, { rango, tipo, fechaRef, modo, i
     const { ingresos, gastos, balance } = calcularTotales(paraTotales);
     const enPeriodo = etiquetaPeriodo(fechaRef, tipo);
 
-    raiz.append(bloqueEncabezado(tipo, fechaRef, rango, acciones), aviso, error);
+    raiz.append(bloqueEncabezado(tipo, acciones), aviso, error);
 
     const descIngreso =
       modo === "estimado"
@@ -548,9 +576,17 @@ export async function montarResumen(contenedor, { rango, tipo, fechaRef, modo, i
         ingresos,
         gastos,
         enPeriodo,
-        tipo,
         modo === "estimado" ? "Estimado: ingresos vs. gastos" : "Ingresos vs. Gastos"
-      ),
+      )
+    );
+
+    // La distribución semanal solo aplica al ver el mes completo — en las
+    // vistas por semana o por año no hay semanas de un mes que comparar.
+    if (tipo === "mes") {
+      raiz.append(seccionGastosSemana(paraTotales, rango, enPeriodo));
+    }
+
+    raiz.append(
       el("div", { class: "resumen-inferior" }, [
         seccionGastosCategoria(paraTotales, enPeriodo),
         seccionActividad(movimientos, enPeriodo, irA),

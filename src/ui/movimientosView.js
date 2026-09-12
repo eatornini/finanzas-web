@@ -92,12 +92,20 @@ export async function montarMovimientos(
   function alTeclearFiltros(ev) {
     if (ev.key === "Escape") cerrarFiltros();
   }
+  // En escritorio el panel es un popover sin backdrop que cubra la
+  // pantalla (eso es solo el bottom sheet móvil) — por eso hace falta este
+  // listener aparte para cerrar al hacer clic fuera del panel/botón.
+  function alClickFuera(ev) {
+    if (panelFiltros.contains(ev.target) || btnFiltros.contains(ev.target)) return;
+    cerrarFiltros();
+  }
   function abrirFiltros() {
     if (!panelFiltros.hidden) return;
     panelFiltros.hidden = false;
     backdropFiltros.hidden = false;
     btnFiltros.classList.add("activo");
     document.addEventListener("keydown", alTeclearFiltros);
+    document.addEventListener("click", alClickFuera, true);
   }
   function cerrarFiltros() {
     if (panelFiltros.hidden) return;
@@ -105,6 +113,7 @@ export async function montarMovimientos(
     backdropFiltros.hidden = true;
     btnFiltros.classList.remove("activo");
     document.removeEventListener("keydown", alTeclearFiltros);
+    document.removeEventListener("click", alClickFuera, true);
   }
   btnFiltros.addEventListener("click", () => {
     if (panelFiltros.hidden) abrirFiltros();
@@ -112,6 +121,14 @@ export async function montarMovimientos(
   });
   btnCerrarFiltros.addEventListener("click", cerrarFiltros);
   backdropFiltros.addEventListener("click", cerrarFiltros);
+
+  // Punto indicador en el botón de filtros: refleja si hay algún filtro
+  // aplicado (categoría, estado o pago). "Ordenar por" no cuenta como
+  // filtro, así que selOrden queda afuera a propósito.
+  function actualizarIndicadorFiltros() {
+    const hayFiltro = Boolean(selCategoria.value || selEstado.value || selPago.value);
+    btnFiltros.classList.toggle("boton--filtros--marcado", hayFiltro);
+  }
 
   const opcionesVista =
     modo === "estimado"
@@ -272,7 +289,7 @@ export async function montarMovimientos(
 
   if (categoriaInicial) {
     selCategoria.value = String(categoriaInicial);
-    abrirFiltros();
+    actualizarIndicadorFiltros();
   }
 
   // Al agregar (no al editar) se limpian los filtros que podrían esconder
@@ -284,6 +301,7 @@ export async function montarMovimientos(
     selCategoria.value = "";
     selEstado.value = "";
     selPago.value = "";
+    actualizarIndicadorFiltros();
     if (vista !== "todos" && opcionesVista.some((o) => o.valor === "todos")) {
       vista = "todos";
       sincronizarVista();
@@ -297,10 +315,19 @@ export async function montarMovimientos(
   }
 
   buscador.addEventListener("input", pintarLista);
-  selCategoria.addEventListener("change", pintarLista);
+  selCategoria.addEventListener("change", () => {
+    actualizarIndicadorFiltros();
+    pintarLista();
+  });
   selOrden.addEventListener("change", pintarLista);
-  selEstado.addEventListener("change", pintarLista);
-  selPago.addEventListener("change", pintarLista);
+  selEstado.addEventListener("change", () => {
+    actualizarIndicadorFiltros();
+    pintarLista();
+  });
+  selPago.addEventListener("change", () => {
+    actualizarIndicadorFiltros();
+    pintarLista();
+  });
 
   await recargar();
 

@@ -460,6 +460,22 @@
     color: var(--acento-fg);
   }
 
+  .boton--filtros {
+    position: relative;
+  }
+
+  .boton--filtros--marcado::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--acento);
+    border: 2px solid var(--bg);
+  }
+
   .boton--primario {
     background: var(--acento);
     border-color: transparent;
@@ -4704,39 +4720,6 @@ color-mix(in srgb, var(--acento) 16%, transparent);
     gap: var(--esp-1);
   }
 
-  .resumen-header-fecha {
-    display: flex;
-    align-items: center;
-    gap: var(--esp-2);
-    color: var(--fg-tenue);
-  }
-
-  .resumen-header-fecha-icono {
-    display: flex;
-    flex: none;
-  }
-
-  .resumen-header-fecha-icono svg {
-    width: 18px;
-    height: 18px;
-  }
-
-  .resumen-header-fecha-txt {
-    display: flex;
-    flex-direction: column;
-    line-height: 1.25;
-  }
-
-  .resumen-header-fecha-periodo {
-    color: var(--fg);
-    font-size: var(--txt-sm);
-    font-weight: var(--peso-semibold);
-  }
-
-  .resumen-header-fecha-rango {
-    font-size: var(--txt-xs);
-  }
-
   /* --- Métricas principales --- */
   .resumen-metricas {
     display: grid;
@@ -4900,62 +4883,99 @@ color-mix(in srgb, var(--acento) 16%, transparent);
     width: 100%;
   }
 
-  .resumen-vs-nota {
-    flex: none;
-    width: 300px;
-    display: flex;
-    gap: var(--esp-3);
-    padding: var(--esp-4);
-    border-radius: var(--r-md);
-  }
-
-  .resumen-vs-nota--pos {
-    background: color-mix(in srgb, var(--ingreso) 10%, transparent);
-  }
-
-  .resumen-vs-nota--neg {
-    background: color-mix(in srgb, var(--gasto) 10%, transparent);
-  }
-
-  .resumen-vs-nota-icono {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex: none;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-  }
-
-  .resumen-vs-nota-icono svg {
-    width: 18px;
-    height: 18px;
-  }
-
-  .resumen-vs-nota--pos .resumen-vs-nota-icono {
-    color: var(--ingreso);
-    background: color-mix(in srgb, var(--ingreso) 16%, transparent);
-  }
-
-  .resumen-vs-nota--neg .resumen-vs-nota-icono {
-    color: var(--gasto);
-    background: color-mix(in srgb, var(--gasto) 16%, transparent);
-  }
-
-  .resumen-vs-nota > div {
+  /* --- Gastos por semana --- */
+  .resumen-semanas-lista {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: var(--esp-3);
   }
 
-  .resumen-vs-nota-titulo {
+  .resumen-semanas-fila {
+    display: grid;
+    grid-template-columns: 64px 1fr 84px 44px;
+    align-items: center;
+    gap: var(--esp-3);
+  }
+
+  .resumen-semanas-fila--futura {
+    grid-template-columns: 64px 1fr;
+    opacity: 0.55;
+  }
+
+  .resumen-semanas-rango {
     font-size: var(--txt-sm);
+    color: var(--fg-tenue);
+    white-space: nowrap;
+  }
+
+  .resumen-semanas-fila--pico .resumen-semanas-rango {
+    color: var(--fg);
     font-weight: var(--peso-semibold);
   }
 
-  .resumen-vs-nota-detalle {
+  .resumen-semanas-estado {
+    font-size: var(--txt-sm);
+    color: var(--fg-tenue);
+    font-style: italic;
+  }
+
+  .resumen-semanas-barra-pista {
+    height: 10px;
+    border-radius: var(--r-pill);
+    background: var(--bg-sutil);
+    overflow: hidden;
+  }
+
+  .resumen-semanas-barra-relleno {
+    display: block;
+    height: 100%;
+    border-radius: var(--r-pill);
+    background: color-mix(in srgb, var(--acento) 45%, transparent);
+    transition: width 0.35s ease;
+  }
+
+  .resumen-semanas-barra-relleno--pico {
+    background: var(--acento);
+  }
+
+  .resumen-semanas-monto {
+    font-size: var(--txt-sm);
+    font-weight: var(--peso-semibold);
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .resumen-semanas-pct {
     font-size: var(--txt-xs);
     color: var(--fg-tenue);
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .resumen-semanas-pct--curso {
+    color: var(--acento);
+    font-weight: var(--peso-semibold);
+    font-style: normal;
+  }
+
+  .resumen-semanas-destacadas {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--esp-2) var(--esp-5);
+    margin-top: var(--esp-4);
+    padding-top: var(--esp-4);
+    border-top: 1px solid var(--borde);
+  }
+
+  .resumen-semanas-destacada {
+    font-size: var(--txt-sm);
+    color: var(--fg-tenue);
+  }
+
+  .resumen-semanas-destacada-etq {
+    color: var(--fg);
+    font-weight: var(--peso-semibold);
   }
 
   /* --- Fila inferior: gastos por categoría + actividad reciente --- */
@@ -5175,20 +5195,12 @@ color-mix(in srgb, var(--acento) 16%, transparent);
     .resumen-inferior {
       grid-template-columns: 1fr;
     }
-
-    .resumen-vs-nota {
-      width: 260px;
-    }
   }
 
   @media (max-width: 860px) {
     .resumen-vs-cuerpo {
       flex-direction: column;
       gap: var(--esp-4);
-    }
-
-    .resumen-vs-nota {
-      width: 100%;
     }
   }
 
@@ -5207,6 +5219,18 @@ color-mix(in srgb, var(--acento) 16%, transparent);
   @media (max-width: 560px) {
     .resumen-desglose {
       grid-template-columns: 1fr;
+    }
+
+    .resumen-semanas-fila {
+      grid-template-columns: 52px 1fr 72px;
+    }
+
+    .resumen-semanas-fila--futura {
+      grid-template-columns: 52px 1fr;
+    }
+
+    .resumen-semanas-pct {
+      display: none;
     }
 
     .resumen-act-item {

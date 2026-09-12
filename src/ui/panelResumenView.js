@@ -99,7 +99,7 @@ function tarjetaCategorias(movimientos, onCategoria, irA) {
           class: "enlace-ver",
           type: "button",
           text: "Ver todas →",
-          onClick: () => irA("categorias"),
+          onClick: () => irA("resumen"),
         })
       : null;
 
