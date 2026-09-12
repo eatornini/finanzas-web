@@ -1,6 +1,6 @@
 import { el, limpiar } from "./dom.js";
 import { montarModal } from "./modal.js";
-import { crearMovimiento, actualizarMovimiento } from "../data/movimientos.js";
+import { crearMovimiento, actualizarMovimiento, buscarMovimientoDuplicado } from "../data/movimientos.js";
 import { usoCategorias, sugerenciasComercio } from "../data/rpc.js";
 import { abrirCategoriaForm } from "./categoriaForm.js";
 import { formatoCLP, parseCLP } from "../logic/dinero.js";
@@ -49,6 +49,61 @@ function isoAInputLocal(iso) {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(
     d.getMinutes()
   )}`;
+}
+
+function formatoFechaHoraLegible(iso) {
+  return new Date(iso).toLocaleString("es-CL", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+// Pregunta qué hacer ante un movimiento ya existente con el mismo comercio,
+// monto y fecha/hora (comprobante cargado dos veces). Devuelve una promesa
+// que resuelve a "reemplazar" | "agregar" | "cancelar" — cerrar el modal de
+// cualquier otra forma (X, click afuera, Escape) cuenta como "cancelar".
+function confirmarDuplicado(duplicado) {
+  return new Promise((resolve) => {
+    let resuelto = false;
+    function resolver(valor) {
+      if (resuelto) return;
+      resuelto = true;
+      resolve(valor);
+      cerrar();
+    }
+    const btnCancelar = el("button", { type: "button", class: "boton--secundario" }, [
+      el("span", { text: "Cancelar" }),
+    ]);
+    const btnAgregar = el("button", { type: "button", class: "boton--secundario" }, [
+      el("span", { text: "Agregar de todas formas" }),
+    ]);
+    const btnReemplazar = el("button", { type: "button", class: "boton--primario" }, [
+      el("span", { text: "Reemplazar" }),
+    ]);
+    btnCancelar.addEventListener("click", () => resolver("cancelar"));
+    btnAgregar.addEventListener("click", () => resolver("agregar"));
+    btnReemplazar.addEventListener("click", () => resolver("reemplazar"));
+    const cuerpo = el("div", { class: "confirmacion-duplicado" }, [
+      el("p", { text: "Ya hay un movimiento con el mismo comercio, monto y fecha:" }),
+      el("p", { class: "confirmacion-duplicado-detalle" }, [
+        el("strong", { text: duplicado.nombre }),
+        el("span", {
+          text: ` — ${formatoCLP(duplicado.monto)} — ${formatoFechaHoraLegible(duplicado.fecha)}`,
+        }),
+      ]),
+      el("p", { text: "¿Reemplazar el anterior, agregarlo de todas formas o cancelar?" }),
+    ]);
+    const { cerrar } = montarModal({
+      titulo: "Posible comprobante duplicado",
+      icono: notaIcono,
+      contenido: cuerpo,
+      acciones: [btnCancelar, btnAgregar, btnReemplazar],
+      onCerrar: () => resolver("cancelar"),
+    });
+  });
 }
 
 export function abrirMovimientoForm({
@@ -226,12 +281,22 @@ export function abrirMovimientoForm({
     }
     if (!fechaTocada || fecha.value === ultimoOcr.fecha) {
       // El campo vive dentro del panel "Más opciones", que en alta arranca
-      // colapsado (grid-template-rows: 0fr + visibility: hidden). Si se le
-      // asigna el valor mientras está oculto, varios navegadores móviles no
-      // repintan el <input type="datetime-local"> y el campo queda en
-      // blanco aunque su valor interno sea correcto. Por eso, si el OCR
-      // encontró una fecha, se abre el panel antes de escribirla.
-      if (fechaOcr) setAvanzado(true);
+      // colapsado (grid-template-rows: 0fr + visibility: hidden). Abrir el
+      // panel y asignar el valor en el mismo tick NO alcanza: el panel tarda
+      // 0.28s en animar a visible (ver .mov-avanzado-contenido en app.css) y
+      // varios navegadores móviles no repintan el <input type="datetime-
+      // local"> si el valor se asigna mientras todavía está en esa
+      // transición, dejando el campo en blanco aunque su valor interno sea
+      // correcto. Por eso se reasigna al terminar la transición del panel
+      // (o a los 300ms si no dispara, p.ej. con prefers-reduced-motion).
+      if (fechaOcr) {
+        setAvanzado(true);
+        const reasignar = () => {
+          fecha.value = fechaOcr;
+        };
+        avanzadoWrap.addEventListener("transitionend", reasignar, { once: true });
+        setTimeout(reasignar, 300);
+      }
       fecha.value = fechaOcr;
     }
     if (!detalle.value.trim() || detalle.value === ultimoOcr.detalle) {
@@ -731,8 +796,36 @@ export function abrirMovimientoForm({
             datos.imagen = null;
           }
 
-          if (edicion) await actualizarMovimiento(movimiento.id, datos);
-          else await crearMovimiento(datos);
+          // Solo tiene sentido en alta: si se está editando, el movimiento
+          // ya es "el mismo", no un duplicado nuevo.
+          const duplicado = edicion
+            ? null
+            : await buscarMovimientoDuplicado({
+                modo,
+                nombre: datos.nombre,
+                monto: datos.monto,
+                fecha: datos.fecha,
+              });
+
+          if (duplicado) {
+            const accion = await confirmarDuplicado(duplicado);
+            if (accion === "cancelar") {
+              btnGuardar.disabled = false;
+              return;
+            }
+            if (accion === "reemplazar") {
+              await actualizarMovimiento(duplicado.id, datos);
+              if (duplicado.imagen && duplicado.imagen !== datos.imagen) {
+                eliminarComprobante(duplicado.imagen); // best-effort, no bloquea el guardado
+              }
+            } else {
+              await crearMovimiento(datos);
+            }
+          } else if (edicion) {
+            await actualizarMovimiento(movimiento.id, datos);
+          } else {
+            await crearMovimiento(datos);
+          }
 
           if (imagenExistente && (archivoComprobante || imagenEliminada)) {
             eliminarComprobante(imagenExistente); // best-effort, no bloquea el guardado

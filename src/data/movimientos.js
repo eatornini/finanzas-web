@@ -52,6 +52,22 @@ export async function crearMovimiento({
   );
 }
 
+// Busca un movimiento existente con el mismo comercio, monto y fecha/hora
+// exactos — usado para detectar comprobantes cargados dos veces.
+export async function buscarMovimientoDuplicado({ modo, nombre, monto, fecha }) {
+  return verificar(
+    await supabase
+      .from("movimientos")
+      .select(SELECT)
+      .eq("modo", modo)
+      .eq("monto", monto)
+      .eq("fecha", fecha)
+      .ilike("nombre", nombre.trim())
+      .limit(1)
+      .maybeSingle()
+  );
+}
+
 export async function actualizarMovimiento(id, cambios) {
   return verificar(
     await supabase.from("movimientos").update(cambios).eq("id", id).select(SELECT).single()

@@ -1119,6 +1119,20 @@
     padding: 23px;
 }
 
+  .confirmacion-duplicado p {
+    margin: 0 0 var(--esp-3);
+  }
+
+  .confirmacion-duplicado p:last-child {
+    margin-bottom: 0;
+  }
+
+  .confirmacion-duplicado-detalle {
+    padding: var(--esp-3) var(--esp-4);
+    border-radius: var(--r-md);
+    background: var(--bg-sutil);
+  }
+
   .modal-panel--ancho {
     max-width: 640px;
   }
