@@ -98,7 +98,7 @@ function buscarMontoEnTexto(text) {
   return null;
 }
 
-function extractMonto(blocks) {
+function extractMonto(blocks, lineas) {
   for (const block of blocks) {
     for (const line of block.lines) {
       const parsed = buscarMontoEnTexto(line.text.trim());
@@ -106,13 +106,27 @@ function extractMonto(blocks) {
     }
   }
 
-  // Fallback: montos grandes (ej. "CLP1,350") a veces quedan en líneas
+  // Fallback 1: montos grandes (ej. "CLP1,350") a veces quedan en líneas
   // separadas dentro del mismo bloque por la diferencia de tamaño de fuente
   // entre el prefijo de moneda y el número — se reintenta uniendo todo el
   // texto del bloque.
   for (const block of blocks) {
     const parsed = buscarMontoEnTexto(block.lines.map((l) => l.text.trim()).join(" "));
     if (parsed !== null) return [parsed, block];
+  }
+
+  // Fallback 2: en algunas capturas el prefijo "CLP" y el número quedan en
+  // bloques DISTINTOS (no solo líneas distintas del mismo bloque) — visto en
+  // Android donde Tesseract separa el prefijo chico del número gigante en
+  // párrafos separados. Se reintenta con todo el texto del documento en
+  // orden de lectura, y si matchea se ubica el bloque que parece ser el del
+  // monto (por forma, aunque no haya sido ahí donde matcheó el regex).
+  if (lineas && lineas.length) {
+    const parsed = buscarMontoEnTexto(lineas.map((l) => l.text.trim()).join(" "));
+    if (parsed !== null) {
+      const montoBlock = blocks.find((b) => esBloqueMonetario(b)) || null;
+      return [parsed, montoBlock];
+    }
   }
 
   return [null, null];
@@ -299,7 +313,7 @@ function extractComercio(blocks, montoBlock, imageHeight) {
 // como compra antes de llamar acá).
 export function parsearCompra(lineas, bloques) {
   const imageHeight = bloques.length ? Math.max(...bloques.map((b) => b.bottom)) : 0;
-  const [monto, montoBlock] = extractMonto(bloques);
+  const [monto, montoBlock] = extractMonto(bloques, lineas);
   const [fecha] = extractFechaHora(lineas);
   const comercio =
     extractComercioDesdeEstadoCuenta(lineas) ?? extractComercio(bloques, montoBlock, imageHeight);

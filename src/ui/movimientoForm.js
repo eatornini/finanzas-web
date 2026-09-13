@@ -214,7 +214,7 @@ export function abrirMovimientoForm({
   // puntual.
   const debugOcrTexto = el("pre", { class: "comprobante-debug-texto" });
   const debugOcr = el("details", { class: "comprobante-debug", hidden: "true" }, [
-    el("summary", { text: "No se detectó la fecha — ver texto reconocido" }),
+    el("summary", { text: "Ver texto reconocido por el OCR" }),
     debugOcrTexto,
   ]);
   const inputArchivo = el("input", {
@@ -337,10 +337,13 @@ export function abrirMovimientoForm({
       // eslint-disable-next-line no-console
       console.log("[OCR debug] resultado:", resultado, "líneas:", lineas.map((l) => l.text));
       aplicarValoresOcr(resultado);
-      if (resultado.fecha) {
+      const faltantes = [];
+      if (!resultado.monto) faltantes.push("el monto");
+      if (!resultado.fecha) faltantes.push("la fecha");
+      if (faltantes.length === 0) {
         estadoOcr.textContent = "";
       } else {
-        estadoOcr.textContent = "No se detectó la fecha. Completala en \"Más opciones\".";
+        estadoOcr.textContent = `No se detectó ${faltantes.join(" ni ")}. Completalo a mano.`;
         debugOcrTexto.textContent = lineas.map((l) => l.text).join("\n");
         debugOcr.hidden = false;
       }
