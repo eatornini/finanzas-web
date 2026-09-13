@@ -36,7 +36,9 @@ const MONTO_NUM = "[\\d]+(?:[.,]\\d{3})*(?:[.,]\\d{1,2})?";
 const CLP_REGEX = new RegExp(`CLP\\s*\\$?\\s*(${MONTO_NUM})`, "i");
 const DOLLAR_REGEX = new RegExp(`\\$\\s*(${MONTO_NUM})`);
 const LABEL_MONTO_REGEX = new RegExp(`(?:Total|Monto|Importe|Valor|Pago)\\s*:?\\s*\\$?\\s*(${MONTO_NUM})`, "i");
-const FECHA_TEXTO_REGEX = /(\d{1,2})\s+de\s+([a-zA-Záéíóúñ]+)\s+a\s+las\s+(\d{1,2}):(\d{2})/;
+// "a\s*las" (no "a\s+las"): Tesseract a veces junta "a las" en "alas" sin
+// espacio (visto en capturas reales de Android, ej. "sept alas 21:45").
+const FECHA_TEXTO_REGEX = /(\d{1,2})\s+de\s+([a-zA-Záéíóúñ]+)\s+a\s*las\s+(\d{1,2}):(\d{2})/i;
 const HORA_REGEX = /(\d{1,2}):(\d{2})/;
 
 function aEnteroONull(s) {
