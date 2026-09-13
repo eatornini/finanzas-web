@@ -23,7 +23,7 @@ import {
   check,
 } from "./iconos.js";
 import { subirComprobante, urlComprobante, eliminarComprobante } from "../data/storage.js";
-import { reconocerImagen } from "../ocr/tesseractWorker.js";
+import { reconocerImagen, reconocerImagenAlterno } from "../ocr/tesseractWorker.js";
 import { construirBloques } from "../ocr/construirBloques.js";
 import { analizarComprobante } from "../ocr/ocrManager.js";
 import { mostrarOverlayCarga } from "./overlayCarga.js";
@@ -332,8 +332,33 @@ export function abrirMovimientoForm({
     const quitarOverlay = mostrarOverlayCarga("Leyendo comprobante…");
     try {
       const bloquesTesseract = await reconocerImagen(file);
-      const { lineas, bloques } = construirBloques(bloquesTesseract);
-      const resultado = analizarComprobante({ lineas, bloques });
+      let { lineas, bloques } = construirBloques(bloquesTesseract);
+      let resultado = analizarComprobante({ lineas, bloques });
+
+      // PSM 11 a veces igual descarta el bloque del monto (bloque grande y
+      // aislado, ver tesseractWorker.js). Se reintenta con PSM 3 SOLO en ese
+      // caso — duplicaría el tiempo de espera en todas las cargas si se
+      // corriera siempre — y se completa lo que falte sin pisar lo que el
+      // primer intento ya encontró bien.
+      if (!resultado.monto) {
+        try {
+          const bloquesAlt = await reconocerImagenAlterno(file);
+          const alt = construirBloques(bloquesAlt);
+          const resultadoAlt = analizarComprobante({ lineas: alt.lineas, bloques: alt.bloques });
+          if (resultadoAlt.monto) {
+            resultado = {
+              ...resultado,
+              monto: resultadoAlt.monto,
+              comercio: resultado.comercio ?? resultadoAlt.comercio,
+              fecha: resultado.fecha ?? resultadoAlt.fecha,
+            };
+            lineas = alt.lineas;
+          }
+        } catch {
+          /* si el segundo intento falla, seguimos con lo que ya teníamos */
+        }
+      }
+
       // eslint-disable-next-line no-console
       console.log("[OCR debug] resultado:", resultado, "líneas:", lineas.map((l) => l.text));
       aplicarValoresOcr(resultado);
