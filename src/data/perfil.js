@@ -20,3 +20,9 @@ export async function registrarAcceso() {
     /* sin efecto visible para el usuario */
   }
 }
+
+// Persiste el color de acento en la cuenta (perfiles.acento) para que se
+// vea igual en cualquier dispositivo. color: "#rrggbb" | null (restablece).
+export async function actualizarAcento(color) {
+  return verificar(await supabase.rpc("actualizar_acento", { p_acento: color }));
+}

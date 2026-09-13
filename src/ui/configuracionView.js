@@ -3,6 +3,7 @@ import { prefs } from "../prefs.js";
 import { engranajeIcono, intercambioIcono, paletaIcono } from "./iconos.js";
 import { tituloVista, iconoTitulo } from "./tituloVista.js";
 import { aplicarAcento, esHexValido, ACENTO_DEFECTO } from "./acento.js";
+import { actualizarAcento } from "../data/perfil.js";
 
 // Colores de acento predefinidos (el primero es el de por defecto). El
 // selector de color al final permite cualquier otro.
@@ -31,6 +32,9 @@ export function montarConfiguracion(contenedor) {
     prefs.set("acento", c);
     aplicarAcento(c);
     sincronizarAcento();
+    // Best-effort: si falla (sin conexión, etc.) el color igual queda
+    // aplicado localmente; se reintentará solo al volver a elegirlo.
+    actualizarAcento(c).catch(() => {});
   }
 
   const botonesPreset = PRESETS_ACENTO.map((c) => {

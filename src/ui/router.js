@@ -1,11 +1,32 @@
 import { limpiar } from "./dom.js";
 import { sesionActual, alCambiarSesion, cerrarSesion } from "../auth.js";
-import { miPerfil } from "../data/perfil.js";
+import { miPerfil, actualizarAcento } from "../data/perfil.js";
 import { cuentaActiva } from "../logic/cuentas.js";
 import { montarLogin } from "./loginView.js";
 import { montarShell } from "./shell.js";
 import { montarRecuperar } from "./recuperarView.js";
 import { montarCuentaPendiente } from "./cuentaPendienteView.js";
+import { prefs } from "../prefs.js";
+import { aplicarAcento, esHexValido, ACENTO_DEFECTO } from "./acento.js";
+
+// El acento vive en localStorage (por dispositivo) y en perfiles.acento (por
+// cuenta). Al resolver la sesión: si la cuenta ya tiene uno guardado, se
+// aplica acá (para que un dispositivo nuevo se vea igual); si no lo tiene
+// pero este dispositivo sí tiene uno elegido (de antes de que existiera esta
+// sincronización), se sube para no perderlo la primera vez que se detecta.
+async function sincronizarAcentoCuenta(perfil) {
+  const local = prefs.get("acento");
+  if (esHexValido(perfil?.acento)) {
+    if (perfil.acento.toLowerCase() !== local.toLowerCase()) {
+      prefs.set("acento", perfil.acento);
+      aplicarAcento(perfil.acento);
+    }
+    return;
+  }
+  if (esHexValido(local) && local.toLowerCase() !== ACENTO_DEFECTO.toLowerCase()) {
+    actualizarAcento(local).catch(() => {});
+  }
+}
 
 const raiz = () => document.getElementById("app");
 
@@ -66,6 +87,7 @@ async function resolver(sesion, recuperando) {
   }
 
   if (cuentaActiva(perfil)) {
+    await sincronizarAcentoCuenta(perfil);
     montarShell(contenedor, sesion, perfil);
   } else {
     montarCuentaPendiente(contenedor, perfil);

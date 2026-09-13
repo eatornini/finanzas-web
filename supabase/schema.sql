@@ -99,9 +99,64 @@ create table perfiles (
                 check (estado in ('pendiente','activo','deshabilitado','rechazado')),
   rol           text not null default 'usuario' check (rol in ('usuario','admin')),
   creado_en     timestamptz not null default now(),
-  ultimo_acceso timestamptz
+  ultimo_acceso timestamptz,
+  -- Color de acento (#rrggbb) elegido en Configuración. null = usa el
+  -- default de la app. Se guarda acá (no solo en localStorage) para que se
+  -- vea igual en cualquier dispositivo donde el usuario inicie sesión.
+  acento        text
 );
 alter table perfiles enable row level security;
+
+-- Categorías por defecto para cuentas nuevas: se editan/eliminan como
+-- cualquier otra, esto solo evita arrancar con la lista vacía. Separadas
+-- por modo ('real'/'estimado', ver comentario en la tabla categorias) —
+-- ambas listas se siembran igual.
+create or replace function sembrar_categorias_default(p_user_id uuid)
+returns void language plpgsql security definer set search_path = public as $$
+declare
+  -- (nombre, icono, color)
+  v_gastos constant text[][] := array[
+    ['Alimentación',    'restaurant',        '#e67e22'],
+    ['Transporte',      'directions_car',    '#3498db'],
+    ['Vivienda',        'home',              '#9b59b6'],
+    ['Salud',           'health_and_safety', '#2ecc71'],
+    ['Educación',       'school',            '#1abc9c'],
+    ['Entretenimiento', 'movie',             '#e84393'],
+    ['Compras',         'shopping_cart',     '#f1c40f'],
+    ['Servicios',       'receipt_long',      '#7f8c8d'],
+    ['Otros gastos',    'category',          '#c0392b']
+  ];
+  v_ingresos constant text[][] := array[
+    ['Sueldo',             'payments',     '#2ecc71'],
+    ['Ventas y freelance', 'sell',         '#3498db'],
+    ['Inversiones',        'trending_up',  '#9b59b6'],
+    ['Otros ingresos',     'attach_money', '#f1c40f']
+  ];
+  v_modo text;
+  v_fila text[];
+  v_orden int;
+begin
+  -- Idempotente: si la cuenta ya tiene alguna categoría, no duplica nada.
+  if exists (select 1 from categorias where user_id = p_user_id) then
+    return;
+  end if;
+
+  foreach v_modo in array array['real', 'estimado'] loop
+    v_orden := 0;
+    foreach v_fila slice 1 in array v_gastos loop
+      v_orden := v_orden + 1;
+      insert into categorias (user_id, nombre, tipo, modo, color, icono, orden)
+      values (p_user_id, v_fila[1], 'gasto', v_modo, v_fila[3], v_fila[2], v_orden);
+    end loop;
+    v_orden := 0;
+    foreach v_fila slice 1 in array v_ingresos loop
+      v_orden := v_orden + 1;
+      insert into categorias (user_id, nombre, tipo, modo, color, icono, orden)
+      values (p_user_id, v_fila[1], 'ingreso', v_modo, v_fila[3], v_fila[2], v_orden);
+    end loop;
+  end loop;
+end;
+$$;
 
 create or replace function handle_nuevo_usuario()
 returns trigger language plpgsql security definer set search_path = public as $$
@@ -109,6 +164,7 @@ begin
   insert into public.perfiles (id, email)
   values (new.id, coalesce(new.email, ''))
   on conflict (id) do nothing;
+  perform sembrar_categorias_default(new.id);
   return new;
 end;
 $$;
@@ -170,6 +226,19 @@ returns void language sql volatile security definer set search_path = public as 
   update perfiles set ultimo_acceso = now() where id = auth.uid();
 $$;
 grant execute on function registrar_acceso() to authenticated;
+
+-- Color de acento propio (Configuración). p_acento null = restablece al
+-- default de la app.
+create or replace function actualizar_acento(p_acento text)
+returns void language plpgsql volatile security definer set search_path = public as $$
+begin
+  if p_acento is not null and p_acento !~ '^#[0-9a-fA-F]{6}$' then
+    raise exception 'color inválido: %', p_acento;
+  end if;
+  update perfiles set acento = p_acento where id = auth.uid();
+end;
+$$;
+grant execute on function actualizar_acento(text) to authenticated;
 
 -- ── RPC de administración (solo admins activos; el resto recibe 42501) ──
 create or replace function admin_listar_usuarios()
