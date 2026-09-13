@@ -24,6 +24,7 @@ import {
 } from "./iconos.js";
 import { subirComprobante, urlComprobante, eliminarComprobante } from "../data/storage.js";
 import { reconocerImagen, reconocerImagenAlterno } from "../ocr/tesseractWorker.js";
+import { invertirImagen } from "../ocr/invertirImagen.js";
 import { construirBloques } from "../ocr/construirBloques.js";
 import { analizarComprobante } from "../ocr/ocrManager.js";
 import { mostrarOverlayCarga } from "./overlayCarga.js";
@@ -370,6 +371,35 @@ export function abrirMovimientoForm({
           }
         } catch (e) {
           debugSecciones.push(`— Intento 2 (PSM 3) — falló: ${e?.message || e} —`);
+        }
+      }
+
+      // Último recurso: capturas con tema oscuro (texto claro sobre fondo
+      // oscuro) a veces pierden justo el bloque grande del monto en ambos
+      // PSM — la misma captura en tema claro sí se lee. Se invierte la
+      // imagen (blanco<->negro) y se reintenta con PSM 11.
+      if (!resultado.monto) {
+        try {
+          const invertida = await invertirImagen(file);
+          const bloquesInv = await reconocerImagen(invertida);
+          const inv = construirBloques(bloquesInv);
+          const resultadoInv = analizarComprobante({ lineas: inv.lineas, bloques: inv.bloques });
+          debugSecciones.push(
+            `— Intento 3 (invertido) — monto:${resultadoInv.monto ?? "?"} fecha:${
+              resultadoInv.fecha ? resultadoInv.fecha.toISOString() : "?"
+            } —\n${inv.lineas.map((l) => l.text).join("\n")}`
+          );
+          if (resultadoInv.monto) {
+            resultado = {
+              ...resultado,
+              monto: resultadoInv.monto,
+              comercio: resultado.comercio ?? resultadoInv.comercio,
+              fecha: resultado.fecha ?? resultadoInv.fecha,
+            };
+            lineas = inv.lineas;
+          }
+        } catch (e) {
+          debugSecciones.push(`— Intento 3 (invertido) — falló: ${e?.message || e} —`);
         }
       }
 
