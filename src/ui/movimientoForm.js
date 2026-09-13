@@ -214,7 +214,7 @@ export function abrirMovimientoForm({
   // puntual.
   const debugOcrTexto = el("pre", { class: "comprobante-debug-texto" });
   const debugOcr = el("details", { class: "comprobante-debug", hidden: "true" }, [
-    el("summary", { text: "Ver texto reconocido por el OCR" }),
+    el("summary", { text: "Ver texto reconocido por el OCR (debug temporal)" }),
     debugOcrTexto,
   ]);
   const inputArchivo = el("input", {
@@ -330,10 +330,19 @@ export function abrirMovimientoForm({
     // Overlay bloqueante: el OCR tarda varios segundos y el usuario no debe
     // tocar el formulario mientras corre.
     const quitarOverlay = mostrarOverlayCarga("Leyendo comprobante…");
+    // DEBUG TEMPORAL: junta el texto de cada intento de OCR por separado
+    // (etiquetado) para poder comparar qué reconoce cada PSM. Sacar cuando
+    // se resuelva el bug del monto que no aparece en ciertos comprobantes.
+    const debugSecciones = [];
     try {
       const bloquesTesseract = await reconocerImagen(file);
       let { lineas, bloques } = construirBloques(bloquesTesseract);
       let resultado = analizarComprobante({ lineas, bloques });
+      debugSecciones.push(
+        `— Intento 1 (PSM 11) — monto:${resultado.monto ?? "?"} fecha:${
+          resultado.fecha ? resultado.fecha.toISOString() : "?"
+        } —\n${lineas.map((l) => l.text).join("\n")}`
+      );
 
       // PSM 11 a veces igual descarta el bloque del monto (bloque grande y
       // aislado, ver tesseractWorker.js). Se reintenta con PSM 3 SOLO en ese
@@ -345,6 +354,11 @@ export function abrirMovimientoForm({
           const bloquesAlt = await reconocerImagenAlterno(file);
           const alt = construirBloques(bloquesAlt);
           const resultadoAlt = analizarComprobante({ lineas: alt.lineas, bloques: alt.bloques });
+          debugSecciones.push(
+            `— Intento 2 (PSM 3) — monto:${resultadoAlt.monto ?? "?"} fecha:${
+              resultadoAlt.fecha ? resultadoAlt.fecha.toISOString() : "?"
+            } —\n${alt.lineas.map((l) => l.text).join("\n")}`
+          );
           if (resultadoAlt.monto) {
             resultado = {
               ...resultado,
@@ -354,8 +368,8 @@ export function abrirMovimientoForm({
             };
             lineas = alt.lineas;
           }
-        } catch {
-          /* si el segundo intento falla, seguimos con lo que ya teníamos */
+        } catch (e) {
+          debugSecciones.push(`— Intento 2 (PSM 3) — falló: ${e?.message || e} —`);
         }
       }
 
@@ -365,13 +379,13 @@ export function abrirMovimientoForm({
       const faltantes = [];
       if (!resultado.monto) faltantes.push("el monto");
       if (!resultado.fecha) faltantes.push("la fecha");
-      if (faltantes.length === 0) {
-        estadoOcr.textContent = "";
-      } else {
-        estadoOcr.textContent = `No se detectó ${faltantes.join(" ni ")}. Completalo a mano.`;
-        debugOcrTexto.textContent = lineas.map((l) => l.text).join("\n");
-        debugOcr.hidden = false;
-      }
+      estadoOcr.textContent =
+        faltantes.length === 0 ? "" : `No se detectó ${faltantes.join(" ni ")}. Completalo a mano.`;
+      // Visible siempre mientras dura este debug temporal (no solo cuando
+      // falta un campo), para poder comparar comprobantes que sí funcionan
+      // contra los que no.
+      debugOcrTexto.textContent = debugSecciones.join("\n\n");
+      debugOcr.hidden = false;
     } catch {
       estadoOcr.textContent = "No se pudo leer el comprobante. Completá los datos a mano.";
     } finally {
