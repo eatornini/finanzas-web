@@ -3385,6 +3385,23 @@
     color: var(--fg-tenue);
     margin: var(--esp-1) 0 0;
   }
+  .comprobante-debug {
+    margin-top: var(--esp-1);
+    font-size: var(--txt-sm);
+    color: var(--fg-tenue);
+  }
+  .comprobante-debug summary {
+    cursor: pointer;
+  }
+  .comprobante-debug-texto {
+    margin: var(--esp-2) 0 0;
+    padding: var(--esp-2);
+    border-radius: var(--r-md);
+    background: var(--bg-sutil);
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-size: var(--txt-xs, var(--txt-sm));
+  }
   .ms-icono--completo {
     font-family: "Material Symbols Full", "Material Symbols";
   }

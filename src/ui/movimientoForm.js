@@ -207,6 +207,16 @@ export function abrirMovimientoForm({
 
   const previewImg = el("img", { class: "comprobante-preview", alt: "Comprobante", hidden: "true" });
   const estadoOcr = el("p", { class: "comprobante-estado" });
+  // Panel de debug: se muestra solo cuando el OCR no logra extraer la
+  // fecha, para que la persona pueda expandirlo y mandarnos una captura con
+  // el texto crudo que reconoció Tesseract en su teléfono — sin eso no hay
+  // forma de saber por qué el regex de fecha no matcheó en ese comprobante
+  // puntual.
+  const debugOcrTexto = el("pre", { class: "comprobante-debug-texto" });
+  const debugOcr = el("details", { class: "comprobante-debug", hidden: "true" }, [
+    el("summary", { text: "No se detectó la fecha — ver texto reconocido" }),
+    debugOcrTexto,
+  ]);
   const inputArchivo = el("input", {
     type: "file",
     accept: "image/*",
@@ -316,14 +326,24 @@ export function abrirMovimientoForm({
     actualizarBotones();
 
     estadoOcr.textContent = "Leyendo comprobante…";
+    debugOcr.hidden = true;
     // Overlay bloqueante: el OCR tarda varios segundos y el usuario no debe
     // tocar el formulario mientras corre.
     const quitarOverlay = mostrarOverlayCarga("Leyendo comprobante…");
     try {
       const bloquesTesseract = await reconocerImagen(file);
       const { lineas, bloques } = construirBloques(bloquesTesseract);
-      aplicarValoresOcr(analizarComprobante({ lineas, bloques }));
-      estadoOcr.textContent = "";
+      const resultado = analizarComprobante({ lineas, bloques });
+      // eslint-disable-next-line no-console
+      console.log("[OCR debug] resultado:", resultado, "líneas:", lineas.map((l) => l.text));
+      aplicarValoresOcr(resultado);
+      if (resultado.fecha) {
+        estadoOcr.textContent = "";
+      } else {
+        estadoOcr.textContent = "No se detectó la fecha. Completala en \"Más opciones\".";
+        debugOcrTexto.textContent = lineas.map((l) => l.text).join("\n");
+        debugOcr.hidden = false;
+      }
     } catch {
       estadoOcr.textContent = "No se pudo leer el comprobante. Completá los datos a mano.";
     } finally {
@@ -334,6 +354,7 @@ export function abrirMovimientoForm({
   const comprobante = el("div", { class: "comprobante-campo comprobante-campo--secundario" }, [
     el("div", { class: "comprobante-caja" }, [previewImg, btnQuitarComprobante, inputArchivo]),
     estadoOcr,
+    debugOcr,
   ]);
 
   const activo = el("input", { id: "mov-activo", type: "checkbox" });
