@@ -215,7 +215,7 @@ export function abrirMovimientoForm({
   // puntual.
   const debugOcrTexto = el("pre", { class: "comprobante-debug-texto" });
   const debugOcr = el("details", { class: "comprobante-debug", hidden: "true" }, [
-    el("summary", { text: "Ver texto reconocido por el OCR (debug temporal)" }),
+    el("summary", { text: "Ver texto reconocido por el OCR" }),
     debugOcrTexto,
   ]);
   const inputArchivo = el("input", {
@@ -331,9 +331,9 @@ export function abrirMovimientoForm({
     // Overlay bloqueante: el OCR tarda varios segundos y el usuario no debe
     // tocar el formulario mientras corre.
     const quitarOverlay = mostrarOverlayCarga("Leyendo comprobante…");
-    // DEBUG TEMPORAL: junta el texto de cada intento de OCR por separado
-    // (etiquetado) para poder comparar qué reconoce cada PSM. Sacar cuando
-    // se resuelva el bug del monto que no aparece en ciertos comprobantes.
+    // Texto de cada intento de OCR, etiquetado — se muestra solo si al final
+    // falta un campo, para poder mandar el detalle de qué reconoció cada
+    // intento en vez de solo "no funcionó".
     const debugSecciones = [];
     try {
       const bloquesTesseract = await reconocerImagen(file);
@@ -409,13 +409,13 @@ export function abrirMovimientoForm({
       const faltantes = [];
       if (!resultado.monto) faltantes.push("el monto");
       if (!resultado.fecha) faltantes.push("la fecha");
-      estadoOcr.textContent =
-        faltantes.length === 0 ? "" : `No se detectó ${faltantes.join(" ni ")}. Completalo a mano.`;
-      // Visible siempre mientras dura este debug temporal (no solo cuando
-      // falta un campo), para poder comparar comprobantes que sí funcionan
-      // contra los que no.
-      debugOcrTexto.textContent = debugSecciones.join("\n\n");
-      debugOcr.hidden = false;
+      if (faltantes.length === 0) {
+        estadoOcr.textContent = "";
+      } else {
+        estadoOcr.textContent = `No se detectó ${faltantes.join(" ni ")}. Completalo a mano.`;
+        debugOcrTexto.textContent = debugSecciones.join("\n\n");
+        debugOcr.hidden = false;
+      }
     } catch {
       estadoOcr.textContent = "No se pudo leer el comprobante. Completá los datos a mano.";
     } finally {
