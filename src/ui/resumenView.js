@@ -108,7 +108,7 @@ function desgloseItem(nombre, t) {
   ]);
 }
 
-function tarjetaHead(fabricaIcono, titulo, sub, extra) {
+export function tarjetaHead(fabricaIcono, titulo, sub, extra) {
   return el("div", { class: "resumen-card-head" }, [
     el("div", { class: "resumen-card-head-txt" }, [
       el("h3", {}, [iconoTitulo(fabricaIcono), titulo]),
@@ -159,7 +159,7 @@ function ymdLocal(d) {
 // Semanas de calendario (lunes a domingo) dentro del rango del mes, tal
 // como se ven las filas de un calendario mensual: la primera y la última
 // quedan recortadas si el mes no empieza en lunes ni termina en domingo.
-function semanasDelMes(desde, hasta) {
+export function semanasDelMes(desde, hasta) {
   const fin = new Date(`${hasta}T12:00:00`);
   const semanas = [];
   let cursor = new Date(`${desde}T12:00:00`);
@@ -173,7 +173,7 @@ function semanasDelMes(desde, hasta) {
   return semanas;
 }
 
-function etiquetaSemana(semana) {
+export function etiquetaSemana(semana) {
   const a = new Date(`${semana.desde}T12:00:00`);
   const b = new Date(`${semana.hasta}T12:00:00`);
   const mes = MESES_ABBR[b.getMonth()];
@@ -181,7 +181,7 @@ function etiquetaSemana(semana) {
 }
 
 // Agrupa los gastos del mes por semana de calendario (lunes a domingo).
-function agruparGastosPorSemana(movimientos, rango) {
+export function agruparGastosPorSemana(movimientos, rango) {
   const semanas = semanasDelMes(rango.desde, rango.hasta);
   for (const m of movimientos) {
     if (m.tipo !== "gasto") continue;
@@ -195,7 +195,7 @@ function agruparGastosPorSemana(movimientos, rango) {
 // "futura": todavía no empieza (sin datos, no cuenta para mayor/menor).
 // "en_curso": hoy cae dentro de la semana (gasto acumulado a la fecha).
 // "pasada": semana ya terminada, con datos definitivos.
-function estadoSemana(semana, hoy) {
+export function estadoSemana(semana, hoy) {
   if (hoy < semana.desde) return "futura";
   if (hoy <= semana.hasta) return "en_curso";
   return "pasada";
@@ -224,14 +224,19 @@ function seccionGastosSemana(movimientos, rango, enPeriodo) {
     ]);
   }
 
+  // Solo semanas YA TERMINADAS compiten por "Mayor gasto": una semana en
+  // curso todavía puede sumar más antes de terminar, así que su total no es
+  // definitivo. Pasa a ser candidata recién en el render donde ya cruzó su
+  // domingo (estadoSemana la reclasifica sola, sin nada hardcodeado).
+  const pasadas = conDatos.filter((s) => s.estado === "pasada");
+  const maxTotalPasadas = pasadas.length ? Math.max(...pasadas.map((s) => s.total)) : null;
+  const mayor = maxTotalPasadas !== null ? pasadas.find((s) => s.total === maxTotalPasadas) : null;
+  const enCurso = semanas.find((s) => s.estado === "en_curso") || null;
+
+  // El ancho de las barras sigue escalando contra la semana con más gasto
+  // entre TODAS las que tienen datos (incluida la en curso) — es solo
+  // proporción visual entre filas, no decide el título "Mayor gasto".
   const maxTotal = Math.max(...conDatos.map((s) => s.total));
-  const minTotal = Math.min(...conDatos.map((s) => s.total));
-  const mayor = conDatos.find((s) => s.total === maxTotal);
-  // "Menor gasto" solo aporta cuando hay más de una semana con datos y
-  // realmente existe variación — si no, sería igual (y redundante) al mayor.
-  const menor = conDatos.length >= 2 && minTotal < maxTotal
-    ? conDatos.find((s) => s.total === minTotal)
-    : null;
 
   const filas = semanas.map((s) => {
     const etiquetaNodo = el("span", { class: "resumen-semanas-rango", text: etiquetaSemana(s) });
@@ -243,7 +248,7 @@ function seccionGastosSemana(movimientos, rango, enPeriodo) {
       ]);
     }
 
-    const esPico = s.total === maxTotal;
+    const esPico = s === mayor;
     const anchoBarra = maxTotal > 0 ? Math.max((s.total / maxTotal) * 100, s.total > 0 ? 4 : 1) : 1;
     const relleno = el("span", {
       class: `resumen-semanas-barra-relleno${esPico ? " resumen-semanas-barra-relleno--pico" : ""}`,
@@ -265,23 +270,25 @@ function seccionGastosSemana(movimientos, rango, enPeriodo) {
     "div",
     { class: "resumen-semanas-destacadas" },
     [
-      el("span", { class: "resumen-semanas-destacada" }, [
-        el("span", { class: "resumen-semanas-destacada-etq", text: "Mayor gasto" }),
-        `: ${etiquetaSemana(mayor)} · ${valorOculto(mayor.total)}`,
-      ]),
-      menor
+      mayor
         ? el("span", { class: "resumen-semanas-destacada" }, [
-            el("span", { class: "resumen-semanas-destacada-etq", text: "Menor gasto" }),
-            `: ${etiquetaSemana(menor)} · ${valorOculto(menor.total)}`,
+            el("span", { class: "resumen-semanas-destacada-etq", text: "Mayor gasto" }),
+            `: ${etiquetaSemana(mayor)} · ${valorOculto(mayor.total)}`,
           ])
         : null,
-    ].filter(Boolean)
+      enCurso
+        ? el("span", { class: "resumen-semanas-destacada" }, [
+            el("span", { class: "resumen-semanas-destacada-etq", text: "Semana en curso" }),
+            `: ${etiquetaSemana(enCurso)} · ${valorOculto(enCurso.total)}`,
+          ])
+        : null,
+    ]
   );
 
   return el("section", { class: "panel-tarjeta resumen-semanas" }, [
     cabecera,
     el("div", { class: "resumen-semanas-lista" }, filas),
-    destacadas,
+    mayor || enCurso ? destacadas : null,
   ]);
 }
 
@@ -341,7 +348,7 @@ function donutGastos(filas, total) {
   return wrap;
 }
 
-function seccionGastosCategoria(movimientos, enPeriodo) {
+function seccionGastosCategoria(movimientos, enPeriodo, verCategoria) {
   const grupos = agruparGastos(movimientos);
   const total = grupos.reduce((s, g) => s + g.total, 0);
   const card = el("section", { class: "panel-tarjeta resumen-gastos-cat" });
@@ -372,12 +379,33 @@ function seccionGastosCategoria(movimientos, enPeriodo) {
         ]);
         icono.style.background = `color-mix(in srgb, ${color} 16%, transparent)`;
         icono.style.color = color;
-        return el("li", { class: "resumen-gastos-cat-item" }, [
-          icono,
-          el("span", { class: "resumen-gastos-cat-nombre", text: g.nombre }),
-          el("span", { class: "resumen-gastos-cat-monto", text: valorOculto(g.total) }),
-          el("span", { class: "resumen-gastos-cat-pct", text: `${pct}%` }),
-        ]);
+        const clickeable = g.clave !== "sin" && typeof verCategoria === "function";
+        return el(
+          "li",
+          {
+            class: `resumen-gastos-cat-item${clickeable ? " resumen-gastos-cat-item--clickable" : ""}`,
+            ...(clickeable
+              ? {
+                  role: "button",
+                  tabindex: "0",
+                  "aria-label": `Ver detalle de ${g.nombre}`,
+                  onClick: () => verCategoria(g.clave),
+                  onKeydown: (ev) => {
+                    if (ev.key === "Enter" || ev.key === " ") {
+                      ev.preventDefault();
+                      verCategoria(g.clave);
+                    }
+                  },
+                }
+              : {}),
+          },
+          [
+            icono,
+            el("span", { class: "resumen-gastos-cat-nombre", text: g.nombre }),
+            el("span", { class: "resumen-gastos-cat-monto", text: valorOculto(g.total) }),
+            el("span", { class: "resumen-gastos-cat-pct", text: `${pct}%` }),
+          ]
+        );
       })
     );
 
@@ -480,7 +508,7 @@ function seccionConsejo(ingresos, gastos, tipo, numMovimientos) {
 
 // --- Vista -----------------------------------------------------------------
 
-export async function montarResumen(contenedor, { rango, tipo, fechaRef, modo, irA }) {
+export async function montarResumen(contenedor, { rango, tipo, fechaRef, modo, irA, verCategoria }) {
   limpiar(contenedor);
 
   const error = el("p", { class: "error", role: "alert" });
@@ -588,7 +616,7 @@ export async function montarResumen(contenedor, { rango, tipo, fechaRef, modo, i
 
     raiz.append(
       el("div", { class: "resumen-inferior" }, [
-        seccionGastosCategoria(paraTotales, enPeriodo),
+        seccionGastosCategoria(paraTotales, enPeriodo, verCategoria),
         seccionActividad(movimientos, enPeriodo, irA),
       ])
     );

@@ -435,7 +435,7 @@ export async function montarMovimientos(
   }
 }
 
-function fila(m, recargar, error, modo, asegurarCategorias) {
+export function fila(m, recargar, error, modo, asegurarCategorias) {
   const signo = m.tipo === "ingreso" ? "+" : "−";
   const cat = m.categoria ? m.categoria.nombre : "Sin categoría";
   const color = colorMovimiento(m);

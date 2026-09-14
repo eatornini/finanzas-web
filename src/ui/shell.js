@@ -26,6 +26,7 @@ import {
 } from "./iconos.js";
 import { montarMovimientos } from "./movimientosView.js";
 import { montarResumen } from "./resumenView.js";
+import { montarCategoriaDetalle } from "./categoriaDetalleView.js";
 import { montarCategorias } from "./categoriasView.js";
 import { montarBuscador } from "./buscadorView.js";
 import { montarReportes } from "./reportesView.js";
@@ -103,8 +104,53 @@ export function montarShell(contenedor, sesion, perfil) {
     const rango = rangoPeriodo(fechaRef, tipo);
     etiqueta.textContent = etiquetaPeriodo(fechaRef, tipo);
     const vista = VISTAS.find((v) => v.clave === activa);
-    vista.montar(cuerpo, { rango, tipo, fechaRef, modo, irA });
+    vista.montar(cuerpo, { rango, tipo, fechaRef, modo, irA, verCategoria });
+    renderActual = pintarVista;
   }
+
+  // Detalle de categoría: no es una pestaña de la barra lateral, es una
+  // sub-pantalla que se abre desde "Gastos por categoría" (Resumen). No
+  // toca `activa` ni prefs.vistaActiva — "Volver" reconstruye exactamente
+  // la pestaña de la que salió.
+  function verCategoria(categoriaId) {
+    function render() {
+      // rango se recalcula acá adentro (no una vez al abrir el detalle):
+      // las flechas de período llaman a renderActual(), que es esta función
+      // mientras el detalle está abierto, y deben reflejar el período nuevo.
+      const rango = rangoPeriodo(fechaRef, tipo);
+      montarCategoriaDetalle(cuerpo, {
+        rango,
+        tipo,
+        fechaRef,
+        modo,
+        categoriaId,
+        volver: pintarVista,
+        irAMovimientos: irAMovimientosCategoria,
+      });
+    }
+    renderActual = render;
+    render();
+  }
+
+  // "Ver todos los movimientos" desde el detalle de categoría: sí es un
+  // cambio real de pestaña (a diferencia de verCategoria), por eso actualiza
+  // `activa`/prefs igual que irA — solo que además precarga el filtro de
+  // categoría en Movimientos.
+  function irAMovimientosCategoria(categoriaId) {
+    activa = "movimientos";
+    prefs.set("vistaActiva", "movimientos");
+    sincronizarNav();
+    const rango = rangoPeriodo(fechaRef, tipo);
+    montarMovimientos(cuerpo, { rango, tipo, fechaRef, modo, categoriaInicial: categoriaId, irA, verCategoria });
+    renderActual = pintarVista;
+    cerrarDrawer();
+  }
+
+  // A qué función redibujar cuando cambian período/tipo/modo: la vista
+  // activa normalmente, pero si hay un detalle de categoría abierto, ese
+  // mismo detalle (para no expulsar a la persona a Resumen al tocar las
+  // flechas de período mientras mira el detalle).
+  let renderActual = pintarVista;
 
   const ETIQUETAS_TIPO = { semana: "Sem", mes: "Mes", año: "Año" };
   const btnTipo = {};
@@ -115,7 +161,8 @@ export function montarShell(contenedor, sesion, perfil) {
         tipo = t;
         prefs.set("periodoTipo", t);
         sincronizarTipo();
-        pintarVista();
+        etiqueta.textContent = etiquetaPeriodo(fechaRef, tipo);
+        renderActual();
       },
     });
   }
@@ -176,7 +223,8 @@ export function montarShell(contenedor, sesion, perfil) {
           onClick: () => {
             fechaRef = periodoAnterior(fechaRef, tipo);
             prefs.set("fechaRef", ymdLocal(fechaRef));
-            pintarVista();
+            etiqueta.textContent = etiquetaPeriodo(fechaRef, tipo);
+            renderActual();
           },
         },
         [flechaIzq()]
@@ -190,7 +238,8 @@ export function montarShell(contenedor, sesion, perfil) {
           onClick: () => {
             fechaRef = periodoSiguiente(fechaRef, tipo);
             prefs.set("fechaRef", ymdLocal(fechaRef));
-            pintarVista();
+            etiqueta.textContent = etiquetaPeriodo(fechaRef, tipo);
+            renderActual();
           },
         },
         [flechaDer()]
@@ -285,7 +334,7 @@ export function montarShell(contenedor, sesion, perfil) {
   ]);
 
   const piePagina = el("footer", { class: "pie-app" }, [
-    el("span", { text: "Finanzas v3.16" }),
+    el("span", { text: "Finanzas v3.19" }),
     el("span", { class: "pie-punto", text: "·" }),
     el("span", { text: "Tus datos están seguros" }),
   ]);

@@ -5086,6 +5086,159 @@ color-mix(in srgb, var(--acento) 16%, transparent);
     text-align: right;
   }
 
+  /* Fila de categoría clickeable (abre el detalle) — el resto de
+     .resumen-gastos-cat-item (ej. "Sin categoría") queda sin esta clase y
+     no es interactivo. */
+  .resumen-gastos-cat-item--clickable {
+    cursor: pointer;
+    border-radius: var(--r-sm);
+  }
+
+  .resumen-gastos-cat-item--clickable:hover {
+    background: var(--bg-sutil);
+  }
+
+  .resumen-gastos-cat-item--clickable:focus-visible {
+    outline: 2px solid var(--acento);
+    outline-offset: 2px;
+  }
+
+  /* =========================================================
+     Detalle de categoría — abierto desde "Gastos por categoría"
+     ========================================================= */
+  .catdet-volver {
+    display: inline-flex;
+    align-self: flex-start;
+    align-items: center;
+    gap: var(--esp-1);
+    margin-bottom: var(--esp-2);
+    font-size: var(--txt-lg);
+  }
+
+  .catdet-volver svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  /* "Mayor gasto": el nombre del comercio puede ser largo — una sola línea
+     con elipsis en vez de romper la altura de la tarjeta. */
+  .metrica-desc--truncar {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Cabecera de "Movimientos": título a la izquierda, buscador + orden a la
+     derecha — envuelve en vez de generar scroll horizontal en mobile. */
+  .catdet-mov-head {
+    flex-wrap: wrap;
+  }
+
+  .catdet-mov-acciones {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .catdet-mov-acciones .campo-busqueda {
+    flex: 1 1 160px;
+    min-width: 0;
+  }
+
+  .catdet-mov-acciones .campo-busqueda input {
+    width: 100%;
+  }
+
+  .catdet-orden {
+    flex: none;
+    width: auto;
+    min-width: 170px;
+  }
+
+  /* Gráfico de barras verticales: una columna por semana, altura relativa a
+     la semana con más gasto de la categoría. */
+  .catdet-semanas-cols {
+    display: flex;
+    align-items: flex-end;
+    gap: var(--esp-3);
+    padding-top: var(--esp-4);
+  }
+
+  .catdet-semanas-col {
+    flex: 1 1 0;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--esp-2);
+  }
+
+  .catdet-semanas-monto {
+    font-size: var(--txt-xs);
+    font-weight: var(--peso-semibold);
+    font-variant-numeric: tabular-nums;
+    color: var(--fg);
+    white-space: nowrap;
+  }
+
+  .catdet-semanas-pista {
+    display: flex;
+    align-items: flex-end;
+    width: 100%;
+    max-width: 40px;
+    height: 140px;
+    border-radius: var(--r-sm);
+    background: var(--bg-sutil);
+    overflow: hidden;
+  }
+
+  .catdet-semanas-relleno {
+    display: block;
+    width: 100%;
+    border-radius: var(--r-sm) var(--r-sm) 0 0;
+    transition: height 0.3s ease;
+  }
+
+  .catdet-semanas-etq {
+    font-size: var(--txt-xs);
+    color: var(--fg-tenue);
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  /* Semana futura o sin gasto: sin barra ni monto — solo un estado
+     discreto, para no mostrar un "$0" que se lea como un gasto real. */
+  .catdet-semanas-col--vacia {
+    opacity: 0.6;
+  }
+
+  .catdet-semanas-estado {
+    font-size: var(--txt-xs);
+    color: var(--fg-tenue);
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  /* Enlace al final de la lista truncada de movimientos. */
+  .catdet-ver-todos {
+    display: flex;
+    justify-content: center;
+    margin-top: var(--esp-1);
+  }
+
+  @media (max-width: 640px) {
+    .catdet-semanas-pista {
+      height: 100px;
+      max-width: 30px;
+    }
+
+    .catdet-semanas-monto,
+    .catdet-semanas-etq,
+    .catdet-semanas-estado {
+      font-size: 10px;
+    }
+  }
+
   .dona--grande {
     width: 190px;
     height: 190px;
