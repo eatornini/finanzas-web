@@ -749,7 +749,7 @@
   }
 
   .marca-lema {
-    font-size: var(--txt-xs);
+    font-size: 12px;
     color: var(--fg-tenue);
   }
 
@@ -3236,6 +3236,25 @@
     cursor: pointer;
   }
 
+  /* Campo hex manual: cubre celulares cuyo picker nativo no permite tipear. */
+  .cat-swatch-hex {
+    flex: none;
+    width: 108px;
+    height: 30px;
+    padding: 0 var(--esp-2);
+    border: 1px solid var(--borde);
+    border-radius: var(--r-sm);
+    background: var(--bg-elevado);
+    color: var(--fg);
+    font-size: var(--txt-xs);
+    text-transform: lowercase;
+  }
+
+  .cat-swatch-hex:focus-visible {
+    outline: 2px solid var(--acento);
+    outline-offset: 1px;
+  }
+
   /* Icono: buscador con lupa embebida (mismo patrón que "Comercio"). */
   .cat-iconos-buscar {
     position: relative;
@@ -4928,11 +4947,6 @@ color-mix(in srgb, var(--acento) 16%, transparent);
     gap: var(--esp-3);
   }
 
-  .resumen-semanas-fila--futura {
-    grid-template-columns: 64px 1fr;
-    opacity: 0.55;
-  }
-
   .resumen-semanas-rango {
     font-size: var(--txt-sm);
     color: var(--fg-tenue);
@@ -4942,12 +4956,6 @@ color-mix(in srgb, var(--acento) 16%, transparent);
   .resumen-semanas-fila--pico .resumen-semanas-rango {
     color: var(--fg);
     font-weight: var(--peso-semibold);
-  }
-
-  .resumen-semanas-estado {
-    font-size: var(--txt-sm);
-    color: var(--fg-tenue);
-    font-style: italic;
   }
 
   .resumen-semanas-barra-pista {
@@ -4988,6 +4996,7 @@ color-mix(in srgb, var(--acento) 16%, transparent);
     color: var(--acento);
     font-weight: var(--peso-semibold);
     font-style: normal;
+    display: none;
   }
 
   .resumen-semanas-destacadas {
@@ -5080,21 +5089,43 @@ color-mix(in srgb, var(--acento) 16%, transparent);
 
   .resumen-gastos-cat-pct {
     min-width: 2.75em;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 1px;
+  }
+
+  .resumen-gastos-cat-pct-valor {
     color: var(--fg-tenue);
     font-size: var(--txt-xs);
     font-variant-numeric: tabular-nums;
     text-align: right;
   }
 
-  /* Fila de categoría clickeable (abre el detalle) — el resto de
-     .resumen-gastos-cat-item (ej. "Sin categoría") queda sin esta clase y
-     no es interactivo. */
-  .resumen-gastos-cat-item--clickable {
-    cursor: pointer;
-    border-radius: var(--r-sm);
+  /* Cantidad de movimientos de la categoría — dato secundario, más chico
+     que el porcentaje. */
+  .resumen-gastos-cat-cantidad {
+    font-size: 10px;
+    color: var(--fg-tenue);
+    opacity: 0.75;
+    white-space: nowrap;
   }
 
-  .resumen-gastos-cat-item--clickable:hover {
+  /* Fila de categoría clickeable (abre el detalle) — el resto de
+     .resumen-gastos-cat-item (ej. "Sin categoría") queda sin esta clase y
+     no es interactivo. El hover/resaltado de abajo aplica a TODAS las filas
+     (clickeables o no), sincronizado con la dona. */
+  .resumen-gastos-cat-item--clickable {
+    cursor: pointer;
+  }
+
+  .resumen-gastos-cat-item {
+    border-radius: var(--r-sm);
+    transition: background-color 0.15s ease;
+  }
+
+  .resumen-gastos-cat-item--clickable:hover,
+  .resumen-gastos-cat-item--activo {
     background: var(--bg-sutil);
   }
 
@@ -5112,7 +5143,7 @@ color-mix(in srgb, var(--acento) 16%, transparent);
     align-items: center;
     gap: var(--esp-1);
     margin-bottom: var(--esp-2);
-    font-size: var(--txt-lg);
+    font-size: 12px;
   }
 
   .catdet-volver svg {
@@ -5217,13 +5248,6 @@ color-mix(in srgb, var(--acento) 16%, transparent);
     color: var(--fg-tenue);
     text-align: center;
     white-space: nowrap;
-  }
-
-  /* Enlace al final de la lista truncada de movimientos. */
-  .catdet-ver-todos {
-    display: flex;
-    justify-content: center;
-    margin-top: var(--esp-1);
   }
 
   @media (max-width: 640px) {
@@ -5407,10 +5431,6 @@ color-mix(in srgb, var(--acento) 16%, transparent);
 
     .resumen-semanas-fila {
       grid-template-columns: 52px 1fr 72px;
-    }
-
-    .resumen-semanas-fila--futura {
-      grid-template-columns: 52px 1fr;
     }
 
     .resumen-semanas-pct {
