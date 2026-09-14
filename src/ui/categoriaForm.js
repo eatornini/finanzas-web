@@ -120,7 +120,32 @@ export function abrirCategoriaForm({
     [inputColorCustom]
   );
 
-  const swatches = el("div", { class: "cat-swatches" }, [...botonesPaleta, swatchCustom]);
+  // El picker nativo de Android no siempre expone un campo de texto para
+  // tipear el hex (solo tono/saturación/valor), así que agregamos uno propio.
+  const inputHex = el("input", {
+    type: "text",
+    class: "cat-swatch-hex",
+    inputmode: "text",
+    maxlength: "7",
+    "aria-label": "Código de color hexadecimal",
+    placeholder: "#1162c3",
+    value: estado.color,
+  });
+  inputHex.addEventListener("input", () => {
+    const valor = inputHex.value.trim();
+    const normalizado = valor.startsWith("#") ? valor : `#${valor}`;
+    if (/^#[0-9a-fA-F]{6}$/.test(normalizado)) {
+      estado.color = normalizado.toLowerCase();
+      inputColorCustom.value = estado.color;
+      sincronizarColor();
+    }
+  });
+
+  const swatches = el("div", { class: "cat-swatches" }, [
+    ...botonesPaleta,
+    swatchCustom,
+    inputHex,
+  ]);
 
   function sincronizarColor() {
     const esCustom = !PALETA.includes(estado.color);
@@ -133,6 +158,9 @@ export function abrirCategoriaForm({
       swatchCustom.style.background = estado.color;
     } else {
       swatchCustom.style.background = "";
+    }
+    if (document.activeElement !== inputHex) {
+      inputHex.value = estado.color;
     }
   }
 

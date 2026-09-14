@@ -534,10 +534,17 @@ export function abrirMovimientoForm({
     limpiar(chips);
     const lista = categoriasDelTipo();
 
+    // En mobile 4 categorías + "Nueva categoría" (5 tarjetas de 96px) no
+    // entran en el ancho de pantalla sin hacer scroll horizontal, y "Nueva
+    // categoría" quedaba invisible de entrada. Con una menos, las 4 tarjetas
+    // totales (3 + Nueva) sí entran. Mismo breakpoint que el resto de la app
+    // usa para mobile (sidebar/drawer, ver app.css).
+    const maxCategorias = window.matchMedia("(max-width: 720px)").matches ? 3 : 4;
+
     // Mientras no llega el uso, placeholder del mismo tamaño (evita el
     // reordenamiento visible cuando la RPC responde).
     if (!usoListo) {
-      for (let i = 0; i < Math.min(4, lista.length); i++) {
+      for (let i = 0; i < Math.min(maxCategorias, lista.length); i++) {
         chips.append(el("span", { class: "mov-chip mov-chip--esqueleto", "aria-hidden": "true" }));
       }
       chips.append(
@@ -546,11 +553,11 @@ export function abrirMovimientoForm({
       return;
     }
 
-    for (const c of lista.slice(0, 4)) chips.append(chip(c));
-    if (categoriaId && !lista.slice(0, 4).some((c) => c.id === categoriaId)) {
+    for (const c of lista.slice(0, maxCategorias)) chips.append(chip(c));
+    if (categoriaId && !lista.slice(0, maxCategorias).some((c) => c.id === categoriaId)) {
       const sel = lista.find((c) => c.id === categoriaId);
-      // La categoría seleccionada que no está entre las 4 primeras se
-      // muestra igualmente, al principio de la fila.
+      // La categoría seleccionada que no está entre las primeras se muestra
+      // igualmente, al principio de la fila.
       if (sel) chips.insertBefore(chip(sel), chips.children[0] || null);
     }
     chips.append(

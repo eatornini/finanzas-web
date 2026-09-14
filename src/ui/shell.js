@@ -23,6 +23,8 @@ import {
   lupaIcono,
   menuIcono,
   logoAppIcono,
+  ojoIcono,
+  ojoTachadoIcono,
 } from "./iconos.js";
 import { montarMovimientos } from "./movimientosView.js";
 import { montarResumen } from "./resumenView.js";
@@ -104,7 +106,7 @@ export function montarShell(contenedor, sesion, perfil) {
     const rango = rangoPeriodo(fechaRef, tipo);
     etiqueta.textContent = etiquetaPeriodo(fechaRef, tipo);
     const vista = VISTAS.find((v) => v.clave === activa);
-    vista.montar(cuerpo, { rango, tipo, fechaRef, modo, irA, verCategoria });
+    capturarRepintar(vista.montar(cuerpo, { rango, tipo, fechaRef, modo, irA, verCategoria }));
     renderActual = pintarVista;
   }
 
@@ -118,32 +120,19 @@ export function montarShell(contenedor, sesion, perfil) {
       // las flechas de período llaman a renderActual(), que es esta función
       // mientras el detalle está abierto, y deben reflejar el período nuevo.
       const rango = rangoPeriodo(fechaRef, tipo);
-      montarCategoriaDetalle(cuerpo, {
-        rango,
-        tipo,
-        fechaRef,
-        modo,
-        categoriaId,
-        volver: pintarVista,
-        irAMovimientos: irAMovimientosCategoria,
-      });
+      capturarRepintar(
+        montarCategoriaDetalle(cuerpo, {
+          rango,
+          tipo,
+          fechaRef,
+          modo,
+          categoriaId,
+          volver: pintarVista,
+        })
+      );
     }
     renderActual = render;
     render();
-  }
-
-  // "Ver todos los movimientos" desde el detalle de categoría: sí es un
-  // cambio real de pestaña (a diferencia de verCategoria), por eso actualiza
-  // `activa`/prefs igual que irA — solo que además precarga el filtro de
-  // categoría en Movimientos.
-  function irAMovimientosCategoria(categoriaId) {
-    activa = "movimientos";
-    prefs.set("vistaActiva", "movimientos");
-    sincronizarNav();
-    const rango = rangoPeriodo(fechaRef, tipo);
-    montarMovimientos(cuerpo, { rango, tipo, fechaRef, modo, categoriaInicial: categoriaId, irA, verCategoria });
-    renderActual = pintarVista;
-    cerrarDrawer();
   }
 
   // A qué función redibujar cuando cambian período/tipo/modo: la vista
@@ -151,6 +140,20 @@ export function montarShell(contenedor, sesion, perfil) {
   // mismo detalle (para no expulsar a la persona a Resumen al tocar las
   // flechas de período mientras mira el detalle).
   let renderActual = pintarVista;
+
+  // Hook opcional que cada vista puede devolver desde su `montar` (async):
+  // { repintar() } — repinta con los datos que esa vista ya tiene cargados,
+  // sin pedirlos de nuevo a la red. Lo usa el toggle de ocultar montos, que
+  // no necesita datos frescos, solo mostrar los mismos de otra forma; antes
+  // usaba renderActual() y eso disparaba un refetch completo (pantalla se
+  // vaciaba y volvía a cargar en cada clic del ojo).
+  let repintarActual = null;
+  function capturarRepintar(resultadoMontar) {
+    repintarActual = null;
+    Promise.resolve(resultadoMontar).then((r) => {
+      repintarActual = (r && r.repintar) || null;
+    });
+  }
 
   const ETIQUETAS_TIPO = { semana: "Sem", mes: "Mes", año: "Año" };
   const btnTipo = {};
@@ -193,6 +196,33 @@ export function montarShell(contenedor, sesion, perfil) {
     btnModo.real,
     btnModo.estimado,
   ]);
+
+  // Ocultar/mostrar montos: global (topbar), afecta a toda la app —
+  // antes vivía solo en el encabezado de Resumen.
+  let ocultarTotal = prefs.get("ocultarTotal");
+  const iconoOjo = el("span", {}, [ocultarTotal ? ojoTachadoIcono() : ojoIcono()]);
+  const btnOjo = el(
+    "button",
+    {
+      class: "boton--icono boton-ojo",
+      "aria-label": ocultarTotal ? "Mostrar montos" : "Ocultar montos",
+      title: ocultarTotal ? "Mostrar montos" : "Ocultar montos",
+      "aria-pressed": String(ocultarTotal),
+      onClick: () => {
+        ocultarTotal = !ocultarTotal;
+        prefs.set("ocultarTotal", ocultarTotal);
+        limpiar(iconoOjo);
+        iconoOjo.append(ocultarTotal ? ojoTachadoIcono() : ojoIcono());
+        btnOjo.setAttribute("aria-label", ocultarTotal ? "Mostrar montos" : "Ocultar montos");
+        btnOjo.title = ocultarTotal ? "Mostrar montos" : "Ocultar montos";
+        btnOjo.setAttribute("aria-pressed", String(ocultarTotal));
+        // Repinta con los datos ya cargados de la vista actual — nunca
+        // vuelve a pedirlos a la red (ver capturarRepintar más abajo).
+        if (repintarActual) repintarActual();
+      },
+    },
+    [iconoOjo]
+  );
 
   const iconoTema = el("span", { class: "icono-tema" }, [tema === "oscuro" ? lunaIcono() : solIcono()]);
   const btnTema = el(
@@ -330,11 +360,11 @@ export function montarShell(contenedor, sesion, perfil) {
   const topbar = el("header", { class: "topbar" }, [
     el("div", { class: "topbar-marca-movil" }, [btnMenu, el("span", { class: "marca-movil", text: "Finanzas" })]),
     selectorPeriodo,
-    el("div", { class: "topbar-derecha" }, [selectorModo]),
+    el("div", { class: "topbar-derecha" }, [btnOjo, selectorModo]),
   ]);
 
   const piePagina = el("footer", { class: "pie-app" }, [
-    el("span", { text: "Finanzas v3.19" }),
+    el("span", { text: "Finanzas v3.25" }),
     el("span", { class: "pie-punto", text: "·" }),
     el("span", { text: "Tus datos están seguros" }),
   ]);

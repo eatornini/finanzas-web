@@ -112,6 +112,14 @@ export async function montarReportes(contenedor, { rango, tipo, fechaRef, modo }
 
   await cargar();
 
+  // El toggle de ocultar montos (shell.js) llama a esto en vez de volver a
+  // montar Reportes entero: repinta con los datos ya cargados, sin pedirlos
+  // de nuevo a la red.
+  function repintar() {
+    pintarComparativa();
+    pintarTendencia();
+  }
+
   async function cargar() {
     error.textContent = "";
     try {
@@ -124,18 +132,25 @@ export async function montarReportes(contenedor, { rango, tipo, fechaRef, modo }
     }
   }
 
+  let datosComparativa = null;
   async function cargarComparativa() {
     const fechaAnterior = periodoAnterior(fechaRef, tipo);
-    const rangoAnterior = rangoPeriodo(fechaAnterior, tipo);
     const incluirInactivos = prefs.get("incluirInactivos");
-
     const [actualMovs, anteriorMovs] = await Promise.all([
       listarMovimientos({ ...rango, modo }),
-      listarMovimientos({ ...rangoAnterior, modo }),
+      listarMovimientos({ ...rangoPeriodo(fechaAnterior, tipo), modo }),
     ]);
-    const actual = calcularTotales(filtrarParaCalculos(actualMovs, { modo, incluirInactivos }));
-    const anterior = calcularTotales(filtrarParaCalculos(anteriorMovs, { modo, incluirInactivos }));
+    datosComparativa = {
+      fechaAnterior,
+      actual: calcularTotales(filtrarParaCalculos(actualMovs, { modo, incluirInactivos })),
+      anterior: calcularTotales(filtrarParaCalculos(anteriorMovs, { modo, incluirInactivos })),
+    };
+    pintarComparativa();
+  }
 
+  function pintarComparativa() {
+    if (!datosComparativa) return;
+    const { actual, anterior, fechaAnterior } = datosComparativa;
     limpiar(comparativa);
     comparativa.append(
       el("h3", {}, [
@@ -155,13 +170,14 @@ export async function montarReportes(contenedor, { rango, tipo, fechaRef, modo }
     );
   }
 
+  let datosTendencia = null;
   async function cargarTendencia() {
     const fechas = fechasTendencia(fechaRef, tipo, 6);
     const incluirInactivos = prefs.get("incluirInactivos");
     const listas = await Promise.all(
       fechas.map((f) => listarMovimientos({ ...rangoPeriodo(f, tipo), modo }))
     );
-    const serie = fechas.map((f, i) => {
+    datosTendencia = fechas.map((f, i) => {
       const t = calcularTotales(filtrarParaCalculos(listas[i], { modo, incluirInactivos }));
       return {
         etiqueta: etiquetaCorta(f, tipo),
@@ -170,11 +186,17 @@ export async function montarReportes(contenedor, { rango, tipo, fechaRef, modo }
         balance: t.balance,
       };
     });
+    pintarTendencia();
+  }
 
+  function pintarTendencia() {
+    if (!datosTendencia) return;
     limpiar(tendencia);
     tendencia.append(
       el("h3", {}, [iconoTitulo(tendenciaCombinadaIcono), "Tendencia"]),
-      construirGraficoTendencia(serie)
+      construirGraficoTendencia(datosTendencia)
     );
   }
+
+  return { repintar };
 }

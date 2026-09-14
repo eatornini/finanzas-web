@@ -6,7 +6,6 @@
 import { el, limpiar } from "./dom.js";
 import { listarMovimientos } from "../data/movimientos.js";
 import { listarCategorias } from "../data/categorias.js";
-import { abrirCategoriaForm } from "./categoriaForm.js";
 import { fila } from "./movimientosView.js";
 import { filtrarParaCalculos, calcularTotales } from "../logic/totales.js";
 import { agruparPorFecha } from "../logic/agrupacionMovimientos.js";
@@ -21,7 +20,7 @@ import {
   calendarioIcono,
   flechaArribaCirculo,
   intercambioIcono,
-  lapiz,
+  chevronAbajo,
 } from "./iconos.js";
 import {
   tarjetaHead,
@@ -113,7 +112,7 @@ function seccionSemanas(movimientosCategoria, rango, nombreCategoria, enPeriodo,
 
 export async function montarCategoriaDetalle(
   contenedor,
-  { rango, tipo, fechaRef, modo, categoriaId, volver, irAMovimientos }
+  { rango, tipo, fechaRef, modo, categoriaId, volver }
 ) {
   limpiar(contenedor);
 
@@ -124,6 +123,15 @@ export async function montarCategoriaDetalle(
   let todos = [];
   let categorias = [];
   let categoria = null; // se conserva entre renders por si un período no tiene movimientos
+
+  // Igual que en Movimientos: cada bloque de fecha se puede acoplar/
+  // desacoplar. Estado en memoria, no persistido — se reabre expandido cada
+  // vez que se entra a la categoría. Declarado ANTES de `await cargar()`:
+  // cargar() llama a pintar() en cuanto resuelve la carga inicial, así que
+  // si esto quedara después del await, la primera vez pintar() se ejecuta
+  // antes de que la línea corra (temporal dead zone) y el primer render
+  // siempre fallaba con "No se pudo cargar la categoría".
+  const colapsados = new Set();
 
   async function asegurarCategorias() {
     return categorias;
@@ -157,6 +165,11 @@ export async function montarCategoriaDetalle(
 
   await cargar();
 
+  // El toggle de ocultar montos (shell.js) llama a esto en vez de volver a
+  // montar la categoría entera: repinta con los datos ya cargados, sin
+  // pedirlos de nuevo a la red.
+  const repintar = pintar;
+
   async function cargar() {
     error.textContent = "";
     try {
@@ -183,33 +196,51 @@ export async function montarCategoriaDetalle(
     iconoWrap.style.color = color;
     iconoWrap.style.background = `color-mix(in srgb, ${color} 12%, transparent)`;
 
-    const btnEditar = el(
-      "button",
-      { type: "button", class: "boton--secundario" },
-      [lapiz(), el("span", { text: "Editar categoría" })]
-    );
-    btnEditar.addEventListener("click", () => {
-      const categoriaCompleta = categorias.find((c) => String(c.id) === String(categoriaId));
-      if (!categoriaCompleta) return;
-      abrirCategoriaForm({
-        categoria: categoriaCompleta,
-        onGuardado: cargar,
-      });
-    });
-
-    return el("header", { class: "resumen-header" }, [
-      el("div", { class: "vista-titulo" }, [
-        iconoWrap,
-        el("div", { class: "vista-titulo-cuerpo" }, [
-          el("h2", { class: "vista-titulo-txt", text: nombreCategoria }),
-          el("p", {
-            class: "vista-titulo-sub",
-            text: `${enPeriodo} · Gastos de la categoría`,
-          }),
-        ]),
+    return el("header", { class: "vista-titulo" }, [
+      iconoWrap,
+      el("div", { class: "vista-titulo-cuerpo" }, [
+        el("h2", { class: "vista-titulo-txt", text: nombreCategoria }),
+        el("p", {
+          class: "vista-titulo-sub",
+          text: `${enPeriodo} · Gastos de la categoría`,
+        }),
       ]),
-      el("div", { class: "resumen-header-lado" }, [btnEditar]),
     ]);
+  }
+
+  // `filasWrap` es el contenedor de las filas de ese grupo — el toggle
+  // muestra/oculta ese nodo directamente (sin volver a llamar a pintar()):
+  // repintar toda la pantalla en cada clic colapsaba momentáneamente el
+  // alto del documento y el navegador reseteaba el scroll a 0.
+  function cabeceraGrupo(grupo, filasWrap) {
+    const { balance } = calcularTotales(grupo.movimientos);
+    const signo = balance >= 0 ? "+" : "−";
+    const colapsado = colapsados.has(grupo.clave);
+    const btn = el(
+      "button",
+      {
+        type: "button",
+        class: "lista-grupo-titulo" + (colapsado ? " colapsado" : ""),
+        "aria-expanded": String(!colapsado),
+      },
+      [
+        chevronAbajo(),
+        el("span", { text: etiquetaDia(grupo.clave) }),
+        el("span", {
+          class: "lista-grupo-total",
+          text: `${signo} ${formatoCLP(Math.abs(balance))}`,
+        }),
+      ]
+    );
+    btn.addEventListener("click", () => {
+      const ahoraColapsado = !filasWrap.hidden;
+      filasWrap.hidden = ahoraColapsado;
+      btn.classList.toggle("colapsado", ahoraColapsado);
+      btn.setAttribute("aria-expanded", String(!ahoraColapsado));
+      if (ahoraColapsado) colapsados.add(grupo.clave);
+      else colapsados.delete(grupo.clave);
+    });
+    return { btn, colapsado };
   }
 
   function seccionMovimientos(movimientosCategoria, nombreCategoria, enPeriodo) {
@@ -240,7 +271,6 @@ export async function montarCategoriaDetalle(
     encabezadoMov.classList.add("catdet-mov-head");
 
     const listaWrap = el("div", { class: "lista lista-grupos" });
-    let hayMas = false;
     if (filtrados.length === 0) {
       listaWrap.append(
         el("section", { class: "panel-tarjeta" }, [
@@ -248,56 +278,21 @@ export async function montarCategoriaDetalle(
         ])
       );
     } else {
-      // Se muestran de a grupos de fecha completos (nunca se corta un día a
-      // la mitad) hasta juntar ~LIMITE_INICIAL movimientos, para no volver
-      // la pantalla eterna con categorías muy usadas. El resto queda a un
-      // clic en "Ver todos los movimientos →" (Movimientos, mismo filtro).
-      const LIMITE_INICIAL = 12;
-      const gruposTodos = agruparPorFecha(filtrados);
-      let acumulado = 0;
-      const gruposMostrados = [];
-      for (const grupo of gruposTodos) {
-        if (acumulado >= LIMITE_INICIAL) break;
-        gruposMostrados.push(grupo);
-        acumulado += grupo.movimientos.length;
-      }
-      hayMas = gruposMostrados.length < gruposTodos.length;
-
-      for (const grupo of gruposMostrados) {
-        const { balance } = calcularTotales(grupo.movimientos);
-        const signo = balance >= 0 ? "+" : "−";
-        const cabeceraGrupo = el("div", { class: "lista-grupo-titulo" }, [
-          calendarioIcono(),
-          el("span", { text: etiquetaDia(grupo.clave) }),
-          el("span", {
-            class: "lista-grupo-total",
-            text: `${signo} ${formatoCLP(Math.abs(balance))}`,
-          }),
-        ]);
-        const tarjeta = el("section", { class: "panel-tarjeta lista-grupo" }, [cabeceraGrupo]);
+      // Todos los movimientos de la categoría en este período, agrupados
+      // por fecha — sin límite ni "ver todos" aparte.
+      for (const grupo of agruparPorFecha(filtrados)) {
+        const filasWrap = el("div", { class: "lista-grupo-filas" });
+        const { btn, colapsado } = cabeceraGrupo(grupo, filasWrap);
+        filasWrap.hidden = colapsado;
         for (const m of grupo.movimientos) {
-          tarjeta.append(fila(m, cargar, error, modo, asegurarCategorias));
+          filasWrap.append(fila(m, cargar, error, modo, asegurarCategorias));
         }
+        const tarjeta = el("section", { class: "panel-tarjeta lista-grupo" }, [btn, filasWrap]);
         listaWrap.append(tarjeta);
       }
     }
 
-    const piePagina =
-      hayMas && typeof irAMovimientos === "function"
-        ? el("div", { class: "catdet-ver-todos" }, [
-            el(
-              "button",
-              {
-                type: "button",
-                class: "enlace-ver",
-                text: "Ver todos los movimientos →",
-                onClick: () => irAMovimientos(categoriaId),
-              }
-            ),
-          ])
-        : null;
-
-    return el("div", { class: "catdet-movimientos" }, [encabezadoMov, listaWrap, piePagina]);
+    return el("div", { class: "catdet-movimientos" }, [encabezadoMov, listaWrap]);
   }
 
   function pintar() {
@@ -384,4 +379,6 @@ export async function montarCategoriaDetalle(
 
     raiz.append(seccionMovimientos(movimientosCategoria, nombreCategoria, enPeriodo));
   }
+
+  return { repintar };
 }

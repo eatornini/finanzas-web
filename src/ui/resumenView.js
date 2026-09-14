@@ -9,8 +9,6 @@ import {
 import { formatoCLP } from "../logic/dinero.js";
 import { prefs } from "../prefs.js";
 import {
-  ojoIcono,
-  ojoTachadoIcono,
   puntosIcono,
   tendenciaCombinadaIcono,
   graficoIcono,
@@ -238,33 +236,34 @@ function seccionGastosSemana(movimientos, rango, enPeriodo) {
   // proporción visual entre filas, no decide el título "Mayor gasto".
   const maxTotal = Math.max(...conDatos.map((s) => s.total));
 
-  const filas = semanas.map((s) => {
-    const etiquetaNodo = el("span", { class: "resumen-semanas-rango", text: etiquetaSemana(s) });
+  // Semanas sin ningún gasto (futuras siempre, o pasadas/en curso donde
+  // simplemente no se gastó nada) no aportan información — se omiten de la
+  // lista en vez de mostrar una fila vacía o "Aún no disponible".
+  const filas = semanas
+    .filter((s) => s.total > 0)
+    .map((s) => {
+      const etiquetaNodo = el("span", { class: "resumen-semanas-rango", text: etiquetaSemana(s) });
+      const esPico = s === mayor;
+      const anchoBarra = Math.max((s.total / maxTotal) * 100, 4);
+      const relleno = el("span", {
+        class: `resumen-semanas-barra-relleno${esPico ? " resumen-semanas-barra-relleno--pico" : ""}`,
+      });
+      relleno.style.width = `${anchoBarra}%`;
+      const pct = totalMes > 0 ? Math.round((s.total / totalMes) * 100) : 0;
 
-    if (s.estado === "futura") {
-      return el("div", { class: "resumen-semanas-fila resumen-semanas-fila--futura" }, [
-        etiquetaNodo,
-        el("span", { class: "resumen-semanas-estado", text: "Aún no disponible" }),
-      ]);
-    }
-
-    const esPico = s === mayor;
-    const anchoBarra = maxTotal > 0 ? Math.max((s.total / maxTotal) * 100, s.total > 0 ? 4 : 1) : 1;
-    const relleno = el("span", {
-      class: `resumen-semanas-barra-relleno${esPico ? " resumen-semanas-barra-relleno--pico" : ""}`,
+      return el(
+        "div",
+        { class: `resumen-semanas-fila${esPico ? " resumen-semanas-fila--pico" : ""}` },
+        [
+          etiquetaNodo,
+          el("div", { class: "resumen-semanas-barra-pista" }, [relleno]),
+          el("span", { class: "resumen-semanas-monto", text: valorOculto(s.total) }),
+          s.estado === "en_curso"
+            ? el("span", { class: "resumen-semanas-pct resumen-semanas-pct--curso", text: "En curso" })
+            : el("span", { class: "resumen-semanas-pct", text: `${pct}%` }),
+        ]
+      );
     });
-    relleno.style.width = `${anchoBarra}%`;
-    const pct = totalMes > 0 ? Math.round((s.total / totalMes) * 100) : 0;
-
-    return el("div", { class: `resumen-semanas-fila${esPico ? " resumen-semanas-fila--pico" : ""}` }, [
-      etiquetaNodo,
-      el("div", { class: "resumen-semanas-barra-pista" }, [relleno]),
-      el("span", { class: "resumen-semanas-monto", text: valorOculto(s.total) }),
-      s.estado === "en_curso"
-        ? el("span", { class: "resumen-semanas-pct resumen-semanas-pct--curso", text: "En curso" })
-        : el("span", { class: "resumen-semanas-pct", text: `${pct}%` }),
-    ]);
-  });
 
   const destacadas = el(
     "div",
@@ -306,15 +305,21 @@ function agruparGastos(movimientos) {
         categoria: m.categoria || null,
         color: (m.categoria && m.categoria.color) || null,
         total: 0,
+        cantidad: 0,
       };
     g.total += Number(m.monto) || 0;
+    g.cantidad += 1;
     if (!g.color && m.categoria && m.categoria.color) g.color = m.categoria.color;
     idx.set(clave, g);
   }
   return [...idx.values()].sort((a, b) => b.total - a.total);
 }
 
-function donutGastos(filas, total) {
+// `referencias`: Map clave -> { li, grupo } (ya poblado por la lista) — acá
+// se completa con el segmento SVG de cada categoría. `activar`/`desactivar`
+// sincronizan lista y dona: se llaman desde el hover de CUALQUIERA de los
+// dos lados.
+function donutGastos(filas, total, referencias, activar, desactivar, centro) {
   const wrap = el("div", { class: "dona dona--grande" });
   const grupoSvg = elSvg("g", { transform: "rotate(-90 50 50)" });
   let acumulado = 0;
@@ -336,14 +341,15 @@ function donutGastos(filas, total) {
     seg.append(
       elSvg("title", {}, [`${f.nombre}: ${formatoCLP(f.total)} (${Math.round(pct)}%)`])
     );
+    seg.addEventListener("mouseenter", () => activar(f.clave));
+    seg.addEventListener("mouseleave", () => desactivar());
     grupoSvg.append(seg);
     acumulado += pct;
+
+    const ref = referencias.get(f.clave);
+    if (ref) ref.segmento = seg;
   });
 
-  const centro = el("div", { class: "dona-centro" }, [
-    el("span", { class: "dona-total", text: valorOculto(total) }),
-    el("span", { class: "dona-etiqueta", text: "Total gastos" }),
-  ]);
   wrap.append(elSvg("svg", { viewBox: "0 0 100 100", class: "dona-svg" }, [grupoSvg]), centro);
   return wrap;
 }
@@ -368,6 +374,36 @@ function seccionGastosCategoria(movimientos, enPeriodo, verCategoria) {
   function pintar() {
     limpiar(cuerpo);
 
+    // clave -> { li, grupo, segmento } — se completa con el segmento al
+    // construir la dona. Al pasar el mouse por una fila o por su porción de
+    // la dona, se resalta la otra mitad y el centro muestra el total de esa
+    // categoría; al sacar el mouse, todo vuelve a "Total gastos".
+    const referencias = new Map();
+    const centroTotal = el("span", { class: "dona-total", text: valorOculto(total) });
+    const centroEtiqueta = el("span", { class: "dona-etiqueta", text: "Total gastos" });
+    const centro = el("div", { class: "dona-centro" }, [centroTotal, centroEtiqueta]);
+
+    function activar(clave) {
+      const ref = referencias.get(clave);
+      if (!ref) return;
+      for (const [k, r] of referencias) {
+        const esEsta = k === clave;
+        r.li.classList.toggle("resumen-gastos-cat-item--activo", esEsta);
+        if (r.segmento) r.segmento.classList.toggle("dona-segmento--atenuado", !esEsta);
+      }
+      centroTotal.textContent = valorOculto(ref.grupo.total);
+      centroEtiqueta.textContent = ref.grupo.nombre;
+    }
+
+    function desactivar() {
+      for (const [, r] of referencias) {
+        r.li.classList.remove("resumen-gastos-cat-item--activo");
+        if (r.segmento) r.segmento.classList.remove("dona-segmento--atenuado");
+      }
+      centroTotal.textContent = valorOculto(total);
+      centroEtiqueta.textContent = "Total gastos";
+    }
+
     const lista = el(
       "ul",
       { class: "resumen-gastos-cat-lista" },
@@ -380,7 +416,7 @@ function seccionGastosCategoria(movimientos, enPeriodo, verCategoria) {
         icono.style.background = `color-mix(in srgb, ${color} 16%, transparent)`;
         icono.style.color = color;
         const clickeable = g.clave !== "sin" && typeof verCategoria === "function";
-        return el(
+        const li = el(
           "li",
           {
             class: `resumen-gastos-cat-item${clickeable ? " resumen-gastos-cat-item--clickable" : ""}`,
@@ -398,18 +434,28 @@ function seccionGastosCategoria(movimientos, enPeriodo, verCategoria) {
                   },
                 }
               : {}),
+            onMouseenter: () => activar(g.clave),
+            onMouseleave: () => desactivar(),
           },
           [
             icono,
             el("span", { class: "resumen-gastos-cat-nombre", text: g.nombre }),
             el("span", { class: "resumen-gastos-cat-monto", text: valorOculto(g.total) }),
-            el("span", { class: "resumen-gastos-cat-pct", text: `${pct}%` }),
+            el("span", { class: "resumen-gastos-cat-pct" }, [
+              el("span", { class: "resumen-gastos-cat-pct-valor", text: `${pct}%` }),
+              el("span", {
+                class: "resumen-gastos-cat-cantidad",
+                text: `${g.cantidad} mov.`,
+              }),
+            ]),
           ]
         );
+        referencias.set(g.clave, { li, grupo: g });
+        return li;
       })
     );
 
-    cuerpo.append(lista, donutGastos(grupos, total));
+    cuerpo.append(lista, donutGastos(grupos, total, referencias, activar, desactivar, centro));
   }
 
   pintar();
@@ -520,6 +566,11 @@ export async function montarResumen(contenedor, { rango, tipo, fechaRef, modo, i
 
   await recargar();
 
+  // El toggle de ocultar montos (shell.js) llama a esto en vez de volver a
+  // montar la vista entera: repinta con los datos ya cargados, sin pedirlos
+  // de nuevo a la red (evitaba un parpadeo de "pantalla se vacía y recarga").
+  const repintar = pintar;
+
   async function recargar() {
     error.textContent = "";
     aviso.textContent = "";
@@ -537,22 +588,9 @@ export async function montarResumen(contenedor, { rango, tipo, fechaRef, modo, i
   function pintar() {
     limpiar(raiz);
 
-    const oculto = prefs.get("ocultarTotal");
-    const btnOjo = el(
-      "button",
-      {
-        class: "boton--icono boton-ojo",
-        "aria-label": oculto ? "Mostrar montos" : "Ocultar montos",
-        title: oculto ? "Mostrar montos" : "Ocultar montos",
-        "aria-pressed": String(oculto),
-        onClick: () => {
-          prefs.set("ocultarTotal", !oculto);
-          pintar();
-        },
-      },
-      [oculto ? ojoTachadoIcono() : ojoIcono()]
-    );
-    const acciones = el("div", { class: "resumen-header-acciones" }, [btnOjo]);
+    // El toggle de ocultar montos (ojo) vive ahora en el topbar (shell.js),
+    // global para toda la app — no solo Resumen.
+    const acciones = el("div", { class: "resumen-header-acciones" });
     if (modo === "estimado" && tipo === "mes") acciones.append(construirMenuMes());
 
     const paraTotales = filtrarParaCalculos(movimientos, {
@@ -727,4 +765,6 @@ export async function montarResumen(contenedor, { rango, tipo, fechaRef, modo, i
     popover.append(btnCopiar, btnEstado, btnBorrar);
     return el("div", { class: "menu-mes-wrap" }, [btnMenu, popover]);
   }
+
+  return { repintar };
 }

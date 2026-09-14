@@ -335,20 +335,7 @@ export async function montarMovimientos(
     error.textContent = "";
     try {
       todos = await listarMovimientos({ ...rango, modo });
-      pintarLista();
-      const paraTotales = filtrarParaCalculos(todos, {
-        modo,
-        incluirInactivos: prefs.get("incluirInactivos"),
-      });
-      const { balance } = calcularTotales(paraTotales);
-      balanceMovilValor.textContent = prefs.get("ocultarTotal") ? "*****" : formatoCLP(balance);
-      montarPanelResumen(aside, todos, paraTotales, {
-        tipo,
-        fechaRef,
-        onCategoria: (catId) =>
-          montarMovimientos(contenedor, { rango, modo, tipo, fechaRef, categoriaInicial: catId, irA }),
-        irA,
-      });
+      repintarTodo();
     } catch (e) {
       todos = [];
       limpiar(lista);
@@ -356,6 +343,25 @@ export async function montarMovimientos(
       error.textContent = "No se pudo conectar. ";
       error.append(el("button", { text: "Reintentar", onClick: recargar }));
     }
+  }
+
+  // Separado de recargar(): repinta con los `todos` ya cargados, sin pedir
+  // datos de nuevo a la red — lo usa el toggle de ocultar montos (shell.js).
+  function repintarTodo() {
+    pintarLista();
+    const paraTotales = filtrarParaCalculos(todos, {
+      modo,
+      incluirInactivos: prefs.get("incluirInactivos"),
+    });
+    const { balance } = calcularTotales(paraTotales);
+    balanceMovilValor.textContent = prefs.get("ocultarTotal") ? "*****" : formatoCLP(balance);
+    montarPanelResumen(aside, todos, paraTotales, {
+      tipo,
+      fechaRef,
+      onCategoria: (catId) =>
+        montarMovimientos(contenedor, { rango, modo, tipo, fechaRef, categoriaInicial: catId, irA }),
+      irA,
+    });
   }
 
   function pintarLista() {
@@ -433,6 +439,8 @@ export async function montarMovimientos(
     }
     contador.textContent = `Mostrando ${filtrados.length} de ${todos.length} movimientos`;
   }
+
+  return { repintar: repintarTodo };
 }
 
 export function fila(m, recargar, error, modo, asegurarCategorias) {
