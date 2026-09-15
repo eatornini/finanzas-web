@@ -2356,53 +2356,6 @@
     gap: var(--esp-3);
   }
 
-  /* Gráfico de barras Ingresos vs. Gastos de la vista Resumen. */
-  .barra-comparativa {
-    display: flex;
-    flex-direction: column;
-    gap: var(--esp-3);
-  }
-
-  .barra-comparativa-fila {
-    display: grid;
-    grid-template-columns: 4.5rem 1fr auto;
-    align-items: center;
-    gap: var(--esp-3);
-  }
-
-  .barra-comparativa-etiqueta {
-    font-size: var(--txt-sm);
-    color: var(--fg-tenue);
-  }
-
-  .barra-comparativa-pista {
-    height: 12px;
-    border-radius: var(--r-pill);
-    background: var(--bg-sutil);
-    overflow: hidden;
-  }
-
-  .barra-comparativa-relleno {
-    display: block;
-    height: 100%;
-    border-radius: var(--r-pill);
-    transition: width 0.35s ease;
-  }
-
-  .barra-comparativa-relleno--ingreso {
-    background: var(--ingreso);
-  }
-
-  .barra-comparativa-relleno--gasto {
-    background: var(--gasto);
-  }
-
-  .barra-comparativa-valor {
-    font-size: var(--txt-sm);
-    font-weight: var(--peso-semibold);
-    font-variant-numeric: tabular-nums;
-  }
-
   .tarjeta {
     border: 1px solid var(--borde);
     border-radius: var(--r-lg);
@@ -4915,22 +4868,209 @@ color-mix(in srgb, var(--acento) 16%, transparent);
     text-decoration: underline;
   }
 
-  /* --- Ingresos vs. Gastos --- */
-  .resumen-vs-cuerpo {
-    display: flex;
-    align-items: stretch;
-    gap: var(--esp-5);
+  /* --- Ingresos vs. Gastos: gráfico de líneas de evolución --- */
+  .vsgrafico-selector button {
+    padding: var(--esp-1) var(--esp-3);
+    font-size: var(--txt-xs);
   }
 
-  .resumen-vs-main {
-    flex: 1;
-    min-width: 0;
+  .vsgrafico-cuerpo {
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-3);
+  }
+
+  .vsgrafico-resumen {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--esp-4) var(--esp-6);
+  }
+
+  .vsgrafico-resumen-item {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--esp-2);
+  }
+
+  .vsgrafico-resumen-txt {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .vsgrafico-resumen-nombre {
+    font-size: var(--txt-xs);
+    color: var(--fg-tenue);
+  }
+
+  .vsgrafico-resumen-valor {
+    font-size: var(--txt-lg);
+    font-weight: var(--peso-bold);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .vsgrafico-resumen-desc {
+    font-size: var(--txt-xs);
+    color: var(--fg-tenue);
+  }
+
+  .vsgrafico-punto {
+    display: inline-block;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    flex: none;
+    margin-top: 5px;
+  }
+
+  .vsgrafico-punto--ingreso {
+    background: var(--ingreso);
+  }
+
+  .vsgrafico-punto--gasto {
+    background: var(--gasto);
+  }
+
+  .vsgrafico-lienzo {
+    position: relative;
+  }
+
+  .vsgrafico-svg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .vsgrafico-grid {
+    stroke: var(--borde);
+    stroke-width: 0.6;
+  }
+
+  .vsgrafico-eje-valor {
+    fill: var(--fg-tenue);
+    font-size: 8px;
+    text-anchor: end;
+  }
+
+  .vsgrafico-eje-etiqueta {
+    fill: var(--fg-tenue);
+    font-size: 8px;
+    text-anchor: middle;
+  }
+
+  .vsgrafico-linea {
+    fill: none;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+
+  .vsgrafico-linea--ingreso {
+    stroke: var(--ingreso);
+  }
+
+  .vsgrafico-linea--gasto {
+    stroke: var(--gasto);
+  }
+
+  .vsgrafico-marca--ingreso {
+    fill: var(--ingreso);
+  }
+
+  .vsgrafico-marca--gasto {
+    fill: var(--gasto);
+  }
+
+  .vsgrafico-guia {
+    stroke: var(--fg-tenue);
+    stroke-width: 0.75;
+    stroke-dasharray: 2 2;
+    opacity: 0;
+    transition: opacity 0.1s ease;
+  }
+
+  .vsgrafico-guia--activa {
+    opacity: 0.5;
+  }
+
+  .vsgrafico-zona {
+    fill: transparent;
+    cursor: pointer;
+  }
+
+  .vsgrafico-tooltip {
+    position: absolute;
+    top: 0;
+    z-index: 1;
+    min-width: 11rem;
+    padding: var(--esp-2) var(--esp-3);
+    border: 1px solid var(--borde);
+    border-radius: var(--r-md);
+    background: var(--bg-elevado);
+    box-shadow: var(--sombra-popover);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.1s ease;
+  }
+
+  .vsgrafico-tooltip--visible {
+    opacity: 1;
+  }
+
+  .vsgrafico-tooltip-titulo {
+    margin: 0 0 var(--esp-2);
+    font-size: var(--txt-xs);
+    font-weight: var(--peso-semibold);
+  }
+
+  .vsgrafico-tooltip-fila {
     display: flex;
     align-items: center;
+    gap: var(--esp-2);
+    font-size: var(--txt-xs);
+    color: var(--fg-tenue);
   }
 
-  .resumen-vs-main > * {
-    width: 100%;
+  .vsgrafico-tooltip-fila .vsgrafico-punto {
+    margin-top: 0;
+  }
+
+  .vsgrafico-tooltip-valor {
+    margin-left: auto;
+    font-weight: var(--peso-semibold);
+    color: var(--fg);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .vsgrafico-leyenda {
+    display: flex;
+    justify-content: center;
+    gap: var(--esp-4);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .vsgrafico-leyenda-item {
+    display: flex;
+    align-items: center;
+    gap: var(--esp-2);
+    font-size: var(--txt-xs);
+    color: var(--fg-tenue);
+  }
+
+  .vsgrafico-leyenda-item .vsgrafico-punto {
+    margin-top: 0;
+  }
+
+  @media (max-width: 720px) {
+    .vsgrafico-resumen {
+      gap: var(--esp-3) var(--esp-5);
+    }
+
+    .vsgrafico-resumen-valor {
+      font-size: var(--txt-base);
+    }
   }
 
   /* --- Gastos por semana --- */
@@ -5073,6 +5213,13 @@ color-mix(in srgb, var(--acento) 16%, transparent);
     line-height: 1;
   }
 
+  .resumen-gastos-cat-nombre-grupo {
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--esp-1);
+  }
+
   .resumen-gastos-cat-nombre {
     min-width: 0;
     overflow: hidden;
@@ -5090,9 +5237,8 @@ color-mix(in srgb, var(--acento) 16%, transparent);
   .resumen-gastos-cat-pct {
     min-width: 2.75em;
     display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 1px;
+    align-items: center;
+    justify-content: flex-end;
   }
 
   .resumen-gastos-cat-pct-valor {
@@ -5102,13 +5248,17 @@ color-mix(in srgb, var(--acento) 16%, transparent);
     text-align: right;
   }
 
-  /* Cantidad de movimientos de la categoría — dato secundario, más chico
-     que el porcentaje. */
+  /* Badge de cantidad de movimientos — junto al nombre, discreto y secundario. */
   .resumen-gastos-cat-cantidad {
+    flex: none;
     font-size: 10px;
+    line-height: 1;
     color: var(--fg-tenue);
-    opacity: 0.75;
+    background: var(--bg-sutil);
+    border-radius: var(--r-full, 999px);
+    padding: 2px 6px;
     white-space: nowrap;
+    font-variant-numeric: tabular-nums;
   }
 
   /* Fila de categoría clickeable (abre el detalle) — el resto de
@@ -5402,13 +5552,6 @@ color-mix(in srgb, var(--acento) 16%, transparent);
   @media (max-width: 1080px) {
     .resumen-inferior {
       grid-template-columns: 1fr;
-    }
-  }
-
-  @media (max-width: 860px) {
-    .resumen-vs-cuerpo {
-      flex-direction: column;
-      gap: var(--esp-4);
     }
   }
 

@@ -116,34 +116,313 @@ export function tarjetaHead(fabricaIcono, titulo, sub, extra) {
   ]);
 }
 
-// Barra proporcional Ingresos / Gastos (misma escala: la mayor = 100%).
-function barraComparativa(etiqueta, valor, maxValor, claseRelleno) {
-  const pct = maxValor > 0 ? Math.max((valor / maxValor) * 100, valor > 0 ? 3 : 0) : 0;
-  const relleno = el("span", { class: `barra-comparativa-relleno ${claseRelleno}` });
-  relleno.style.width = `${pct}%`;
-  return el("div", { class: "barra-comparativa-fila" }, [
-    el("span", { class: "barra-comparativa-etiqueta", text: etiqueta }),
-    el("span", { class: "barra-comparativa-pista" }, [relleno]),
-    el("span", { class: "barra-comparativa-valor", text: valorOculto(valor) }),
+const MESES_LARGO = [
+  "enero", "febrero", "marzo", "abril", "mayo", "junio",
+  "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
+];
+
+const GRANULARIDADES_VS = [
+  { clave: "dia", etiqueta: "Día" },
+  { clave: "semana", etiqueta: "Semana" },
+  { clave: "mes", etiqueta: "Mes" },
+];
+
+const COMPACTO_CLP = new Intl.NumberFormat("es-CL", { notation: "compact", maximumFractionDigits: 1 });
+
+function valorEjeOculto(valor) {
+  return prefs.get("ocultarTotal") ? "•••" : `$${COMPACTO_CLP.format(valor)}`;
+}
+
+// Todos los días (YYYY-MM-DD, zona local) entre desde y hasta, inclusive.
+function diasDelRango(desde, hasta) {
+  const fin = new Date(`${hasta}T12:00:00`);
+  const dias = [];
+  let cursor = new Date(`${desde}T12:00:00`);
+  while (cursor <= fin) {
+    dias.push(ymdLocal(cursor));
+    cursor = new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate() + 1);
+  }
+  return dias;
+}
+
+// Tramos de mes calendario dentro de un rango arbitrario (análogo a
+// semanasDelMes pero por mes — sirve tanto para un rango de un mes, como
+// para un año completo al agrupar por "Mes").
+function mesesDelRango(desde, hasta) {
+  const inicio = new Date(`${desde}T12:00:00`);
+  const fin = new Date(`${hasta}T12:00:00`);
+  const meses = [];
+  let cursor = new Date(inicio.getFullYear(), inicio.getMonth(), 1);
+  while (cursor <= fin) {
+    const finMes = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 0);
+    const desdeTramo = cursor < inicio ? ymdLocal(inicio) : ymdLocal(cursor);
+    const hastaTramo = finMes > fin ? ymdLocal(fin) : ymdLocal(finMes);
+    meses.push({ desde: desdeTramo, hasta: hastaTramo });
+    cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
+  }
+  return meses;
+}
+
+function tituloDia(fecha) {
+  const d = new Date(`${fecha}T12:00:00`);
+  return `${d.getDate()} de ${MESES_LARGO[d.getMonth()]} de ${d.getFullYear()}`;
+}
+
+function tituloSemana(desde, hasta) {
+  const a = new Date(`${desde}T12:00:00`);
+  const b = new Date(`${hasta}T12:00:00`);
+  if (a.getMonth() === b.getMonth() && a.getFullYear() === b.getFullYear()) {
+    return `${a.getDate()} al ${b.getDate()} de ${MESES_LARGO[b.getMonth()]} de ${b.getFullYear()}`;
+  }
+  return `${a.getDate()} ${MESES_ABBR[a.getMonth()]} – ${b.getDate()} ${MESES_ABBR[b.getMonth()]} ${b.getFullYear()}`;
+}
+
+function tituloMes(desde) {
+  const d = new Date(`${desde}T12:00:00`);
+  const nombre = MESES_LARGO[d.getMonth()];
+  return `${nombre[0].toUpperCase()}${nombre.slice(1)} de ${d.getFullYear()}`;
+}
+
+// Serie diaria real: un punto por cada día del rango (incluidos los días sin
+// movimientos, en 0) a partir de los montos reales agrupados por fecha_local.
+function serieVsPorDia(movimientos, rango) {
+  const porFecha = new Map();
+  for (const m of movimientos) {
+    const clave = String(m.fecha_local || m.fecha || "").slice(0, 10);
+    const g = porFecha.get(clave) || { ingresos: 0, gastos: 0, cantidad: 0 };
+    if (m.tipo === "ingreso") g.ingresos += Number(m.monto) || 0;
+    else if (m.tipo === "gasto") g.gastos += Number(m.monto) || 0;
+    g.cantidad += 1;
+    porFecha.set(clave, g);
+  }
+  return diasDelRango(rango.desde, rango.hasta).map((fecha) => {
+    const g = porFecha.get(fecha) || { ingresos: 0, gastos: 0, cantidad: 0 };
+    const d = new Date(`${fecha}T12:00:00`);
+    return {
+      clave: fecha,
+      etiquetaEje: `${d.getDate()} ${MESES_ABBR[d.getMonth()]}`,
+      titulo: tituloDia(fecha),
+      ...g,
+    };
+  });
+}
+
+// Serie agrupada en tramos (semanas o meses) — suma los movimientos reales
+// que caen dentro de cada tramo [desde, hasta].
+function serieVsPorTramos(movimientos, tramos, etiquetaFn, tituloFn) {
+  const filas = tramos.map((t) => ({ ...t, ingresos: 0, gastos: 0, cantidad: 0 }));
+  for (const m of movimientos) {
+    const fecha = String(m.fecha_local || m.fecha || "").slice(0, 10);
+    const fila = filas.find((f) => fecha >= f.desde && fecha <= f.hasta);
+    if (!fila) continue;
+    if (m.tipo === "ingreso") fila.ingresos += Number(m.monto) || 0;
+    else if (m.tipo === "gasto") fila.gastos += Number(m.monto) || 0;
+    fila.cantidad += 1;
+  }
+  return filas.map((f) => ({
+    clave: f.desde,
+    etiquetaEje: etiquetaFn(f),
+    titulo: tituloFn(f),
+    ingresos: f.ingresos,
+    gastos: f.gastos,
+    cantidad: f.cantidad,
+  }));
+}
+
+// Construye la serie real de ingresos/gastos según la granularidad elegida
+// — nunca inventa puntos: cada valor sale de sumar movimientos reales del
+// período dentro del tramo correspondiente.
+function serieVs(movimientos, rango, granularidad) {
+  if (granularidad === "semana") {
+    return serieVsPorTramos(movimientos, semanasDelMes(rango.desde, rango.hasta), etiquetaSemana, (f) =>
+      tituloSemana(f.desde, f.hasta)
+    );
+  }
+  if (granularidad === "mes") {
+    return serieVsPorTramos(
+      movimientos,
+      mesesDelRango(rango.desde, rango.hasta),
+      (f) => tituloMes(f.desde),
+      (f) => tituloMes(f.desde)
+    );
+  }
+  return serieVsPorDia(movimientos, rango);
+}
+
+function puntoLeyendaVs(clase, texto) {
+  return el("li", { class: "vsgrafico-leyenda-item" }, [
+    el("span", { class: `vsgrafico-punto vsgrafico-punto--${clase}` }),
+    texto,
   ]);
 }
 
-function seccionIngresoGasto(ingresos, gastos, enPeriodo, titulo) {
-  const max = Math.max(ingresos, gastos, 0);
-  const main =
-    max > 0
-      ? el("div", { class: "barra-comparativa" }, [
-          barraComparativa("Ingresos", ingresos, max, "barra-comparativa-relleno--ingreso"),
-          barraComparativa("Gastos", gastos, max, "barra-comparativa-relleno--gasto"),
-        ])
-      : el("p", { class: "vacio", text: "Sin movimientos en este período." });
+function indicadorVs(clase, nombre, valor, desc, claseValor) {
+  return el("div", { class: "vsgrafico-resumen-item" }, [
+    el("span", { class: `vsgrafico-punto vsgrafico-punto--${clase}` }),
+    el("div", { class: "vsgrafico-resumen-txt" }, [
+      el("span", { class: "vsgrafico-resumen-nombre", text: nombre }),
+      el("span", { class: `vsgrafico-resumen-valor ${claseValor || ""}`.trim(), text: valorOculto(valor) }),
+      el("span", { class: "vsgrafico-resumen-desc", text: desc }),
+    ]),
+  ]);
+}
 
-  const cuerpo = el("div", { class: "resumen-vs-cuerpo" }, [
-    el("div", { class: "resumen-vs-main" }, [main]),
+// SVG de líneas (sin librerías externas, mismo enfoque que el resto de
+// gráficos de la app): dos polylines (ingresos/gastos) sobre una grilla
+// sutil, con zonas invisibles por punto para el tooltip al pasar el mouse.
+function graficoVsLineas(puntos) {
+  const ANCHO = 600;
+  const ALTO = 160;
+  const M_IZQ = 46;
+  const M_DER = 10;
+  const M_TOP = 14;
+  const M_INF = 26;
+  const anchoTrazo = ANCHO - M_IZQ - M_DER;
+  const altoTrazo = ALTO - M_TOP - M_INF;
+  const n = puntos.length;
+  const maxValor = Math.max(1, ...puntos.flatMap((p) => [p.ingresos, p.gastos]));
+
+  const x = (i) => (n > 1 ? M_IZQ + (i / (n - 1)) * anchoTrazo : M_IZQ + anchoTrazo / 2);
+  const y = (v) => M_TOP + altoTrazo - (v / maxValor) * altoTrazo;
+
+  // Grilla horizontal muy sutil: base, mitad y techo.
+  const nodosGrilla = [0, 0.5, 1].flatMap((frac) => {
+    const cy = M_TOP + altoTrazo * (1 - frac);
+    return [
+      elSvg("line", { x1: M_IZQ, y1: cy, x2: ANCHO - M_DER, y2: cy, class: "vsgrafico-grid" }),
+      elSvg("text", { x: M_IZQ - 6, y: cy + 3, class: "vsgrafico-eje-valor" }, [
+        valorEjeOculto(maxValor * frac),
+      ]),
+    ];
+  });
+
+  // Etiquetas del eje X: un subconjunto para no recargar el gráfico.
+  const maxEtiquetas = window.matchMedia("(max-width: 720px)").matches ? 4 : 7;
+  const indicesEtiquetas = new Set();
+  if (n <= maxEtiquetas) {
+    for (let i = 0; i < n; i++) indicesEtiquetas.add(i);
+  } else {
+    const paso = (n - 1) / (maxEtiquetas - 1);
+    for (let k = 0; k < maxEtiquetas; k++) indicesEtiquetas.add(Math.round(k * paso));
+  }
+  const nodosEjeX = [...indicesEtiquetas].map((i) =>
+    elSvg("text", { x: x(i), y: ALTO - 8, class: "vsgrafico-eje-etiqueta" }, [puntos[i].etiquetaEje])
+  );
+
+  const puntosIngreso = puntos.map((p, i) => `${x(i).toFixed(1)},${y(p.ingresos).toFixed(1)}`).join(" ");
+  const puntosGasto = puntos.map((p, i) => `${x(i).toFixed(1)},${y(p.gastos).toFixed(1)}`).join(" ");
+
+  const nodosMarcas = puntos.flatMap((p, i) => [
+    p.ingresos > 0
+      ? elSvg("circle", { cx: x(i), cy: y(p.ingresos), r: 2.6, class: "vsgrafico-marca vsgrafico-marca--ingreso" })
+      : null,
+    p.gastos > 0
+      ? elSvg("circle", { cx: x(i), cy: y(p.gastos), r: 2.6, class: "vsgrafico-marca vsgrafico-marca--gasto" })
+      : null,
+  ]);
+
+  const guia = elSvg("line", { x1: 0, y1: M_TOP, x2: 0, y2: M_TOP + altoTrazo, class: "vsgrafico-guia" });
+
+  const tooltip = el("div", { class: "vsgrafico-tooltip", role: "tooltip" });
+
+  function mostrarTooltip(i) {
+    const p = puntos[i];
+    const cx = x(i);
+    guia.setAttribute("x1", cx);
+    guia.setAttribute("x2", cx);
+    guia.classList.add("vsgrafico-guia--activa");
+
+    limpiar(tooltip);
+    tooltip.append(
+      el("p", { class: "vsgrafico-tooltip-titulo", text: p.titulo }),
+      el("div", { class: "vsgrafico-tooltip-fila" }, [
+        el("span", { class: "vsgrafico-punto vsgrafico-punto--ingreso" }),
+        el("span", { text: "Ingresos" }),
+        el("span", { class: "vsgrafico-tooltip-valor", text: valorOculto(p.ingresos) }),
+      ]),
+      el("div", { class: "vsgrafico-tooltip-fila" }, [
+        el("span", { class: "vsgrafico-punto vsgrafico-punto--gasto" }),
+        el("span", { text: "Gastos" }),
+        el("span", { class: "vsgrafico-tooltip-valor", text: valorOculto(p.gastos) }),
+      ])
+    );
+
+    const pct = (cx / ANCHO) * 100;
+    tooltip.style.left = `${pct}%`;
+    tooltip.style.transform = pct < 15 ? "translateX(0)" : pct > 85 ? "translateX(-100%)" : "translateX(-50%)";
+    tooltip.classList.add("vsgrafico-tooltip--visible");
+  }
+
+  function ocultarTooltip() {
+    guia.classList.remove("vsgrafico-guia--activa");
+    tooltip.classList.remove("vsgrafico-tooltip--visible");
+  }
+
+  const nodosZonas = puntos.map((p, i) => {
+    const paso = n > 1 ? anchoTrazo / (n - 1) : anchoTrazo;
+    return elSvg("rect", {
+      x: x(i) - paso / 2,
+      y: M_TOP,
+      width: paso,
+      height: altoTrazo,
+      class: "vsgrafico-zona",
+      onMouseenter: () => mostrarTooltip(i),
+      onMouseleave: ocultarTooltip,
+      onClick: () => mostrarTooltip(i),
+    });
+  });
+
+  const svg = elSvg("svg", { viewBox: `0 0 ${ANCHO} ${ALTO}`, class: "vsgrafico-svg" }, [
+    ...nodosGrilla,
+    elSvg("polyline", { points: puntosIngreso, class: "vsgrafico-linea vsgrafico-linea--ingreso" }),
+    elSvg("polyline", { points: puntosGasto, class: "vsgrafico-linea vsgrafico-linea--gasto" }),
+    ...nodosMarcas,
+    guia,
+    ...nodosEjeX,
+    ...nodosZonas,
+  ]);
+
+  return el("div", { class: "vsgrafico-lienzo", onMouseleave: ocultarTooltip }, [svg, tooltip]);
+}
+
+function seccionIngresoGasto(movimientos, rango, granularidad, totales, enPeriodo, tipo, titulo, onCambiarGranularidad) {
+  const { ingresos, gastos } = totales;
+
+  const selector = el(
+    "div",
+    { class: "selector-tipo vsgrafico-selector" },
+    GRANULARIDADES_VS.map((g) =>
+      el("button", {
+        class: g.clave === granularidad ? "activo" : "",
+        text: g.etiqueta,
+        onClick: () => onCambiarGranularidad(g.clave),
+      })
+    )
+  );
+
+  const resumen = el("div", { class: "vsgrafico-resumen" }, [
+    indicadorVs("ingreso", "Ingresos", ingresos, `Total ${delPeriodo(tipo)}`, "valor-ingreso"),
+    indicadorVs("gasto", "Gastos", gastos, `Total ${delPeriodo(tipo)}`, "valor-gasto"),
+  ]);
+
+  const puntos = serieVs(movimientos, rango, granularidad);
+  const hayDatos = puntos.some((p) => p.ingresos > 0 || p.gastos > 0);
+
+  const cuerpo = el("div", { class: "vsgrafico-cuerpo" }, [
+    resumen,
+    hayDatos
+      ? graficoVsLineas(puntos)
+      : el("p", { class: "vacio", text: "Sin movimientos en este período." }),
+    hayDatos
+      ? el("ul", { class: "vsgrafico-leyenda" }, [
+          puntoLeyendaVs("ingreso", "Ingresos"),
+          puntoLeyendaVs("gasto", "Gastos"),
+        ])
+      : null,
   ]);
 
   return el("section", { class: "panel-tarjeta resumen-vs" }, [
-    tarjetaHead(graficoIcono, titulo, `Comparación de tus ingresos y gastos en ${enPeriodo}.`),
+    tarjetaHead(graficoIcono, titulo, `Evolución de tus ingresos y gastos en ${enPeriodo}.`, selector),
     cuerpo,
   ]);
 }
@@ -439,14 +718,13 @@ function seccionGastosCategoria(movimientos, enPeriodo, verCategoria) {
           },
           [
             icono,
-            el("span", { class: "resumen-gastos-cat-nombre", text: g.nombre }),
+            el("span", { class: "resumen-gastos-cat-nombre-grupo" }, [
+              el("span", { class: "resumen-gastos-cat-nombre", text: g.nombre }),
+              el("span", { class: "resumen-gastos-cat-cantidad", text: String(g.cantidad) }),
+            ]),
             el("span", { class: "resumen-gastos-cat-monto", text: valorOculto(g.total) }),
             el("span", { class: "resumen-gastos-cat-pct" }, [
               el("span", { class: "resumen-gastos-cat-pct-valor", text: `${pct}%` }),
-              el("span", {
-                class: "resumen-gastos-cat-cantidad",
-                text: `${g.cantidad} mov.`,
-              }),
             ]),
           ]
         );
@@ -563,6 +841,9 @@ export async function montarResumen(contenedor, { rango, tipo, fechaRef, modo, i
   contenedor.append(raiz);
 
   let movimientos = [];
+  // Vista mensual: "Día" por defecto, para detectar en qué días concretos
+  // se gastó o ingresó más dentro del mes.
+  let granularidadVs = "dia";
 
   await recargar();
 
@@ -639,10 +920,17 @@ export async function montarResumen(contenedor, { rango, tipo, fechaRef, modo, i
 
     raiz.append(
       seccionIngresoGasto(
-        ingresos,
-        gastos,
+        paraTotales,
+        rango,
+        granularidadVs,
+        { ingresos, gastos, balance },
         enPeriodo,
-        modo === "estimado" ? "Estimado: ingresos vs. gastos" : "Ingresos vs. Gastos"
+        tipo,
+        modo === "estimado" ? "Estimado: ingresos vs. gastos" : "Ingresos vs. Gastos",
+        (nueva) => {
+          granularidadVs = nueva;
+          pintar();
+        }
       )
     );
 
