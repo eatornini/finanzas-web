@@ -263,12 +263,24 @@ function indicadorVs(clase, nombre, valor, desc, claseValor) {
 // gráficos de la app): dos polylines (ingresos/gastos) sobre una grilla
 // sutil, con zonas invisibles por punto para el tooltip al pasar el mouse.
 function graficoVsLineas(puntos) {
-  const ANCHO = 600;
-  const ALTO = 160;
-  const M_IZQ = 46;
-  const M_DER = 10;
-  const M_TOP = 14;
-  const M_INF = 26;
+  // En escritorio el viewBox es ancho y bajo (ANCHO grande): el gráfico se
+  // ve compacto porque todo (fuente, grosor de línea, radio de puntos) se
+  // escala según el ancho real del contenedor / ANCHO. En un celular esa
+  // misma relación deja el ancho real MUY chico (~300-360px), así que ese
+  // mismo factor de escala achica el texto y las líneas hasta ser
+  // ilegibles — no alcanza con hacer el viewBox "más alto" nada más. Por
+  // eso en móvil se usa un ANCHO de viewBox más chico (sube el factor de
+  // escala = todo se ve más grande en píxeles reales) Y un ALTO
+  // proporcionalmente mucho mayor (más alto que ancho = más espacio
+  // vertical para las variaciones).
+  const movil = window.matchMedia("(max-width: 720px)").matches;
+  const ANCHO = movil ? 300 : 600;
+  const ALTO = movil ? 220 : 160;
+  const M_IZQ = movil ? 40 : 46;
+  const M_DER = movil ? 8 : 10;
+  const M_TOP = movil ? 10 : 14;
+  const M_INF = movil ? 22 : 26;
+  const radioMarca = movil ? 3.2 : 2.6;
   const anchoTrazo = ANCHO - M_IZQ - M_DER;
   const altoTrazo = ALTO - M_TOP - M_INF;
   const n = puntos.length;
@@ -289,7 +301,7 @@ function graficoVsLineas(puntos) {
   });
 
   // Etiquetas del eje X: un subconjunto para no recargar el gráfico.
-  const maxEtiquetas = window.matchMedia("(max-width: 720px)").matches ? 4 : 7;
+  const maxEtiquetas = movil ? 4 : 7;
   const indicesEtiquetas = new Set();
   if (n <= maxEtiquetas) {
     for (let i = 0; i < n; i++) indicesEtiquetas.add(i);
@@ -306,10 +318,20 @@ function graficoVsLineas(puntos) {
 
   const nodosMarcas = puntos.flatMap((p, i) => [
     p.ingresos > 0
-      ? elSvg("circle", { cx: x(i), cy: y(p.ingresos), r: 2.6, class: "vsgrafico-marca vsgrafico-marca--ingreso" })
+      ? elSvg("circle", {
+          cx: x(i),
+          cy: y(p.ingresos),
+          r: radioMarca,
+          class: "vsgrafico-marca vsgrafico-marca--ingreso",
+        })
       : null,
     p.gastos > 0
-      ? elSvg("circle", { cx: x(i), cy: y(p.gastos), r: 2.6, class: "vsgrafico-marca vsgrafico-marca--gasto" })
+      ? elSvg("circle", {
+          cx: x(i),
+          cy: y(p.gastos),
+          r: radioMarca,
+          class: "vsgrafico-marca vsgrafico-marca--gasto",
+        })
       : null,
   ]);
 

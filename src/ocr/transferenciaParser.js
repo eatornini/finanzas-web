@@ -5,6 +5,14 @@
 // Diferencia con el original: la fecha se devuelve como Date (hora local
 // del dispositivo), no como epoch millis de Calendar.getInstance().
 
+// Lista MÁS CHICA a propósito que la de documentTypeDetector.js: acá actúa
+// como confirmación estricta, red de seguridad para no parsear como
+// transferencia algo que el detector (con su lista más amplia y más laxa)
+// clasificó mal — ver el test "degrada a compra..." en ocrManager.test.js.
+// "cuenta pro" SÍ se agregó acá (no solo en el detector): es un producto
+// específico de BancoEstado que en la práctica solo aparece en comprobantes
+// de transferencia reales (nunca en boletas de compra), así que no le resta
+// nada a esa red de seguridad.
 const TRANSFER_KEYWORDS = [
   "transferencia", "operacion exitosa", "operación exitosa", "destinatario",
   "detalle cuenta destino", "cuenta origen", "monto transferido",
@@ -13,6 +21,7 @@ const TRANSFER_KEYWORDS = [
   "transferencia realizada", "transferiste",
   "transferencia recibida", "transferencia enviada",
   "pago exitoso", "pago realizado", "pago recibido",
+  "cuenta pro",
 ];
 
 const EXCLUDE_COMERCIO = [

@@ -877,6 +877,8 @@
   }
 
   .selector-tipo {
+    display: inline-flex;
+    flex-wrap: nowrap;
     gap: 0;
     border: 1px solid var(--borde);
     border-radius: var(--r-pill);
@@ -889,6 +891,7 @@
     border-radius: var(--r-pill);
     padding: var(--esp-1) var(--esp-3);
     font-size: var(--txt-sm);
+    white-space: nowrap;
   }
 
   /* Sin :not(.activo) acá, ".selector-tipo button" (misma especificidad que
@@ -5063,6 +5066,24 @@ color-mix(in srgb, var(--acento) 16%, transparent);
   }
 
   @media (max-width: 720px) {
+    /* El selector Día/Semana/Mes no compite con el título: pasa a su
+       propia línea, debajo del subtítulo, en vez de angostar el header
+       hasta que ".selector-tipo" no tenga lugar para sus 3 botones. */
+    .resumen-vs .resumen-card-head {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .vsgrafico-selector {
+      align-self: flex-start;
+    }
+
+    /* Menos aire entre indicadores/gráfico/leyenda: ese espacio se lo
+       queda el gráfico, que en móvil es el elemento central del bloque. */
+    .vsgrafico-cuerpo {
+      gap: var(--esp-2);
+    }
+
     .vsgrafico-resumen {
       gap: var(--esp-3) var(--esp-5);
     }

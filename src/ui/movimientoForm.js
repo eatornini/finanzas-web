@@ -52,6 +52,30 @@ function isoAInputLocal(iso) {
   )}`;
 }
 
+// Lee una imagen del portapapeles del sistema, si hay una y el navegador
+// deja. Devuelve un File listo para el pipeline de OCR, o null si no hay
+// imagen, no hay permiso, o la API no está disponible (Safari y varios
+// WebViews de Android no soportan navigator.clipboard.read() con
+// imágenes) — en cualquiera de esos casos, quien llama cae al selector de
+// archivo normal, así que acá no hace falta distinguir el motivo del fallo.
+async function leerImagenPortapapeles() {
+  if (!navigator.clipboard || !navigator.clipboard.read) return null;
+  try {
+    const items = await navigator.clipboard.read();
+    for (const item of items) {
+      const tipoImagen = item.types.find((t) => t.startsWith("image/"));
+      if (!tipoImagen) continue;
+      const blob = await item.getType(tipoImagen);
+      const extension = tipoImagen.split("/")[1] || "png";
+      return new File([blob], `comprobante-portapapeles.${extension}`, { type: blob.type });
+    }
+  } catch {
+    // Sin permiso, portapapeles vacío/sin imagen, o gesto de usuario ya
+    // consumido — todos caen al selector de archivo normal.
+  }
+  return null;
+}
+
 function formatoFechaHoraLegible(iso) {
   return new Date(iso).toLocaleString("es-CL", {
     day: "2-digit",
@@ -224,7 +248,21 @@ export function abrirMovimientoForm({
     hidden: "true",
   });
   const btnCargarComprobante = el("button", { type: "button", class: "boton--secundario boton--secundario-icono" });
-  btnCargarComprobante.addEventListener("click", () => inputArchivo.click());
+  // Antes de abrir el selector de archivos, se intenta leer una imagen del
+  // portapapeles (útil cuando la persona ya copió una captura de pantalla o
+  // una imagen desde otra app). Best-effort: si el navegador no soporta la
+  // API, no hay permiso, o el portapapeles no tiene imagen, se cae al
+  // selector de archivo normal sin mostrar ningún error — Safari y varios
+  // WebViews de Android no soportan navigator.clipboard.read() para
+  // imágenes, así que esto nunca puede ser el único camino.
+  btnCargarComprobante.addEventListener("click", async () => {
+    const archivoPortapapeles = await leerImagenPortapapeles();
+    if (archivoPortapapeles && confirm("Detectamos una imagen copiada. ¿Usarla como comprobante?")) {
+      await cargarComprobante(archivoPortapapeles);
+      return;
+    }
+    inputArchivo.click();
+  });
   const btnQuitarComprobante = el(
     "button",
     { type: "button", class: "boton--icono", "aria-label": "Quitar comprobante", hidden: "true" },
@@ -318,9 +356,11 @@ export function abrirMovimientoForm({
     actualizarBotones();
   }
 
-  inputArchivo.addEventListener("change", async () => {
-    const file = inputArchivo.files[0];
-    if (!file) return;
+  // Corre el pipeline de OCR sobre `file` y carga los resultados en el
+  // formulario. Compartida por el selector de archivo (input type=file) y
+  // por la imagen leída del portapapeles — mismo procesamiento para ambos
+  // orígenes, no hay una segunda ruta de extracción.
+  async function cargarComprobante(file) {
     archivoComprobante = file;
     imagenEliminada = false;
     await pintarComprobante();
@@ -421,6 +461,11 @@ export function abrirMovimientoForm({
     } finally {
       quitarOverlay();
     }
+  }
+
+  inputArchivo.addEventListener("change", () => {
+    const file = inputArchivo.files[0];
+    if (file) cargarComprobante(file);
   });
 
   const comprobante = el("div", { class: "comprobante-campo comprobante-campo--secundario" }, [
