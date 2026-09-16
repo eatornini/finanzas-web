@@ -4,12 +4,10 @@ import {
   calcularTotales,
   desglosarPorPago,
   filtrarParaCalculos,
-  todosActivos,
 } from "../logic/totales.js";
 import { formatoCLP } from "../logic/dinero.js";
 import { prefs } from "../prefs.js";
 import {
-  puntosIcono,
   tendenciaCombinadaIcono,
   graficoIcono,
   graficoTortaIcono,
@@ -23,13 +21,7 @@ import {
 import { tituloVista, iconoTitulo } from "./tituloVista.js";
 import { nodoIconoCategoria } from "./iconoCategoria.js";
 import { colorMovimiento } from "./iconosCategoria.js";
-import { periodoSiguiente, rangoPeriodo, etiquetaPeriodo } from "../logic/periodos.js";
-import {
-  contarMovimientosEstimado,
-  copiarMesEstimado,
-  borrarMesEstimado,
-  cambiarEstadoMesEstimado,
-} from "../data/herramientasMes.js";
+import { rangoPeriodo, etiquetaPeriodo } from "../logic/periodos.js";
 
 const MESES_ABBR = [
   "ene", "feb", "mar", "abr", "may", "jun",
@@ -869,11 +861,6 @@ export async function montarResumen(contenedor, { rango, tipo, fechaRef, modo, i
   function pintar() {
     limpiar(raiz);
 
-    // El toggle de ocultar montos (ojo) vive ahora en el topbar (shell.js),
-    // global para toda la app — no solo Resumen.
-    const acciones = el("div", { class: "resumen-header-acciones" });
-    if (modo === "estimado" && tipo === "mes") acciones.append(construirMenuMes());
-
     const paraTotales = filtrarParaCalculos(movimientos, {
       modo,
       incluirInactivos: prefs.get("incluirInactivos"),
@@ -881,7 +868,7 @@ export async function montarResumen(contenedor, { rango, tipo, fechaRef, modo, i
     const { ingresos, gastos, balance } = calcularTotales(paraTotales);
     const enPeriodo = etiquetaPeriodo(fechaRef, tipo);
 
-    raiz.append(bloqueEncabezado(tipo, acciones), aviso, error);
+    raiz.append(bloqueEncabezado(tipo, null), aviso, error);
 
     const descIngreso =
       modo === "estimado"
@@ -949,109 +936,6 @@ export async function montarResumen(contenedor, { rango, tipo, fechaRef, modo, i
 
     const consejo = seccionConsejo(ingresos, gastos, tipo, movimientos.length);
     if (consejo) raiz.append(consejo);
-  }
-
-  function construirMenuMes() {
-    const popover = el("div", { class: "menu-mes", hidden: "true" });
-    const btnMenu = el(
-      "button",
-      {
-        class: "boton--icono",
-        "aria-label": "Más acciones del mes",
-        title: "Más acciones del mes",
-        onClick: () => {
-          popover.hidden = !popover.hidden;
-        },
-      },
-      [puntosIcono()]
-    );
-
-    const etiquetaActual = etiquetaPeriodo(fechaRef, tipo);
-    const desdeSiguiente = periodoSiguiente(fechaRef, "mes");
-    const etiquetaSiguiente = etiquetaPeriodo(desdeSiguiente, "mes");
-
-    function cerrarMenu() {
-      popover.hidden = true;
-    }
-
-    async function conBloqueo(fn) {
-      for (const b of popover.querySelectorAll("button")) b.disabled = true;
-      error.textContent = "";
-      aviso.textContent = "";
-      try {
-        await fn();
-      } catch (e) {
-        error.textContent = "No se pudo completar la acción.";
-      } finally {
-        for (const b of popover.querySelectorAll("button")) b.disabled = false;
-      }
-    }
-
-    const btnCopiar = el(
-      "button",
-      {
-        class: "menu-mes-item",
-        type: "button",
-        onClick: () =>
-          conBloqueo(async () => {
-            cerrarMenu();
-            const rangoDestino = rangoPeriodo(desdeSiguiente, "mes");
-            const n = await contarMovimientosEstimado(rangoDestino.desde, rangoDestino.hasta);
-            const mensajeConfirm =
-              n > 0
-                ? `${etiquetaSiguiente} ya tiene ${n} movimientos estimados. Se reemplazarán por la copia de ${etiquetaActual}. ¿Continuar?`
-                : `¿Copiar los movimientos estimados de ${etiquetaActual} a ${etiquetaSiguiente}?`;
-            if (!confirm(mensajeConfirm)) return;
-            const total = await copiarMesEstimado(rango.desde);
-            aviso.textContent = `Se copiaron ${total} movimientos a ${etiquetaSiguiente}.`;
-          }),
-      },
-      [`Copiar a ${etiquetaSiguiente}`]
-    );
-
-    const btnEstado = el(
-      "button",
-      {
-        class: "menu-mes-item",
-        type: "button",
-        onClick: () =>
-          conBloqueo(async () => {
-            cerrarMenu();
-            const nuevoEstado = !todosActivos(movimientos);
-            const verbo = nuevoEstado ? "Activar" : "Desactivar";
-            if (!confirm(`¿${verbo} los ${movimientos.length} movimientos de ${etiquetaActual}?`)) return;
-            await cambiarEstadoMesEstimado(rango.desde, rango.hasta, nuevoEstado);
-            await recargar();
-            aviso.textContent = `Se ${nuevoEstado ? "activaron" : "desactivaron"} los movimientos de ${etiquetaActual}.`;
-          }),
-      },
-      [todosActivos(movimientos) ? "Desactivar todos" : "Activar todos"]
-    );
-
-    const btnBorrar = el(
-      "button",
-      {
-        class: "menu-mes-item menu-mes-item--peligro",
-        type: "button",
-        onClick: () =>
-          conBloqueo(async () => {
-            cerrarMenu();
-            if (
-              !confirm(
-                `¿Borrar los ${movimientos.length} movimientos estimados de ${etiquetaActual}? Esta acción no se puede deshacer.`
-              )
-            )
-              return;
-            await borrarMesEstimado(rango.desde, rango.hasta);
-            await recargar();
-            aviso.textContent = `Se borraron los movimientos estimados de ${etiquetaActual}.`;
-          }),
-      },
-      ["Borrar datos del mes"]
-    );
-
-    popover.append(btnCopiar, btnEstado, btnBorrar);
-    return el("div", { class: "menu-mes-wrap" }, [btnMenu, popover]);
   }
 
   return { repintar };

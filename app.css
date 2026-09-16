@@ -3834,27 +3834,7 @@
     font-size: var(--txt-sm);
     margin: 0 0 var(--esp-3);
   }
-  .menu-mes-wrap {
-    position: relative;
-  }
-  .menu-mes {
-    position: absolute;
-    top: calc(100% + var(--esp-2));
-    right: 0;
-    z-index: 20;
-    display: flex;
-    flex-direction: column;
-    gap: var(--esp-1);
-    width: 220px;
-    padding: var(--esp-2);
-    border: 1px solid var(--borde);
-    border-radius: var(--r-md);
-    background: var(--bg-elevado);
-    box-shadow: var(--sombra-popover);
-  }
-  .menu-mes[hidden] {
-    display: none;
-  }
+  /* Reutilizadas por la sección "Mes estimado" de Configuración. */
   .menu-mes-item {
     width: 100%;
     text-align: left;
@@ -3876,6 +3856,31 @@
   .menu-mes-item--peligro {
     color: var(--gasto);
   }
+
+  /* --- Configuración: sección "Mes estimado" --- */
+  .mesestimado-estado {
+    color: var(--fg-tenue);
+    font-size: var(--txt-sm);
+    margin: var(--esp-3) 0 0;
+  }
+
+  .menu-mes-lista {
+    display: flex;
+    flex-direction: column;
+    margin-top: var(--esp-3);
+    border: 1px solid var(--borde);
+    border-radius: var(--r-md);
+    overflow: hidden;
+  }
+
+  .menu-mes-lista .menu-mes-item {
+    border-radius: 0;
+  }
+
+  .menu-mes-lista .menu-mes-item + .menu-mes-item {
+    border-top: 1px solid var(--borde);
+  }
+
   /* --- Shell: toggle "incluir inactivos" --- */
   .boton--chip {
     padding: var(--esp-1) var(--esp-3);
@@ -4715,12 +4720,6 @@ color-mix(in srgb, var(--acento) 16%, transparent);
     align-items: center;
     gap: var(--esp-3);
     flex-wrap: wrap;
-  }
-
-  .resumen-header-acciones {
-    display: flex;
-    align-items: center;
-    gap: var(--esp-1);
   }
 
   /* --- Métricas principales --- */
