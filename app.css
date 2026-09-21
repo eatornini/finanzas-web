@@ -4981,6 +4981,9 @@ color-mix(in srgb, var(--acento) 16%, transparent);
 
   .vsgrafico-linea--balance {
     stroke: var(--acento);
+    /* Acumulado, no un dato puntual del período: pesa menos que
+       ingresos/gastos, que usan el stroke-width base de .vsgrafico-linea. */
+    stroke-width: 1.5;
   }
 
   .vsgrafico-marca--ingreso {
@@ -4996,11 +4999,12 @@ color-mix(in srgb, var(--acento) 16%, transparent);
   }
 
   /* Referencia visual en $0: aparece solo cuando el balance cruza a
-     negativo, distinta de la grilla normal (más marcada, punteada). */
+     negativo, distinta de la grilla normal (más marcada, punteada) pero sin
+     competir con el color de las tres series. */
   .vsgrafico-cero {
     stroke: var(--fg-tenue);
-    stroke-width: 0.75;
-    stroke-dasharray: 3 2;
+    stroke-width: 1.1;
+    stroke-dasharray: 4 2;
   }
 
   .vsgrafico-guia {

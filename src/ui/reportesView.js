@@ -110,6 +110,14 @@ export async function montarReportes(contenedor, { rango, tipo, fechaRef, modo }
     error
   );
 
+  // Declaradas antes de cargar(): cargarComparativa/cargarTendencia asignan
+  // estas variables desde su continuación post-await, que corre antes de que
+  // la ejecución síncrona de montarReportes llegue a un `let` posterior
+  // (queda en pausa en el `await cargar()` de abajo) — si el `let` estuviera
+  // más abajo, esa asignación cae en su temporal dead zone y explota.
+  let datosComparativa = null;
+  let datosTendencia = null;
+
   await cargar();
 
   // El toggle de ocultar montos (shell.js) llama a esto en vez de volver a
@@ -120,19 +128,26 @@ export async function montarReportes(contenedor, { rango, tipo, fechaRef, modo }
     pintarTendencia();
   }
 
+  // Reportes dispara 8 consultas simultáneas (2 de comparativa + 6 de
+  // tendencia); recién llegado a la app esa ráfaga en frío puede toparse con
+  // una falla transitoria de red aislada. Se reintenta una vez en silencio
+  // antes de mostrar el error, que solo aparece si también falla el reintento.
   async function cargar() {
     error.textContent = "";
     try {
       await Promise.all([cargarComparativa(), cargarTendencia()]);
     } catch (e) {
-      limpiar(comparativa);
-      limpiar(tendencia);
-      error.textContent = "No se pudieron cargar los reportes. ";
-      error.append(el("button", { text: "Reintentar", onClick: cargar }));
+      try {
+        await Promise.all([cargarComparativa(), cargarTendencia()]);
+      } catch (e2) {
+        limpiar(comparativa);
+        limpiar(tendencia);
+        error.textContent = "No se pudieron cargar los reportes. ";
+        error.append(el("button", { text: "Reintentar", onClick: cargar }));
+      }
     }
   }
 
-  let datosComparativa = null;
   async function cargarComparativa() {
     const fechaAnterior = periodoAnterior(fechaRef, tipo);
     const incluirInactivos = prefs.get("incluirInactivos");
@@ -170,7 +185,6 @@ export async function montarReportes(contenedor, { rango, tipo, fechaRef, modo }
     );
   }
 
-  let datosTendencia = null;
   async function cargarTendencia() {
     const fechas = fechasTendencia(fechaRef, tipo, 6);
     const incluirInactivos = prefs.get("incluirInactivos");

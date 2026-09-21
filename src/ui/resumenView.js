@@ -224,21 +224,38 @@ function serieVsPorTramos(movimientos, tramos, etiquetaFn, tituloFn) {
 // Construye la serie real de ingresos/gastos según la granularidad elegida
 // — nunca inventa puntos: cada valor sale de sumar movimientos reales del
 // período dentro del tramo correspondiente.
+//
+// El rango del período (rango.hasta) puede llegar hasta el final del mes/
+// semana/año aunque hoy sea un día anterior (p. ej. "septiembre 2026"
+// completo estando a mitad de mes) — mostrar esos tramos futuros dibujaría
+// días/semanas/meses que todavía no ocurrieron como si fueran $0, lo que se
+// lee como "sin movimientos" en vez de "sin datos todavía". Por eso se
+// recorta el tramo visible a la fecha real de hoy: los tramos ya
+// arrancados quedan (con su tope acotado a hoy), los que ni empezaron no se
+// generan. Si el período consultado ya terminó (hasta <= hoy), no cambia
+// nada — se muestra completo.
 function serieVs(movimientos, rango, granularidad) {
+  const hoy = ymdLocal(new Date());
+  const hastaVisible = rango.hasta > hoy ? hoy : rango.hasta;
+  const rangoVisible = { desde: rango.desde, hasta: hastaVisible };
+
   if (granularidad === "semana") {
-    return serieVsPorTramos(movimientos, semanasDelMes(rango.desde, rango.hasta), etiquetaSemana, (f) =>
-      tituloSemana(f.desde, f.hasta)
+    return serieVsPorTramos(
+      movimientos,
+      semanasDelMes(rangoVisible.desde, rangoVisible.hasta),
+      etiquetaSemana,
+      (f) => tituloSemana(f.desde, f.hasta)
     );
   }
   if (granularidad === "mes") {
     return serieVsPorTramos(
       movimientos,
-      mesesDelRango(rango.desde, rango.hasta),
+      mesesDelRango(rangoVisible.desde, rangoVisible.hasta),
       (f) => tituloMes(f.desde),
       (f) => tituloMes(f.desde)
     );
   }
-  return serieVsPorDia(movimientos, rango);
+  return serieVsPorDia(movimientos, rangoVisible);
 }
 
 function puntoLeyendaVs(clase, texto) {
@@ -281,6 +298,10 @@ function graficoVsLineas(puntos) {
   const M_TOP = movil ? 10 : 14;
   const M_INF = movil ? 22 : 26;
   const radioMarca = movil ? 3.2 : 2.6;
+  // Balance es un acumulado, no un dato puntual del período como
+  // ingresos/gastos: su marca es ligeramente más chica para que la línea
+  // azul pese menos visualmente que las otras dos series.
+  const radioMarcaBalance = movil ? 2.6 : 2.1;
   const anchoTrazo = ANCHO - M_IZQ - M_DER;
   const altoTrazo = ALTO - M_TOP - M_INF;
   const n = puntos.length;
@@ -364,7 +385,7 @@ function graficoVsLineas(puntos) {
     elSvg("circle", {
       cx: x(i),
       cy: y(p.balanceAcumulado),
-      r: radioMarca,
+      r: radioMarcaBalance,
       class: "vsgrafico-marca vsgrafico-marca--balance",
     }),
   ]);
@@ -395,7 +416,7 @@ function graficoVsLineas(puntos) {
       ]),
       el("div", { class: "vsgrafico-tooltip-fila" }, [
         el("span", { class: "vsgrafico-punto vsgrafico-punto--balance" }),
-        el("span", { text: "Balance" }),
+        el("span", { text: "Balance acumulado" }),
         el("span", { class: "vsgrafico-tooltip-valor", text: valorOculto(p.balanceAcumulado) }),
       ])
     );
@@ -461,7 +482,7 @@ function seccionIngresoGasto(movimientos, rango, granularidad, totales, enPeriod
     // A diferencia de la tarjeta superior (que pinta el balance en rojo si
     // es negativo), aquí se mantiene siempre azul: la negatividad ya se
     // comunica con el signo del número y la posición bajo la línea $0.
-    indicadorVs("balance", "Balance", balance, "Ingresos - Gastos", "valor-balance"),
+    indicadorVs("balance", "Balance", balance, "Balance acumulado", "valor-balance"),
   ]);
 
   // El balance de cada punto es ACUMULADO (ingresos y gastos sumados desde
@@ -494,7 +515,7 @@ function seccionIngresoGasto(movimientos, rango, granularidad, totales, enPeriod
   ]);
 
   return el("section", { class: "panel-tarjeta resumen-vs" }, [
-    tarjetaHead(graficoIcono, titulo, `Evolución de tus ingresos y gastos en ${enPeriodo}.`, selector),
+    tarjetaHead(graficoIcono, titulo, `Evolución de tus ingresos, gastos y balance en ${enPeriodo}.`, selector),
     cuerpo,
   ]);
 }
@@ -993,7 +1014,7 @@ export async function montarResumen(contenedor, { rango, tipo, fechaRef, modo, i
         { ingresos, gastos, balance },
         enPeriodo,
         tipo,
-        modo === "estimado" ? "Estimado: ingresos vs. gastos" : "Ingresos vs. Gastos",
+        modo === "estimado" ? "Estimado: evolución financiera" : "Evolución financiera",
         (nueva) => {
           granularidadVs = nueva;
           pintar();
