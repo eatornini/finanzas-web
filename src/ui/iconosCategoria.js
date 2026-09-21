@@ -17,6 +17,7 @@ import {
   saludPulsoIcono,
   intercambioIcono,
   carroIcono,
+  etiquetaIcono,
 } from "./iconos.js";
 
 const REGLAS = [
@@ -48,14 +49,15 @@ export function iconoMovimiento(m) {
 }
 
 // Icono semántico para una categoría por su nombre (leyenda de "Gastos por
-// categoría"). Devuelve una fábrica de <svg> o null si no hay coincidencia
-// (en ese caso la leyenda mantiene el punto de color de siempre).
+// categoría"). Devuelve una fábrica de <svg>; si no hay coincidencia, cae
+// en un icono genérico de etiqueta.
 const REGLAS_CATEGORIA = [
   { rx: /aliment|comida|super|mercado|almac[eé]n|restaurant|caf[eé]/i, icono: utensiliosIcono },
   { rx: /ahorro|saving|inversi[oó]n/i, icono: alcanciaIcono },
   { rx: /salud|farmacia|m[eé]dic|dentista|hospital/i, icono: saludPulsoIcono },
   { rx: /transferen/i, icono: intercambioIcono },
   { rx: /locomoci[oó]n|transporte|micro|metro|\bbus\b|uber|taxi|bencina|combustible|movilizaci[oó]n/i, icono: carroIcono },
+  { rx: /ocio|cine|streaming|netflix|entretenim/i, icono: peliculaIcono },
 ];
 
 export function iconoSemanticoCategoria(nombre) {
@@ -63,7 +65,7 @@ export function iconoSemanticoCategoria(nombre) {
   for (const { rx, icono } of REGLAS_CATEGORIA) {
     if (rx.test(texto)) return icono;
   }
-  return null;
+  return etiquetaIcono;
 }
 
 // Devuelve el color hex a usar de fondo/ícono para un movimiento.
