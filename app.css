@@ -4933,6 +4933,10 @@ color-mix(in srgb, var(--acento) 16%, transparent);
     background: var(--gasto);
   }
 
+  .vsgrafico-punto--balance {
+    background: var(--acento);
+  }
+
   .vsgrafico-lienzo {
     position: relative;
   }
@@ -4975,12 +4979,28 @@ color-mix(in srgb, var(--acento) 16%, transparent);
     stroke: var(--gasto);
   }
 
+  .vsgrafico-linea--balance {
+    stroke: var(--acento);
+  }
+
   .vsgrafico-marca--ingreso {
     fill: var(--ingreso);
   }
 
   .vsgrafico-marca--gasto {
     fill: var(--gasto);
+  }
+
+  .vsgrafico-marca--balance {
+    fill: var(--acento);
+  }
+
+  /* Referencia visual en $0: aparece solo cuando el balance cruza a
+     negativo, distinta de la grilla normal (más marcada, punteada). */
+  .vsgrafico-cero {
+    stroke: var(--fg-tenue);
+    stroke-width: 0.75;
+    stroke-dasharray: 3 2;
   }
 
   .vsgrafico-guia {

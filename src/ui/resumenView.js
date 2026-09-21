@@ -284,21 +284,43 @@ function graficoVsLineas(puntos) {
   const anchoTrazo = ANCHO - M_IZQ - M_DER;
   const altoTrazo = ALTO - M_TOP - M_INF;
   const n = puntos.length;
-  const maxValor = Math.max(1, ...puntos.flatMap((p) => [p.ingresos, p.gastos]));
+  // El balance acumulado puede ser negativo (gastos > ingresos), a
+  // diferencia de ingresos/gastos que nunca bajan de 0 — por eso el
+  // dominio del eje Y arranca en el mínimo real (puede ser < 0) en vez de
+  // asumir siempre 0 como piso.
+  const valores = puntos.flatMap((p) => [p.ingresos, p.gastos, p.balanceAcumulado]);
+  const maxValor = Math.max(1, ...valores);
+  const minValor = Math.min(0, ...valores);
+  const rangoValores = maxValor - minValor || 1;
+  const hayNegativos = minValor < 0;
 
   const x = (i) => (n > 1 ? M_IZQ + (i / (n - 1)) * anchoTrazo : M_IZQ + anchoTrazo / 2);
-  const y = (v) => M_TOP + altoTrazo - (v / maxValor) * altoTrazo;
+  const y = (v) => M_TOP + altoTrazo - ((v - minValor) / rangoValores) * altoTrazo;
 
-  // Grilla horizontal muy sutil: base, mitad y techo.
+  // Grilla horizontal muy sutil: piso, mitad y techo del dominio real
+  // (no siempre 0-máximo: si hay balance negativo el piso baja de 0).
   const nodosGrilla = [0, 0.5, 1].flatMap((frac) => {
+    const valor = minValor + rangoValores * frac;
     const cy = M_TOP + altoTrazo * (1 - frac);
     return [
       elSvg("line", { x1: M_IZQ, y1: cy, x2: ANCHO - M_DER, y2: cy, class: "vsgrafico-grid" }),
-      elSvg("text", { x: M_IZQ - 6, y: cy + 3, class: "vsgrafico-eje-valor" }, [
-        valorEjeOculto(maxValor * frac),
-      ]),
+      elSvg("text", { x: M_IZQ - 6, y: cy + 3, class: "vsgrafico-eje-valor" }, [valorEjeOculto(valor)]),
     ];
   });
+
+  // Referencia visual explícita en $0: solo hace falta dibujarla aparte
+  // cuando cae DENTRO del gráfico y no coincide ya con la grilla (piso o
+  // techo) — o sea, cuando hay tramo negativo y otro positivo.
+  const nodoCero =
+    hayNegativos && maxValor > 0
+      ? elSvg("line", {
+          x1: M_IZQ,
+          y1: y(0),
+          x2: ANCHO - M_DER,
+          y2: y(0),
+          class: "vsgrafico-cero",
+        })
+      : null;
 
   // Etiquetas del eje X: un subconjunto para no recargar el gráfico.
   const maxEtiquetas = movil ? 4 : 7;
@@ -315,6 +337,9 @@ function graficoVsLineas(puntos) {
 
   const puntosIngreso = puntos.map((p, i) => `${x(i).toFixed(1)},${y(p.ingresos).toFixed(1)}`).join(" ");
   const puntosGasto = puntos.map((p, i) => `${x(i).toFixed(1)},${y(p.gastos).toFixed(1)}`).join(" ");
+  const puntosBalance = puntos
+    .map((p, i) => `${x(i).toFixed(1)},${y(p.balanceAcumulado).toFixed(1)}`)
+    .join(" ");
 
   const nodosMarcas = puntos.flatMap((p, i) => [
     p.ingresos > 0
@@ -333,6 +358,15 @@ function graficoVsLineas(puntos) {
           class: "vsgrafico-marca vsgrafico-marca--gasto",
         })
       : null,
+    // El balance sí se marca en 0: a diferencia de ingresos/gastos, un
+    // balance en cero es información real (ingresos == gastos), no
+    // ausencia de dato.
+    elSvg("circle", {
+      cx: x(i),
+      cy: y(p.balanceAcumulado),
+      r: radioMarca,
+      class: "vsgrafico-marca vsgrafico-marca--balance",
+    }),
   ]);
 
   const guia = elSvg("line", { x1: 0, y1: M_TOP, x2: 0, y2: M_TOP + altoTrazo, class: "vsgrafico-guia" });
@@ -358,6 +392,11 @@ function graficoVsLineas(puntos) {
         el("span", { class: "vsgrafico-punto vsgrafico-punto--gasto" }),
         el("span", { text: "Gastos" }),
         el("span", { class: "vsgrafico-tooltip-valor", text: valorOculto(p.gastos) }),
+      ]),
+      el("div", { class: "vsgrafico-tooltip-fila" }, [
+        el("span", { class: "vsgrafico-punto vsgrafico-punto--balance" }),
+        el("span", { text: "Balance" }),
+        el("span", { class: "vsgrafico-tooltip-valor", text: valorOculto(p.balanceAcumulado) }),
       ])
     );
 
@@ -388,8 +427,10 @@ function graficoVsLineas(puntos) {
 
   const svg = elSvg("svg", { viewBox: `0 0 ${ANCHO} ${ALTO}`, class: "vsgrafico-svg" }, [
     ...nodosGrilla,
+    nodoCero,
     elSvg("polyline", { points: puntosIngreso, class: "vsgrafico-linea vsgrafico-linea--ingreso" }),
     elSvg("polyline", { points: puntosGasto, class: "vsgrafico-linea vsgrafico-linea--gasto" }),
+    elSvg("polyline", { points: puntosBalance, class: "vsgrafico-linea vsgrafico-linea--balance" }),
     ...nodosMarcas,
     guia,
     ...nodosEjeX,
@@ -400,7 +441,7 @@ function graficoVsLineas(puntos) {
 }
 
 function seccionIngresoGasto(movimientos, rango, granularidad, totales, enPeriodo, tipo, titulo, onCambiarGranularidad) {
-  const { ingresos, gastos } = totales;
+  const { ingresos, gastos, balance } = totales;
 
   const selector = el(
     "div",
@@ -417,9 +458,25 @@ function seccionIngresoGasto(movimientos, rango, granularidad, totales, enPeriod
   const resumen = el("div", { class: "vsgrafico-resumen" }, [
     indicadorVs("ingreso", "Ingresos", ingresos, `Total ${delPeriodo(tipo)}`, "valor-ingreso"),
     indicadorVs("gasto", "Gastos", gastos, `Total ${delPeriodo(tipo)}`, "valor-gasto"),
+    // A diferencia de la tarjeta superior (que pinta el balance en rojo si
+    // es negativo), aquí se mantiene siempre azul: la negatividad ya se
+    // comunica con el signo del número y la posición bajo la línea $0.
+    indicadorVs("balance", "Balance", balance, "Ingresos - Gastos", "valor-balance"),
   ]);
 
+  // El balance de cada punto es ACUMULADO (ingresos y gastos sumados desde
+  // el inicio del período hasta ese punto) — no el balance del tramo
+  // individual. Así el último punto siempre coincide con `balance`, que
+  // viene de calcularTotales() sobre el mismo conjunto de movimientos: una
+  // sola fuente de verdad para el gráfico y para la tarjeta superior.
   const puntos = serieVs(movimientos, rango, granularidad);
+  let acumIngresos = 0;
+  let acumGastos = 0;
+  for (const p of puntos) {
+    acumIngresos += p.ingresos;
+    acumGastos += p.gastos;
+    p.balanceAcumulado = acumIngresos - acumGastos;
+  }
   const hayDatos = puntos.some((p) => p.ingresos > 0 || p.gastos > 0);
 
   const cuerpo = el("div", { class: "vsgrafico-cuerpo" }, [
@@ -431,6 +488,7 @@ function seccionIngresoGasto(movimientos, rango, granularidad, totales, enPeriod
       ? el("ul", { class: "vsgrafico-leyenda" }, [
           puntoLeyendaVs("ingreso", "Ingresos"),
           puntoLeyendaVs("gasto", "Gastos"),
+          puntoLeyendaVs("balance", "Balance"),
         ])
       : null,
   ]);
