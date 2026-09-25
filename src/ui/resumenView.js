@@ -573,7 +573,7 @@ export function estadoSemana(semana, hoy) {
 
 // Solo tiene sentido cuando el período mostrado es un mes calendario
 // completo (varias semanas) — en vista semana o año no hay nada que agrupar.
-function seccionGastosSemana(movimientos, rango, enPeriodo) {
+function seccionGastosSemana(movimientos, rango, enPeriodo, irA) {
   const hoy = ymdLocal(new Date());
   const semanas = agruparGastosPorSemana(movimientos, rango).map((s) => ({
     ...s,
@@ -623,9 +623,31 @@ function seccionGastosSemana(movimientos, rango, enPeriodo) {
       relleno.style.width = `${anchoBarra}%`;
       const pct = totalMes > 0 ? Math.round((s.total / totalMes) * 100) : 0;
 
+      // Tocar la fila abre Movimientos en vista semanal, en esa semana.
+      const clickeable = typeof irA === "function";
+      const abrir = () => irA("movimientos", { tipo: "semana", fecha: s.desde });
+
       return el(
         "div",
-        { class: `resumen-semanas-fila${esPico ? " resumen-semanas-fila--pico" : ""}` },
+        {
+          class: `resumen-semanas-fila${esPico ? " resumen-semanas-fila--pico" : ""}${
+            clickeable ? " resumen-semanas-fila--clickable" : ""
+          }`,
+          ...(clickeable
+            ? {
+                role: "button",
+                tabindex: "0",
+                "aria-label": `Ver movimientos de ${etiquetaSemana(s)}`,
+                onClick: abrir,
+                onKeydown: (ev) => {
+                  if (ev.key === "Enter" || ev.key === " ") {
+                    ev.preventDefault();
+                    abrir();
+                  }
+                },
+              }
+            : {}),
+        },
         [
           etiquetaNodo,
           el("div", { class: "resumen-semanas-barra-pista" }, [relleno]),
@@ -1025,7 +1047,7 @@ export async function montarResumen(contenedor, { rango, tipo, fechaRef, modo, i
     // La distribución semanal solo aplica al ver el mes completo — en las
     // vistas por semana o por año no hay semanas de un mes que comparar.
     if (tipo === "mes") {
-      raiz.append(seccionGastosSemana(paraTotales, rango, enPeriodo));
+      raiz.append(seccionGastosSemana(paraTotales, rango, enPeriodo, irA));
     }
 
     raiz.append(

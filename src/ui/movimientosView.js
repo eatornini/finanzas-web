@@ -133,8 +133,8 @@ export async function montarMovimientos(
   const opcionesVista =
     modo === "estimado"
       ? [
-          { valor: "gasto", texto: "Gastos estimados" },
-          { valor: "ingreso", texto: "Ingresos estimados" },
+          { valor: "gasto", texto: "Gastos" },
+          { valor: "ingreso", texto: "Ingresos" },
         ]
       : [
           { valor: "todos", texto: "Todos" },

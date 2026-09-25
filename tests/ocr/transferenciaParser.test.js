@@ -63,4 +63,28 @@ describe("parsearTransferencia", () => {
     expect(r.fecha.getHours()).toBe(10);
     expect(r.fecha.getMinutes()).toBe(45);
   });
+  // Franja "Monto transferido: $5.000" (texto blanco sobre naranja) que PSM 11
+  // descarta: sin etiqueta de monto ni "$", el número tomado es un adivinado.
+  it("marca el monto como dudoso si no sale de una etiqueta ni de una línea con $", () => {
+    const r = parsearTransferencia(
+      lineas([
+        "Desde:", "Producto", "Cuenta Pro", "N9 de cuenta", "02070049611", "N9 de TEF:", "7049584",
+        "Fecha y Hora de TEF", "25/09/2026 07:33:01", "Hacia:", "Nombre", "Matias Eric Tomini",
+        "RUT", "23.409.2251", "Banco", "BancoEstado", "N9 de cuenta", "rm9225",
+      ])
+    );
+    expect(r.montoDudoso).toBe(true);
+  });
+
+  it("no marca como dudoso el monto leído de la franja de monto transferido", () => {
+    const r = parsearTransferencia(
+      lineas([
+        "onto transferido: $5.000", "Desde:", "Producto : Cuenta Pro", "N* de cuenta + 02070049611",
+        "N* de TEF : 7049584", "Fecha y Hora de TEF + 25/09/2026 07:33:01", "Hacia:",
+        "Nombre : Matias Eric Tomini", "Banco + BancoEstado",
+      ])
+    );
+    expect(r.monto).toBe(5000);
+    expect(r.montoDudoso).toBe(false);
+  });
 });

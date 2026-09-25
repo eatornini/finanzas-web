@@ -13,6 +13,7 @@ import { engranajeIcono, intercambioIcono, paletaIcono, calendarioIcono, flechaI
 import { tituloVista, iconoTitulo } from "./tituloVista.js";
 import { aplicarAcento, esHexValido, ACENTO_DEFECTO } from "./acento.js";
 import { actualizarAcento } from "../data/perfil.js";
+import { montarSeccionExportarImportar } from "./exportarImportarSeccion.js";
 
 // Sección "Mes estimado": copiar/activar-desactivar/borrar los movimientos
 // estimados de un mes completo. Vivía como menú "⋮" dentro de Resumen — se
@@ -258,6 +259,8 @@ export async function montarConfiguracion(contenedor, { fechaRef } = {}) {
   sincronizarAcento();
 
   const seccionMesEstimado = el("section", { class: "panel-tarjeta" });
+  const seccionExportarImportar = el("section", { class: "panel-tarjeta" });
+  const seccionPeligro = el("section", { class: "panel-tarjeta panel-tarjeta--peligro" });
 
   contenedor.append(
     el("div", { class: "config-vista" }, [
@@ -286,8 +289,11 @@ export async function montarConfiguracion(contenedor, { fechaRef } = {}) {
         ]),
       ]),
       seccionMesEstimado,
+      seccionExportarImportar,
+      seccionPeligro,
     ])
   );
 
   await montarSeccionMesEstimado(seccionMesEstimado, fechaRef);
+  montarSeccionExportarImportar(seccionExportarImportar, seccionPeligro, fechaRef);
 }

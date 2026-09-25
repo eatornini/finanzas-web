@@ -34,7 +34,7 @@ export function montarCategorias(contenedor) {
 
   const btnNueva = el("button", {
     class: "boton--primario",
-    text: "+ Nueva categoría",
+    text: "+ Categoría",
     onClick: () =>
       abrirCategoriaForm({ modoInicial: modo, tipoInicial: "gasto", onGuardado: recargar }),
   });

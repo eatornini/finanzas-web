@@ -37,6 +37,9 @@ export const basura = () =>
     "M14 11v6",
   ]);
 export const check = () => svg("M20 6L9 17l-5-5");
+// Lucide: triangle-alert — confirmaciones de acciones destructivas (borrado total).
+export const alertaIcono = () =>
+  svg(["m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z", "M12 9v4", "M12 17h.01"]);
 export const cerrarIcono = () => svg(["M18 6 6 18", "M6 6l12 12"]);
 // Arco abierto: girando con CSS (@keyframes girar) hace de spinner.
 export const cargandoIcono = () => svg("M21 12a9 9 0 1 1-6.219-8.56");
@@ -273,6 +276,12 @@ export const escudoIcono = () =>
   ]);
 
 // Lucide: user-plus — "crear cuenta"
+// Lucide: download — "Exportar datos" (Configuración).
+export const descargaIcono = () =>
+  svg(["M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", "M7 10l5 5 5-5", "M12 15V3"]);
+// Lucide: upload — "Importar datos" (Configuración).
+export const subidaIcono = () =>
+  svg(["M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", "M17 8l-5-5-5 5", "M12 3v12"]);
 export const usuarioMasIcono = () =>
   svg([
     "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2",

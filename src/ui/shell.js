@@ -175,26 +175,41 @@ export function montarShell(contenedor, sesion, perfil) {
     }
   }
 
-  const btnModo = {};
+  const etiquetaModo = {};
   for (const m of ["real", "estimado"]) {
-    btnModo[m] = el("button", {
+    etiquetaModo[m] = el("span", {
+      class: "modo-etiqueta",
       text: m === "real" ? "Real" : "Estimado",
-      onClick: () => {
-        modo = m;
-        prefs.set("modo", modo);
-        sincronizarModo();
-        pintarVista();
-      },
     });
   }
+  function alternarModo() {
+    modo = modo === "real" ? "estimado" : "real";
+    prefs.set("modo", modo);
+    sincronizarModo();
+    pintarVista();
+  }
+  const switchModo = el(
+    "button",
+    {
+      type: "button",
+      class: "modo-switch",
+      role: "switch",
+      "aria-label": "Alternar entre Real y Estimado",
+      onClick: alternarModo,
+    },
+    [el("span", { class: "modo-switch-circulo" })]
+  );
   function sincronizarModo() {
     for (const m of ["real", "estimado"]) {
-      btnModo[m].classList.toggle("activo", modo === m);
+      etiquetaModo[m].classList.toggle("activo", modo === m);
     }
+    switchModo.setAttribute("aria-checked", String(modo === "estimado"));
+    switchModo.classList.toggle("modo-switch--estimado", modo === "estimado");
   }
   const selectorModo = el("div", { class: "selector-modo" }, [
-    btnModo.real,
-    btnModo.estimado,
+    etiquetaModo.real,
+    switchModo,
+    etiquetaModo.estimado,
   ]);
 
   // Ocultar/mostrar montos: global (topbar), afecta a toda la app —
@@ -277,7 +292,17 @@ export function montarShell(contenedor, sesion, perfil) {
     ]),
   ]);
 
-  function irA(clave) {
+  // `periodo` opcional ({ tipo, fecha: "YYYY-MM-DD" }): además de cambiar de
+  // pestaña, fija tipo y fecha de referencia (ej. "Gastos por semana" en
+  // Resumen abre Movimientos en la semana tocada).
+  function irA(clave, periodo) {
+    if (periodo) {
+      tipo = periodo.tipo;
+      prefs.set("periodoTipo", tipo);
+      sincronizarTipo();
+      fechaRef = new Date(`${periodo.fecha}T12:00:00`);
+      prefs.set("fechaRef", periodo.fecha);
+    }
     activa = clave;
     prefs.set("vistaActiva", clave);
     sincronizarNav();
@@ -358,13 +383,15 @@ export function montarShell(contenedor, sesion, perfil) {
   ]);
 
   const topbar = el("header", { class: "topbar" }, [
-    el("div", { class: "topbar-marca-movil" }, [btnMenu, el("span", { class: "marca-movil", text: "Finanzas" })]),
-    selectorPeriodo,
-    el("div", { class: "topbar-derecha" }, [btnOjo, selectorModo]),
+    el("div", { class: "topbar-contenido" }, [
+      el("div", { class: "topbar-marca-movil" }, [btnMenu, el("span", { class: "marca-movil", text: "Finanzas" })]),
+      selectorPeriodo,
+      el("div", { class: "topbar-derecha" }, [btnOjo, selectorModo]),
+    ]),
   ]);
 
   const piePagina = el("footer", { class: "pie-app" }, [
-    el("span", { text: "Finanzas v3.37" }),
+    el("span", { text: "Finanzas v3.45" }),
     el("span", { class: "pie-punto", text: "·" }),
     el("span", { text: "Tus datos están seguros" }),
   ]);

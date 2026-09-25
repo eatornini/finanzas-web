@@ -222,11 +222,20 @@ function extractMonto(lines) {
     }
   }
 
+  return null;
+}
+
+// Último recurso: el primer número que aparezca. Se separa de extractMonto
+// para poder marcar el resultado como dudoso — pasa cuando el OCR se come
+// el bloque del monto. Visto con la franja naranja "Monto transferido:
+// $5.000" (texto blanco sobre color) que PSM 11 descarta entera: se tomaba
+// un "9" de "N9 de cuenta" o el N° de cuenta como monto y, como ya había
+// monto, no se disparaba el reintento con PSM 3 (que sí lee la franja).
+function extractMontoAdivinado(lines) {
   for (const line of lines) {
     const parsed = parseMonto(line.text);
     if (parsed !== null) return parsed;
   }
-
   return null;
 }
 
@@ -401,7 +410,7 @@ function extractFecha(lines) {
 }
 
 // lines: LineInfo[] (ver construirBloques.js). Devuelve
-// { comercio, monto, fecha, detalle } o null si no hay suficientes
+// { comercio, monto, montoDudoso, fecha, detalle } o null si no hay suficientes
 // palabras clave de transferencia (esTransferencia, red de seguridad
 // interna aunque el router ya haya clasificado antes).
 export function parsearTransferencia(lines) {
@@ -409,9 +418,14 @@ export function parsearTransferencia(lines) {
   const allTextLower = allText.toLowerCase();
   if (!esTransferencia(allTextLower)) return null;
 
+  const montoSeguro = extractMonto(lines);
+  const monto = montoSeguro ?? extractMontoAdivinado(lines);
   return {
     comercio: extractComercio(lines),
-    monto: extractMonto(lines),
+    monto,
+    // true si el monto salió del último recurso (ver extractMontoAdivinado):
+    // movimientoForm lo trata como faltante para decidir los reintentos.
+    montoDudoso: montoSeguro === null && monto !== null,
     fecha: extractFecha(lines),
     detalle: null, // extractDetalle en el Kotlin original siempre devolvía null.
   };

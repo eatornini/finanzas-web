@@ -37,9 +37,9 @@
     --esp-5: 15px;
     --esp-6: 32px;
 
-    --r-sm: 6px;
+    --r-sm: 8px;
     --r-md: 10px;
-    --r-lg: 14px;
+    --r-lg: 3px;
     --r-pill: 999px;
 
     --txt-xs: 0.85rem;
@@ -62,9 +62,10 @@
     --peso-normal: 400;
     --peso-medio: 500;
     --peso-semibold: 600;
-    --peso-bold: 700;
+    --peso-bold: 500;
 
-    font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --fuente-principal: "Stack Sans Text", "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+    font-family: var(--fuente-principal);
   }
 
   @media (prefers-color-scheme: dark) {
@@ -123,6 +124,7 @@
     margin: 0;
     color: var(--fg);
     background: var(--bg-pagina);
+    font-family: var(--fuente-principal);
     font-size: var(--txt-base);
     font-weight: var(--peso-normal);
     line-height: 1.5;
@@ -199,11 +201,7 @@
 
   .topbar {
     display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--esp-3) var(--esp-5);
-    padding: var(--esp-4) var(--esp-5);
+    justify-content: center;
     background: var(--bg);
     border-bottom: 1px solid var(--borde);
     /* Fija la barra (período + Real/Estimado) al tope del área que scrollea
@@ -212,6 +210,21 @@
     top: 0;
     z-index: 20;
     flex-shrink: 0;
+  }
+
+  /* Mismo ancho máximo y centrado que .cuerpo: header y contenido comparten
+     el mismo eje derecho (ver .cuerpo más abajo) en vez de que la topbar
+     use el ancho completo del viewport y el contenido quede recortado
+     antes por su max-width. */
+  .topbar-contenido {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--esp-3) var(--esp-5);
+    width: 100%;
+    max-width: var(--ancho-cuerpo);
+    padding: var(--esp-4) var(--esp-5);
   }
 
   .topbar-marca-movil {
@@ -236,6 +249,7 @@
   .cuerpo {
     width: 100%;
     max-width: var(--ancho-cuerpo);
+    margin-inline: auto;
     padding: var(--esp-5);
     flex: 1;
   }
@@ -351,6 +365,14 @@
       display: contents;
     }
 
+    /* En desktop .topbar-contenido es la caja que centra y limita el ancho
+       (ver regla base). En mobile se aplana igual que .topbar-marca-movil
+       para que sus hijos entren directo al flex-wrap de .topbar de acá
+       abajo, que ya redefine padding y layout para esta resolución. */
+    .topbar-contenido {
+      display: contents;
+    }
+
     .boton-menu {
       display: inline-flex;
       order: 1;
@@ -422,26 +444,30 @@
 }
 
 @layer componentes {
-  button,
-  .boton {
+ button, .boton {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: var(--esp-2);
-    padding: var(--esp-2) var(--esp-3);
+    /* padding: var(--esp-2) var(--esp-3); */
     border: 1px solid var(--borde);
     border-radius: var(--r-sm);
-    background: var(--bg-elevado);
-    color: var(--fg);
+    /* background: var(--bg-elevado); */
+    /* color: var(--fg); */
     font-size: var(--txt-sm);
     font-weight: var(--peso-medio);
     transition: background-color 0.12s ease, border-color 0.12s ease, filter 0.12s ease,
       transform 0.06s ease;
-  }
+    /* background: color-mix(in hsl, var(--i-primary) 10%, transparent); */
+    background-color: #E6EFF9;
+    padding: .6em 1.3em;
+    font-size: 15px;
+     /* color: var(--acento);*/
+}
 
   button:hover:not(:disabled):not(.activo):not(.boton--primario) {
-    background: var(--bg-sutil);
-    border-color: color-mix(in srgb, var(--fg) 14%, var(--borde));
+    /*  background: var(--bg-sutil);
+    border-color: color-mix(in srgb, var(--fg) 14%, var(--borde));*/
   }
 
   button:active:not(:disabled):not(.activo):not(.boton--primario) {
@@ -476,15 +502,17 @@
     border: 2px solid var(--bg);
   }
 
-  .boton--primario {
+.boton--primario {
     background: var(--acento);
     border-color: transparent;
     color: var(--acento-fg);
-    padding: var(--esp-3) var(--esp-4);
-    font-size: var(--txt-base);
+    /* padding: var(--esp-3) var(--esp-4); */
+    /* font-size: var(--txt-base); */
     font-weight: var(--peso-semibold);
     box-shadow: 0 2px 6px color-mix(in srgb, var(--acento) 25%, transparent);
-  }
+    padding: .6em 1.3em;
+    font-size: 15px;
+}
 
   button.boton--primario:hover:not(:disabled) {
     background: color-mix(in srgb, var(--acento) 90%, black);
@@ -492,6 +520,25 @@
 
   button.boton--primario:active:not(:disabled) {
     background: color-mix(in srgb, var(--acento) 85%, black);
+    transform: translateY(1px);
+  }
+
+  /* Variante roja de .boton--primario para acciones destructivas
+     irreversibles (borrar todos los datos). Color de texto fijo en blanco
+     (no var(--acento-fg): ese token es oscuro en algunos temas, pensado
+     para el azul, no para --gasto). */
+  .boton--peligro {
+    background: var(--gasto);
+    color: #fff;
+    box-shadow: 0 2px 6px color-mix(in srgb, var(--gasto) 25%, transparent);
+  }
+
+  button.boton--peligro:hover:not(:disabled) {
+    background: color-mix(in srgb, var(--gasto) 90%, black);
+  }
+
+  button.boton--peligro:active:not(:disabled) {
+    background: color-mix(in srgb, var(--gasto) 85%, black);
     transform: translateY(1px);
   }
 
@@ -760,7 +807,7 @@
     gap: var(--esp-1);
   }
 
-  .nav-boton {
+.nav-boton {
     justify-content: flex-start;
     width: 100%;
     border: none;
@@ -769,18 +816,21 @@
     padding: var(--esp-3);
     border-radius: var(--r-md);
     font-weight: var(--peso-medio);
-  }
+    font-size: 13px;
+}
 
   .nav-boton:hover:not(.activo) {
     background: var(--bg-sutil);
     color: var(--fg);
   }
 
-  .nav-boton.activo {
+.nav-boton.activo {
     background: var(--acento-tenue);
     color: var(--acento);
-    font-weight: var(--peso-semibold);
-  }
+    /* font-weight: var(--peso-semibold); */
+    font-weight: var(--peso-bold);
+    font-size: 13px;
+}
 
   .nav-icono {
     display: flex;
@@ -859,6 +909,7 @@
     background: transparent;
     color: var(--fg-tenue);
     padding: var(--esp-2);
+    font-size: 13px;
   }
 
   .boton-salir:hover {
@@ -911,6 +962,13 @@
     padding: 0 var(--esp-1);
   }
 
+  /* Sin esto, [hidden] (regla de user-agent) pierde contra el display:flex
+     de acá arriba (regla de autor, gana siempre sin importar especificidad)
+     y el navegador de mes queda visible aunque se le ponga hidden. */
+  .navegador-periodo[hidden] {
+    display: none;
+  }
+
   .periodo-label {
     font-weight: var(--peso-semibold);
     font-size: var(--txt-sm);
@@ -919,42 +977,66 @@
     color: var(--fg);
   }
 
-  .topbar-derecha {
+.topbar-derecha {
     display: flex;
     align-items: center;
     gap: var(--esp-3);
     margin-left: auto;
-  }
+    padding: 3px;
+}
 
   .selector-modo {
-    gap: 0;
-    border: 1px solid var(--borde);
-    border-radius: var(--r-pill);
-    padding: 3px;
-    background: var(--bg-sutil);
+    gap: var(--esp-2);
   }
 
-  .selector-modo button {
+  .modo-etiqueta {
+    font-size: var(--txt-sm);
+    font-weight: var(--peso-normal);
+    color: var(--fg-tenue);
+    transition: font-weight 0.15s ease, color 0.15s ease;
+  }
+
+  .modo-etiqueta.activo {
+    font-weight: var(--peso-semibold);
+    color: var(--fg);
+  }
+
+.modo-switch {
+    position: relative;
+    flex: none;
+    width: 40px;
+    height: 22px;
     border: none;
     border-radius: var(--r-pill);
-    padding: var(--esp-1) var(--esp-4);
-    font-size: var(--txt-sm);
-  }
-
-  /* Mismo motivo que en .selector-tipo button: sin :not(.activo) esto le
-     ganaba el fondo al estado activo por orden de declaración. */
-  .selector-modo button:not(.activo) {
-    background: transparent;
-  }
-
-  .selector-modo button.activo {
+    /* background: var(--borde); */
+    padding: 0;
+    cursor: pointer;
+    transition: background 0.2s ease;
     background: var(--acento);
-    color: var(--acento-fg);
+}
+
+  .modo-switch--estimado {
+    background: var(--acento);
   }
 
-  .selector-modo button:first-child.activo {
-    background: var(--acento);
-    color: var(--acento-fg);
+  .modo-switch:focus-visible {
+    outline: 2px solid var(--acento);
+    outline-offset: 2px;
+  }
+
+  .modo-switch-circulo {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #fff;
+    transition: transform 0.2s ease;
+  }
+
+  .modo-switch--estimado .modo-switch-circulo {
+    transform: translateX(18px);
   }
 
   .boton-tema {
@@ -1089,6 +1171,13 @@
   .modal-titulo-icono svg {
     width: 22px;
     height: 22px;
+  }
+
+  /* Confirmación de borrado total: ícono rojo en vez de azul, para que se
+     note de entrada que es una acción distinta (destructiva). */
+  .modal-panel--peligro .modal-titulo-icono {
+    color: var(--gasto);
+    background: color-mix(in srgb, var(--gasto) 12%, transparent);
   }
 
   .modal-titulo-textos {
@@ -1725,8 +1814,8 @@
   /* Encabezado del grupo dentro de su tarjeta: fecha/categoría + total del
      día, con un respiro antes de la primera fila. */
   .lista-grupo .lista-grupo-titulo {
-    /*margin: 0 0 var(--esp-2); */
-    padding: var(--esp-1) var(--esp-2);
+    /*margin: 0 0 var(--esp-2); 
+    padding: var(--esp-1) var(--esp-2);*/
   }
 
   /* Dentro de la tarjeta de grupo las filas son renglones planos: sin
@@ -1745,16 +1834,18 @@
   }
 
   .lista-grupo .fila:hover {
-    background: var(--bg-sutil);
+  /*   background: var(--bg-sutil);*/
   }
 
   /* Selector Todos/Gastos/Ingresos: control segmentado compacto, alineado a
      la izquierda, FUERA de la tarjeta. No ocupa todo el ancho (ni en móvil). */
-  .tabs-vista {
+.tabs-vista {
     display: flex;
     align-self: flex-start;
     max-width: 100%;
-  }
+    padding: 3px;
+    margin-bottom: 14px;
+}
 
   .tabs-vista button {
     white-space: nowrap;
@@ -2059,9 +2150,7 @@
     color: var(--fg-tenue);
   }
 
-  .lista-grupo-titulo:first-child {
-    margin-top: 0;
-  }
+
 
   .lista-grupo-titulo:hover {
     color: var(--fg);
@@ -2153,7 +2242,7 @@
   }
 
   .fila:hover {
-    background: var(--bg-sutil);
+    
     border-color: color-mix(in srgb, var(--fg) 12%, var(--borde));
   }
 
@@ -2195,7 +2284,7 @@
     min-width: 0;
   }
 
-  .fila .nombre {
+.fila .nombre {
     display: inline-block;
     max-width: 100%;
     font-size: var(--txt-base);
@@ -2204,7 +2293,9 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     cursor: pointer;
-  }
+    top: 7px;
+    position: relative;
+}
 
  
 
@@ -2313,13 +2404,17 @@
     background: color-mix(in srgb, var(--ingreso) 15%, transparent);
     border-color: var(--ingreso);
     color: var(--ingreso);
+        font-size: 10px;
+    border-radius: 7px;
   }
 
-  button.pendiente {
+button.pendiente {
     background: color-mix(in srgb, var(--pendiente) 18%, transparent);
     border-color: var(--pendiente);
     color: var(--pendiente);
-  }
+    font-size: 10px;
+    border-radius: 7px;
+}
 
   .cifras {
     display: flex;
@@ -2674,17 +2769,16 @@
     margin-bottom: var(--esp-3);
   }
 
-  .saldo-cabecera-icono {
+.saldo-cabecera-icono {
     display: flex;
     align-items: center;
-    justify-content: center;
-    width: 28px;
+    /* justify-content: center; */
+    /* width: 28px; */
     height: 28px;
     flex: none;
     border-radius: var(--r-sm);
-    /* --- background: var(--acento-tenue); --- */
     color: var(--acento);
-  }
+}
 
   .saldo-cabecera-icono svg {
     width: 16px;
@@ -2715,7 +2809,7 @@
     gap: var(--esp-3);
     padding: var(--esp-5) var(--esp-3);
     border-radius: var(--r-lg);
-    background: var(--acento-tenue);
+    background-color: #E6EFF9;
   }
 
   .saldo-hero-icono {
@@ -2940,7 +3034,7 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     font-size: var(--txt-sm);
-    font-weight: var(--peso-medio);
+    
   }
 
   .cat-barras-monto {
@@ -3023,7 +3117,7 @@
   }
 
   .actividad-nombre {
-    font-weight: var(--peso-semibold);
+    font-weight: var(--peso-bold);
     font-size: var(--txt-sm);
     overflow: hidden;
     text-overflow: ellipsis;
@@ -3837,6 +3931,10 @@
     font-size: var(--txt-sm);
     margin: 0 0 var(--esp-3);
   }
+  /* Igual que .error:empty más abajo: sin texto no reserva línea/margen. */
+  .aviso:empty {
+    display: none;
+  }
   /* Reutilizadas por la sección "Mes estimado" de Configuración. */
   .menu-mes-item {
     width: 100%;
@@ -3882,6 +3980,132 @@
 
   .menu-mes-lista .menu-mes-item + .menu-mes-item {
     border-top: 1px solid var(--borde);
+  }
+
+  /* --- Configuración: sección "Exportar / Importar datos" --- */
+  .expimp-bloque {
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-3);
+  }
+
+  .expimp-bloque + .expimp-bloque {
+    margin-top: var(--esp-5);
+    padding-top: var(--esp-5);
+    border-top: 1px solid var(--borde);
+  }
+
+  .expimp-subtitulo {
+    font-size: var(--txt-base);
+    font-weight: var(--peso-semibold);
+    margin: 0;
+  }
+
+  .expimp-filtros {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: var(--esp-3);
+  }
+
+  .expimp-acciones {
+    display: flex;
+    gap: var(--esp-3);
+  }
+
+  /* Reutilizada por la fila de "Exportar datos" (siempre visible) y por
+     Cancelar/Importar (con hidden hasta elegir un archivo válido) — mismo
+     motivo que .navegador-periodo[hidden] más arriba. */
+  .expimp-acciones[hidden] {
+    display: none;
+  }
+
+  .expimp-seleccionar {
+    display: flex;
+    align-items: center;
+    gap: var(--esp-3);
+    flex-wrap: wrap;
+  }
+
+  /* Tarjeta de vista previa: aparece recién con un archivo válido
+     seleccionado — nombre + resumen compacto + impacto de la importación,
+     antes de los botones Cancelar/Importar. */
+  .expimp-preview {
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-2);
+    border: 1px solid var(--borde);
+    border-radius: var(--r-md);
+    padding: var(--esp-4);
+    background: var(--bg-elevado);
+    box-shadow: var(--sombra-1);
+  }
+
+  .expimp-preview[hidden] {
+    display: none;
+  }
+
+  /* .expimp-preview ya separa las líneas con su propio gap (flex); estas
+     son <p> sueltos, así que se les resetea el margen por defecto del
+     navegador para no duplicar el espaciado. */
+  .expimp-archivo-nombre {
+    margin: 0;
+    font-size: var(--txt-sm);
+    font-weight: var(--peso-semibold);
+    word-break: break-all;
+  }
+
+  .expimp-stat-linea {
+    margin: 0;
+    font-size: var(--txt-sm);
+    color: var(--fg-tenue);
+  }
+
+  .expimp-preview-divisor {
+    border: none;
+    border-top: 1px solid var(--borde);
+    margin: var(--esp-1) 0;
+  }
+
+  .expimp-preview-linea {
+    margin: 0;
+    font-size: var(--txt-sm);
+    font-weight: var(--peso-semibold);
+    color: var(--acento);
+  }
+
+  .expimp-preview-linea--secundaria {
+    font-weight: var(--peso-normal);
+    color: var(--fg-tenue);
+  }
+
+  /* Vista previa en modo "Reemplazar todo": línea de advertencia de lo que
+     se va a borrar, en rojo para distinguirla de lo que se va a importar. */
+  .expimp-preview-linea--peligro {
+    color: var(--gasto);
+  }
+
+  .expimp-analizando {
+    margin: 0;
+    font-size: var(--txt-sm);
+    color: var(--fg-tenue);
+  }
+
+  /* --- Configuración: "Zona de peligro" (borrar todos los datos) --- */
+  .panel-tarjeta--peligro {
+    border-color: color-mix(in srgb, var(--gasto) 35%, var(--borde));
+  }
+
+  /* Contenido del modal de confirmación de borrado total. */
+  .expimp-peligro-modal {
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-3);
+  }
+
+  .expimp-peligro-modal p {
+    margin: 0;
+    font-size: var(--txt-sm);
+    color: var(--fg-tenue);
   }
 
   /* --- Shell: toggle "incluir inactivos" --- */
@@ -3984,7 +4208,7 @@
     align-items: center;
     gap: var(--esp-2);
     font-size: var(--txt-sm);
-    font-weight: var(--peso-semibold);
+    font-weight: var(--peso-bold);
     color: var(--fg);
   }
 
@@ -4810,7 +5034,7 @@ color-mix(in srgb, var(--acento) 16%, transparent);
     gap: 2px;
     padding: var(--esp-3) var(--esp-4);
     border: 1px solid var(--borde);
-    border-radius: var(--r-md);
+    border-radius: var(--r-lg);
     background: var(--bg-elevado);
   }
 
@@ -5135,6 +5359,25 @@ color-mix(in srgb, var(--acento) 16%, transparent);
     font-size: var(--txt-sm);
     color: var(--fg-tenue);
     white-space: nowrap;
+  }
+
+  .resumen-semanas-fila--clickable {
+    cursor: pointer;
+    border-radius: var(--r-sm);
+    transition: background-color 0.15s ease;
+  }
+
+  .resumen-semanas-fila--clickable:hover {
+    background: var(--bg-sutil);
+  }
+
+  .resumen-semanas-fila--clickable:hover .resumen-semanas-barra-pista {
+    background: var(--bg);
+  }
+
+  .resumen-semanas-fila--clickable:focus-visible {
+    outline: 2px solid var(--acento);
+    outline-offset: 2px;
   }
 
   .resumen-semanas-fila--pico .resumen-semanas-rango {

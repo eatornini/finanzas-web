@@ -385,12 +385,20 @@ export function abrirMovimientoForm({
         } —\n${lineas.map((l) => l.text).join("\n")}`
       );
 
+      // Un monto "dudoso" (el parser no lo encontró junto a una etiqueta
+      // de monto ni con "$", solo tomó el primer número suelto) cuenta como
+      // faltante para los reintentos, y un monto confiable de un reintento
+      // le gana. Ver extractMontoAdivinado en transferenciaParser.js.
+      const faltaMonto = (r) => !r.monto || r.montoDudoso;
+      const mejorMonto = (actual, otro) =>
+        otro.monto && (!actual.monto || (actual.montoDudoso && !otro.montoDudoso));
+
       // PSM 11 a veces igual descarta el bloque del monto (bloque grande y
       // aislado, ver tesseractWorker.js). Se reintenta con PSM 3 SOLO en ese
       // caso — duplicaría el tiempo de espera en todas las cargas si se
       // corriera siempre — y se completa lo que falte sin pisar lo que el
       // primer intento ya encontró bien.
-      if (!resultado.monto) {
+      if (faltaMonto(resultado)) {
         try {
           const bloquesAlt = await reconocerImagenAlterno(file);
           const alt = construirBloques(bloquesAlt);
@@ -400,10 +408,11 @@ export function abrirMovimientoForm({
               resultadoAlt.fecha ? resultadoAlt.fecha.toISOString() : "?"
             } —\n${alt.lineas.map((l) => l.text).join("\n")}`
           );
-          if (resultadoAlt.monto) {
+          if (mejorMonto(resultado, resultadoAlt)) {
             resultado = {
               ...resultado,
               monto: resultadoAlt.monto,
+              montoDudoso: resultadoAlt.montoDudoso,
               comercio: resultado.comercio ?? resultadoAlt.comercio,
               fecha: resultado.fecha ?? resultadoAlt.fecha,
             };
@@ -418,7 +427,7 @@ export function abrirMovimientoForm({
       // oscuro) a veces pierden justo el bloque grande del monto en ambos
       // PSM — la misma captura en tema claro sí se lee. Se invierte la
       // imagen (blanco<->negro) y se reintenta con PSM 11.
-      if (!resultado.monto) {
+      if (faltaMonto(resultado)) {
         try {
           const invertida = await invertirImagen(file);
           const bloquesInv = await reconocerImagen(invertida);
@@ -429,10 +438,11 @@ export function abrirMovimientoForm({
               resultadoInv.fecha ? resultadoInv.fecha.toISOString() : "?"
             } —\n${inv.lineas.map((l) => l.text).join("\n")}`
           );
-          if (resultadoInv.monto) {
+          if (mejorMonto(resultado, resultadoInv)) {
             resultado = {
               ...resultado,
               monto: resultadoInv.monto,
+              montoDudoso: resultadoInv.montoDudoso,
               comercio: resultado.comercio ?? resultadoInv.comercio,
               fecha: resultado.fecha ?? resultadoInv.fecha,
             };
@@ -449,7 +459,11 @@ export function abrirMovimientoForm({
       const faltantes = [];
       if (!resultado.monto) faltantes.push("el monto");
       if (!resultado.fecha) faltantes.push("la fecha");
-      if (faltantes.length === 0) {
+      if (faltantes.length === 0 && resultado.montoDudoso) {
+        estadoOcr.textContent = "Revisá el monto: no se pudo leer con seguridad.";
+        debugOcrTexto.textContent = debugSecciones.join("\n\n");
+        debugOcr.hidden = false;
+      } else if (faltantes.length === 0) {
         estadoOcr.textContent = "";
       } else {
         estadoOcr.textContent = `No se detectó ${faltantes.join(" ni ")}. Completalo a mano.`;
