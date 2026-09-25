@@ -1,7 +1,17 @@
 import { el, limpiar } from "./dom.js";
 import { listarMovimientos, actualizarMovimiento, eliminarMovimiento } from "../data/movimientos.js";
 import { listarCategorias } from "../data/categorias.js";
-import { basura, lupaIcono, embudoIcono, chevronAbajo, check, mas, cerrarIcono, intercambioIcono } from "./iconos.js";
+import {
+  basura,
+  lupaIcono,
+  embudoIcono,
+  chevronAbajo,
+  check,
+  mas,
+  cerrarIcono,
+  intercambioIcono,
+  calendarioIcono,
+} from "./iconos.js";
 import { colorMovimiento } from "./iconosCategoria.js";
 import { nodoIconoCategoria } from "./iconoCategoria.js";
 import { montarPanelResumen } from "./panelResumenView.js";
@@ -223,11 +233,21 @@ export async function montarMovimientos(
   const aside = el("aside", { class: "panel-lateral" });
   contenedor.append(el("div", { class: "vista-movimientos" }, [principal, aside]));
 
+  // La clase marca cuál svg del encabezado rota al colapsar (el icono del
+  // grupo, si hay, no debe rotar).
+  function chevronConClase() {
+    const c = chevronAbajo();
+    c.classList.add("lista-grupo-chevron");
+    return c;
+  }
+
   let categorias = [];
   let todos = [];
   const colapsados = new Set(prefs.get("gruposColapsados"));
 
-  function grupoHeader(claveGrupo, etiqueta, movimientosGrupo) {
+  // icono (opcional): se pinta entre el chevron y la etiqueta — el
+  // calendario en los grupos por fecha.
+  function grupoHeader(claveGrupo, etiqueta, movimientosGrupo, icono = null) {
     const colapsado = colapsados.has(claveGrupo);
     const { balance } = calcularTotales(movimientosGrupo);
     const signo = balance >= 0 ? "+" : "−";
@@ -239,7 +259,8 @@ export async function montarMovimientos(
         "aria-expanded": String(!colapsado),
       },
       [
-        chevronAbajo(),
+        chevronConClase(),
+        icono ? el("span", { class: "lista-grupo-icono" }, [icono()]) : null,
         el("span", { text: etiqueta }),
         el("span", {
           class: "lista-grupo-total",
@@ -404,8 +425,8 @@ export async function montarMovimientos(
 
     // Cada grupo es una tarjeta propia: encabezado (fecha/categoría + total)
     // y, debajo, sus movimientos. Sin tarjeta contenedora general.
-    function pintarGrupo(claveGrupo, etiqueta, movimientosGrupo) {
-      const { btn, colapsado } = grupoHeader(claveGrupo, etiqueta, movimientosGrupo);
+    function pintarGrupo(claveGrupo, etiqueta, movimientosGrupo, icono) {
+      const { btn, colapsado } = grupoHeader(claveGrupo, etiqueta, movimientosGrupo, icono);
       const tarjeta = el("section", { class: "panel-tarjeta lista-grupo" }, [btn]);
       if (!colapsado) {
         for (const m of movimientosGrupo) {
@@ -430,11 +451,16 @@ export async function montarMovimientos(
       );
     } else if (modo === "estimado") {
       for (const grupo of ordenarGruposPorMonto(agruparPorCategoria(filtrados))) {
-        pintarGrupo(`estimado:${grupo.clave}`, grupo.nombre, grupo.movimientos);
+        // Grupos por categoría: el icono de la categoría en lugar del
+        // calendario (mismo tono gris que este, ver .lista-grupo-icono).
+        const cat = grupo.movimientos[0].categoria;
+        pintarGrupo(`estimado:${grupo.clave}`, grupo.nombre, grupo.movimientos, () =>
+          nodoIconoCategoria(cat, grupo.nombre)
+        );
       }
     } else {
       for (const grupo of ordenarGruposPorMonto(agruparPorFecha(filtrados))) {
-        pintarGrupo(`real:${grupo.clave}`, etiquetaDia(grupo.clave), grupo.movimientos);
+        pintarGrupo(`real:${grupo.clave}`, etiquetaDia(grupo.clave), grupo.movimientos, calendarioIcono);
       }
     }
     contador.textContent = `Mostrando ${filtrados.length} de ${todos.length} movimientos`;
@@ -519,6 +545,12 @@ export function fila(m, recargar, error, modo, asegurarCategorias) {
     );
     metaHijos.push(el("span", { class: "fila-meta-sep", text: "·" }), togglePagado);
   }
+  // Inactivo va junto a los demás badges de estado (al lado de Pendiente),
+  // no pegado al nombre.
+  if (inactivo) {
+    if (metaHijos.length === 1) metaHijos.push(el("span", { class: "fila-meta-sep", text: "·" }));
+    metaHijos.push(el("span", { class: "mov-badge-inactivo", text: "Inactivo" }));
+  }
 
   const claseFila =
     `fila fila--editable tipo-${m.tipo}` +
@@ -552,10 +584,7 @@ export function fila(m, recargar, error, modo, asegurarCategorias) {
     [
       iconoFila,
       el("div", { class: "fila-principal" }, [
-        el("span", { class: "fila-nombre-linea" }, [
-          el("span", { class: "nombre", text: m.nombre }),
-          inactivo ? el("span", { class: "badge-inactivo", text: "Inactivo" }) : null,
-        ]),
+        el("span", { class: "fila-nombre-linea" }, [el("span", { class: "nombre", text: m.nombre })]),
       ]),
       el("span", { class: "fila-meta" }, metaHijos),
       el("div", { class: "acciones" }, controles),

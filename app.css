@@ -2140,6 +2140,7 @@
     display: flex;
     align-items: center;
     justify-content: flex-start;
+    gap: var(--esp-2);
     width: 100%;
     margin: var(--esp-2) 0 0;
     padding: var(--esp-1);
@@ -2163,8 +2164,39 @@
     transition: transform 0.15s ease;
   }
 
-  .lista-grupo-titulo.colapsado svg {
+  .lista-grupo-titulo.colapsado .lista-grupo-chevron {
     transform: rotate(-90deg);
+  }
+
+  /* Icono del grupo (calendario en los grupos por fecha): entre el
+     chevron y la fecha, chico y en el mismo gris tenue, sin fondo. */
+  .lista-grupo-icono {
+    display: inline-flex;
+    color: var(--fg-tenue);
+  }
+
+  .lista-grupo-titulo .lista-grupo-icono svg {
+    width: 15px;
+    height: 15px;
+    transition: none;
+  }
+
+  /* Icono de categoría (modo Estimado): glifo Material Symbols al mismo
+     tamaño que el calendario. El emoji no se puede teñir, solo se achica. */
+  .lista-grupo-icono .ms-icono {
+    font-size: 17px;
+  }
+
+  .lista-grupo-icono .cat-emoji {
+    font-size: 13px;
+    line-height: 1;
+  }
+
+  /* Separador entre el encabezado y los movimientos: solo con el grupo
+     expandido (colapsado no hay nada debajo que separar). */
+  .lista-grupo .lista-grupo-titulo:not(.colapsado) {
+    padding-bottom: var(--esp-2);
+    border-bottom: 1px solid var(--borde);
   }
 
   /* Total del grupo, al extremo derecho — mismo tamaño/peso que el
@@ -2387,9 +2419,7 @@
     color: var(--gasto);
   }
 
-  .fila.fila-pagada {
-    opacity: 0.55;
-  }
+
 
   .punto {
     width: 18px;
@@ -2407,6 +2437,21 @@
         font-size: 10px;
     border-radius: 7px;
   }
+
+/* Inactivo en la fila de movimiento: mismo formato que el badge
+   Pendiente (fondo claro + borde del color base), en gris. */
+.mov-badge-inactivo {
+    display: inline-flex;
+    align-items: center;
+    padding: 1px var(--esp-2);
+    line-height: 1.5;
+    font-size: 10px;
+    font-weight: var(--peso-medio);
+    border: 1px solid var(--fg-tenue);
+    border-radius: 7px;
+    background: color-mix(in srgb, var(--fg-tenue) 15%, transparent);
+    color: var(--fg-tenue);
+}
 
 button.pendiente {
     background: color-mix(in srgb, var(--pendiente) 18%, transparent);
