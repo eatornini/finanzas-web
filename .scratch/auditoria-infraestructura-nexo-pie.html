@@ -1,0 +1,741 @@
+<title>Auditoría NEXO PIE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --bg:#f5f7fb;
+    --surface:#ffffff;
+    --surface-alt:#eef1f7;
+    --text:#1b2333;
+    --text-muted:#5c6675;
+    --border:#dfe3ec;
+    --accent:#2563eb;
+    --accent-ink:#12358f;
+    --accent-soft:#e8effe;
+    --ok:#157f3c;
+    --ok-soft:#e5f6ec;
+    --warn:#a4570a;
+    --warn-soft:#fbf0e2;
+    --danger:#c0293c;
+    --danger-soft:#fbe7ea;
+    --code-bg:#10162a;
+    --code-text:#dbe3f5;
+    --code-border:#232c46;
+    --shadow: 0 1px 2px rgba(20,25,40,.04), 0 8px 24px -12px rgba(20,25,40,.12);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0f1320;
+      --surface:#161b29;
+      --surface-alt:#1c2233;
+      --text:#e8ebf3;
+      --text-muted:#99a2b8;
+      --border:#2a3149;
+      --accent:#7ea0ff;
+      --accent-ink:#dbe6ff;
+      --accent-soft:#1c2848;
+      --ok:#4bc182;
+      --ok-soft:#12291f;
+      --warn:#e0902f;
+      --warn-soft:#2c2113;
+      --danger:#f0687a;
+      --danger-soft:#2c151a;
+      --code-bg:#0a0d18;
+      --code-text:#cfd8ee;
+      --code-border:#232c46;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.5);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0f1320;
+    --surface:#161b29;
+    --surface-alt:#1c2233;
+    --text:#e8ebf3;
+    --text-muted:#99a2b8;
+    --border:#2a3149;
+    --accent:#7ea0ff;
+    --accent-ink:#dbe6ff;
+    --accent-soft:#1c2848;
+    --ok:#4bc182;
+    --ok-soft:#12291f;
+    --warn:#e0902f;
+    --warn-soft:#2c2113;
+    --danger:#f0687a;
+    --danger-soft:#2c151a;
+    --code-bg:#0a0d18;
+    --code-text:#cfd8ee;
+    --code-border:#232c46;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.5);
+  }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:"Inter",system-ui,sans-serif;
+    font-size:16px;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  code,.mono,.spec dt,.spec dd,.envvar,td.num,.cost{
+    font-family:"IBM Plex Mono",ui-monospace,monospace;
+    font-variant-numeric: tabular-nums;
+  }
+
+  a{color:var(--accent);}
+  a:focus-visible,button:focus-visible{outline:2px solid var(--accent); outline-offset:2px;}
+
+  .layout{
+    display:flex;
+    max-width:1180px;
+    margin:0 auto;
+    align-items:flex-start;
+  }
+  nav.toc{
+    position:sticky;
+    top:0;
+    align-self:flex-start;
+    width:250px;
+    flex:0 0 250px;
+    height:100vh;
+    overflow-y:auto;
+    padding:2.5rem 1.25rem 2rem 1.5rem;
+    border-right:1px solid var(--border);
+    display:none;
+  }
+  nav.toc .eyebrow{
+    font-size:.7rem;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--text-muted);
+    margin:0 0 .9rem;
+    font-weight:600;
+  }
+  nav.toc ol{list-style:none; margin:0; padding:0; counter-reset:toc;}
+  nav.toc li{counter-increment:toc; margin-bottom:.15rem;}
+  nav.toc a{
+    display:flex;
+    gap:.6rem;
+    text-decoration:none;
+    color:var(--text-muted);
+    font-size:.82rem;
+    padding:.35rem .5rem;
+    border-radius:6px;
+    line-height:1.35;
+  }
+  nav.toc a::before{
+    content:counter(toc,decimal-leading-zero);
+    font-family:"IBM Plex Mono",monospace;
+    font-size:.72rem;
+    color:var(--accent);
+    flex:0 0 auto;
+  }
+  nav.toc a:hover{background:var(--surface-alt); color:var(--text);}
+
+  @media (min-width:960px){ nav.toc{display:block;} }
+
+  main{
+    flex:1 1 auto;
+    min-width:0;
+    padding:2.5rem 1.5rem 6rem;
+  }
+  .prose{max-width:700px;}
+  .wide{max-width:940px;}
+
+  header.hero{
+    max-width:700px;
+    margin-bottom:2.75rem;
+  }
+  .eyebrow{
+    font-size:.72rem;
+    letter-spacing:.09em;
+    text-transform:uppercase;
+    color:var(--accent-ink);
+    font-weight:700;
+    margin:0 0 .75rem;
+  }
+  h1{
+    font-size:2.1rem;
+    line-height:1.15;
+    margin:0 0 .6rem;
+    font-weight:800;
+    letter-spacing:-.01em;
+    text-wrap:balance;
+  }
+  .dek{
+    color:var(--text-muted);
+    font-size:1.05rem;
+    margin:0 0 1.1rem;
+    text-wrap:balance;
+  }
+  .meta{
+    display:flex;
+    gap:1.25rem;
+    flex-wrap:wrap;
+    font-size:.8rem;
+    color:var(--text-muted);
+    border-top:1px solid var(--border);
+    padding-top:.85rem;
+  }
+  .meta b{color:var(--text); font-weight:600;}
+
+  h2{
+    font-size:1.4rem;
+    font-weight:700;
+    margin:3rem 0 .4rem;
+    letter-spacing:-.005em;
+    scroll-margin-top:1.5rem;
+  }
+  h2 .num{ color:var(--accent); font-family:"IBM Plex Mono",monospace; font-weight:600; font-size:1rem; margin-right:.5rem;}
+  h3{font-size:1.05rem; font-weight:700; margin:1.6rem 0 .5rem;}
+  p{margin:.7rem 0;}
+  ul,ol{padding-left:1.3rem;}
+  li{margin:.3rem 0;}
+  .lead{color:var(--text-muted); font-size:.95rem; margin-top:-.2rem;}
+
+  .callout{
+    border:1px solid var(--border);
+    background:var(--surface);
+    border-radius:12px;
+    padding:1.1rem 1.25rem;
+    margin:1.5rem 0;
+    box-shadow:var(--shadow);
+  }
+  .callout.warn{border-color:color-mix(in srgb, var(--warn) 35%, var(--border)); background:var(--warn-soft);}
+  .callout.ok{border-color:color-mix(in srgb, var(--ok) 35%, var(--border)); background:var(--ok-soft);}
+  .callout.accent{border-color:color-mix(in srgb, var(--accent) 40%, var(--border)); background:var(--accent-soft);}
+  .callout .tag{
+    font-size:.68rem;
+    font-weight:700;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    margin-bottom:.4rem;
+    display:block;
+  }
+  .callout.warn .tag{color:var(--warn);}
+  .callout.ok .tag{color:var(--ok);}
+  .callout.accent .tag{color:var(--accent-ink);}
+  .callout p:first-of-type{margin-top:0;}
+  .callout p:last-child{margin-bottom:0;}
+
+  table{border-collapse:collapse; width:100%; margin:1rem 0; font-size:.92rem;}
+  th,td{text-align:left; padding:.55rem .7rem; border-bottom:1px solid var(--border); vertical-align:top;}
+  th{color:var(--text-muted); font-weight:600; font-size:.75rem; text-transform:uppercase; letter-spacing:.04em;}
+  .table-wrap{overflow-x:auto; border:1px solid var(--border); border-radius:10px; background:var(--surface);}
+  .table-wrap table{margin:0;}
+  .table-wrap th,.table-wrap td{border-bottom:1px solid var(--border);}
+  .table-wrap tr:last-child td{border-bottom:none;}
+
+  .pill{
+    display:inline-block;
+    font-size:.68rem;
+    font-weight:700;
+    letter-spacing:.03em;
+    padding:.15rem .55rem;
+    border-radius:999px;
+    text-transform:uppercase;
+  }
+  .pill.alta{color:var(--danger); background:var(--danger-soft);}
+  .pill.media{color:var(--warn); background:var(--warn-soft);}
+  .pill.baja{color:var(--ok); background:var(--ok-soft);}
+  .pill.info{color:var(--accent-ink); background:var(--accent-soft);}
+
+  .codebox{
+    background:var(--code-bg);
+    color:var(--code-text);
+    border:1px solid var(--code-border);
+    border-radius:10px;
+    padding:.9rem 1.1rem;
+    font-family:"IBM Plex Mono",monospace;
+    font-size:.83rem;
+    line-height:1.7;
+    overflow-x:auto;
+    margin:1rem 0;
+  }
+  .codebox .c{color:#7c8aae;}
+
+  .envgrid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+    gap:.6rem;
+    margin:1rem 0;
+  }
+  .envcard{
+    border:1px solid var(--border);
+    background:var(--surface);
+    border-radius:10px;
+    padding:.7rem .85rem;
+  }
+  .envcard .name{font-family:"IBM Plex Mono",monospace; font-weight:600; font-size:.85rem;}
+  .envcard .where{font-size:.72rem; color:var(--text-muted); margin-top:.2rem;}
+
+  code.inline{
+    background:var(--surface-alt);
+    border:1px solid var(--border);
+    padding:.05rem .35rem;
+    border-radius:5px;
+    font-size:.87em;
+  }
+
+  .spec{
+    border:1px solid var(--border);
+    background:var(--surface);
+    border-radius:14px;
+    box-shadow:var(--shadow);
+    padding:1.5rem 1.75rem;
+    margin:1.5rem 0;
+  }
+  .spec-title{
+    font-family:"IBM Plex Mono",monospace;
+    font-size:.75rem;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    color:var(--accent);
+    margin:0 0 1rem;
+    border-bottom:1px dashed var(--border);
+    padding-bottom:.75rem;
+  }
+  .spec dl{
+    display:grid;
+    grid-template-columns:170px 1fr;
+    gap:.5rem 1rem;
+    margin:0;
+  }
+  .spec dt{color:var(--text-muted); font-size:.82rem; padding-top:.15rem;}
+  .spec dd{margin:0; font-size:.9rem; font-weight:500;}
+  .spec dd .yes{color:var(--ok); font-weight:700;}
+  .spec dd .no{color:var(--danger); font-weight:700;}
+
+  .options{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+    gap:1rem;
+    margin:1.25rem 0 2rem;
+  }
+  .opt{
+    border:1px solid var(--border);
+    background:var(--surface);
+    border-radius:14px;
+    box-shadow:var(--shadow);
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+  }
+  .opt-head{padding:1.1rem 1.25rem .9rem; border-bottom:1px solid var(--border);}
+  .opt.a .opt-head{border-top:4px solid var(--ok);}
+  .opt.b .opt-head{border-top:4px solid var(--accent);}
+  .opt.c .opt-head{border-top:4px solid var(--warn);}
+  .opt-eyebrow{font-size:.68rem; letter-spacing:.07em; text-transform:uppercase; color:var(--text-muted); font-weight:700;}
+  .opt-title{font-size:1.15rem; font-weight:800; margin:.25rem 0 .1rem;}
+  .opt-cost{font-family:"IBM Plex Mono",monospace; font-size:1.05rem; font-weight:600; color:var(--accent-ink);}
+  .opt-cost small{font-family:"Inter",sans-serif; font-weight:400; color:var(--text-muted); font-size:.7rem;}
+  .opt-body{padding:1rem 1.25rem 1.25rem; font-size:.87rem; flex:1;}
+  .opt dl{display:grid; grid-template-columns:80px 1fr; gap:.3rem .6rem; margin:0 0 1rem;}
+  .opt dt{color:var(--text-muted); font-size:.76rem;}
+  .opt dd{margin:0; font-family:"IBM Plex Mono",monospace; font-size:.8rem;}
+  .opt h4{font-size:.72rem; text-transform:uppercase; letter-spacing:.05em; margin:.9rem 0 .35rem; color:var(--text-muted);}
+  .opt ul{margin:0; padding-left:1.05rem; font-size:.83rem;}
+  .opt ul.cons li::marker{color:var(--danger);}
+  .opt ul.pros li::marker{color:var(--ok);}
+
+  .verdict{
+    max-width:700px;
+    margin:3.5rem 0 1rem;
+    border:1.5px solid var(--accent);
+    background:var(--accent-soft);
+    border-radius:16px;
+    padding:1.75rem 1.9rem;
+    box-shadow:var(--shadow);
+  }
+  .verdict .eyebrow{color:var(--accent-ink);}
+  .verdict h2{margin-top:0;}
+  .verdict ul{margin:.6rem 0;}
+
+  hr.sep{border:none; border-top:1px solid var(--border); margin:3rem 0; max-width:700px;}
+
+  footer{
+    max-width:700px;
+    color:var(--text-muted);
+    font-size:.78rem;
+    margin-top:3rem;
+    border-top:1px solid var(--border);
+    padding-top:1rem;
+  }
+
+  @media (max-width: 600px){
+    h1{font-size:1.6rem;}
+    .spec dl{grid-template-columns:1fr;}
+    main{padding:1.75rem 1.1rem 4rem;}
+  }
+</style>
+
+<div class="layout">
+  <nav class="toc" aria-label="Contenido">
+    <p class="eyebrow">Contenido</p>
+    <ol>
+      <li><a href="#stack">Stack tecnológico</a></li>
+      <li><a href="#arquitectura">Arquitectura</a></li>
+      <li><a href="#bd">Base de datos</a></li>
+      <li><a href="#storage">Archivos y almacenamiento</a></li>
+      <li><a href="#recursos">Recursos necesarios</a></li>
+      <li><a href="#env">Variables de entorno</a></li>
+      <li><a href="#deps">Dependencias del servidor</a></li>
+      <li><a href="#deploy">Build y despliegue</a></li>
+      <li><a href="#seguridad">Seguridad</a></li>
+      <li><a href="#tipo">Tipo de hosting</a></li>
+      <li><a href="#ficha">Requisitos mínimos</a></li>
+      <li><a href="#arqs">Arquitecturas propuestas</a></li>
+      <li><a href="#recomendacion">Recomendación final</a></li>
+    </ol>
+  </nav>
+
+  <main>
+    <header class="hero">
+      <p class="eyebrow">Informe técnico · solo lectura · sin cambios de código</p>
+      <h1>Auditoría de infraestructura — NEXO PIE</h1>
+      <p class="dek">Qué es hoy el código, qué necesita para correr en producción, y qué tipo de hosting económico con dominio propio le alcanza.</p>
+      <div class="meta">
+        <span><b>Repositorio</b> finanzas-web</span>
+        <span><b>Fecha</b> 28 sep. 2026</span>
+        <span><b>Tamaño del proyecto</b> ~11 MB (sin node_modules ni .git)</span>
+      </div>
+    </header>
+
+    <div class="prose">
+      <div class="callout warn">
+        <span class="tag">Corrección de punto de partida</span>
+        <p>El pliego de preguntas asume un stack Next.js + React + Prisma + TypeScript + Tailwind. <b>Ese stack no existe en este repositorio.</b> Revisé <code class="inline">package.json</code>, todo <code class="inline">src/</code>, <code class="inline">supabase/</code> y el árbol completo: no hay <code class="inline">next</code>, <code class="inline">react</code>, <code class="inline">prisma</code> ni <code class="inline">tailwind</code> en ninguna dependencia ni import.</p>
+        <p>Lo que hay es mucho más simple de alojar: un <b>sitio estático en JavaScript vanilla</b> (ES modules, sin build) que habla directo con <b>Supabase</b> (Postgres + Auth + Storage + 1 Edge Function). Este informe está construido 100% sobre ese código real, no sobre el stack asumido. Es una buena noticia para el objetivo de hosting económico: casi no hay infraestructura de servidor que pagar.</p>
+      </div>
+    </div>
+
+    <!-- 1. STACK -->
+    <section class="prose">
+      <h2 id="stack"><span class="num">01</span>Stack tecnológico</h2>
+      <div class="table-wrap">
+        <table>
+          <tr><th>Capa</th><th>Detectado</th></tr>
+          <tr><td>Framework frontend</td><td>Ninguno. HTML + CSS + JS vanilla, <code class="inline">type="module"</code> nativo del navegador.</td></tr>
+          <tr><td>React</td><td>No se usa.</td></tr>
+          <tr><td>Node.js</td><td>No corre en producción. Solo hace falta en la máquina de desarrollo para <code class="inline">npm test</code> (Vitest).</td></tr>
+          <tr><td>TypeScript</td><td>Un único archivo: <code class="inline">supabase/functions/admin/index.ts</code>, la Edge Function de Supabase (runtime Deno, no Node). El resto del proyecto es JS.</td></tr>
+          <tr><td>Tailwind CSS</td><td>No se usa. <code class="inline">app.css</code> es una hoja de estilos escrita a mano (141 KB).</td></tr>
+          <tr><td>Prisma / ORM</td><td>No existe. Las tablas se crean con SQL plano (<code class="inline">supabase/schema.sql</code>) y se consultan vía PostgREST (el cliente <code class="inline">@supabase/supabase-js</code>).</td></tr>
+          <tr><td>Autenticación</td><td>Supabase Auth (GoTrue): email + contraseña, con aprobación manual de cuentas nuevas vía tabla <code class="inline">perfiles</code>.</td></tr>
+          <tr><td>Base de datos</td><td>PostgreSQL administrado por Supabase.</td></tr>
+          <tr><td>Cliente de datos</td><td><code class="inline">@supabase/supabase-js@2</code>, importado en runtime desde <code class="inline">esm.sh</code> (CDN), no está vendoreado ni en <code class="inline">node_modules</code>.</td></tr>
+          <tr><td>OCR</td><td>Tesseract.js, vendoreado localmente en <code class="inline">assets/ocr/</code> (WASM + modelo entrenado en español), corre 100% en el navegador vía Web Worker.</td></tr>
+          <tr><td>PWA</td><td><code class="inline">manifest.webmanifest</code> + <code class="inline">sw.js</code> (service worker cache-first, sin librería, hecho a mano).</td></tr>
+          <tr><td>Tests</td><td>Vitest — solo <code class="inline">devDependency</code>, no viaja a producción.</td></tr>
+          <tr><td>Tipografía</td><td>Google Fonts (Inter) vía <code class="inline">&lt;link&gt;</code> + subset local de Material Symbols en <code class="inline">assets/fonts</code> (304 KB).</td></tr>
+        </table>
+      </div>
+      <p class="lead">Confirmado también: no hay <code class="inline">next.config</code>, ni carpeta <code class="inline">app/</code> o <code class="inline">pages/</code>, ni bundler configurado (esbuild/rollup instalados son transitivos de Vitest, no se usan para build de producción).</p>
+    </section>
+
+    <!-- 2. ARQUITECTURA -->
+    <section class="prose">
+      <h2 id="arquitectura"><span class="num">02</span>Arquitectura de la aplicación</h2>
+      <p>Es un <b>sitio 100% estático</b> (SPA sin build) que consume un <b>backend administrado externo (BaaS)</b>. No es SSR, no es SSG, no es "híbrida" — no hay servidor de aplicación que renderice nada. El navegador carga <code class="inline">index.html</code>, ese archivo importa <code class="inline">src/main.js</code> como módulo ES, y desde ahí todo el enrutado (<code class="inline">src/ui/router.js</code>) y el estado corren en el cliente.</p>
+      <div class="table-wrap">
+        <table>
+          <tr><th>Elemento buscado</th><th>Resultado</th></tr>
+          <tr><td><code class="inline">app/</code>, <code class="inline">pages/</code>, <code class="inline">app/api/</code></td><td>No existen — no aplica (no es Next.js).</td></tr>
+          <tr><td>Server actions / route handlers</td><td>No existen.</td></tr>
+          <tr><td>Middleware</td><td>No existe middleware de servidor. La única "puerta" de acceso es RLS en Postgres + el estado <code class="inline">estado='activo'</code> de <code class="inline">perfiles</code>.</td></tr>
+          <tr><td>Componentes que tocan la BD</td><td>Toda la carpeta <code class="inline">src/data/*.js</code> llama a <code class="inline">supabase-js</code> directo desde el navegador (PostgREST + RPC), protegido por RLS, no por un backend propio.</td></tr>
+          <tr><td>Generación de informes</td><td><code class="inline">src/ui/reportesView.js</code> + <code class="inline">src/logic/reportes.js</code>: agregación y gráficos renderizados en el cliente a partir de funciones RPC de Postgres. No genera PDF ni documentos — no hay librería tipo jsPDF.</td></tr>
+          <tr><td>Procesamiento de archivos</td><td>El OCR de comprobantes corre íntegramente en el navegador (WASM + Web Worker). Ningún archivo se procesa en un servidor.</td></tr>
+          <tr><td>Algo que requiera Node.js en producción</td><td>Nada. El único cómputo "de servidor" real es una Edge Function de Supabase (Deno) para 3 operaciones administrativas puntuales.</td></tr>
+        </table>
+      </div>
+      <p>Traducido a la pregunta de hosting: <b>todo lo que hay que alojar es un puñado de archivos estáticos.</b> El backend (Postgres, Auth, Storage, la Edge Function) ya vive en la infraestructura de Supabase y se contrata/dimensiona aparte, con total independencia de dónde se sirvan los archivos estáticos.</p>
+    </section>
+
+    <!-- 3. BASE DE DATOS -->
+    <section class="prose">
+      <h2 id="bd"><span class="num">03</span>Base de datos</h2>
+      <p>PostgreSQL, administrado por Supabase (no hay motor propio que instalar ni mantener). El frontend nunca abre una conexión SQL directa: habla HTTP contra PostgREST usando la <code class="inline">anon key</code>, y toda la autorización real la hace <b>Row Level Security</b> en el propio Postgres.</p>
+      <div class="table-wrap">
+        <table>
+          <tr><th></th><th></th></tr>
+          <tr><td>Tablas propias</td><td><code class="inline">categorias</code>, <code class="inline">movimientos</code>, <code class="inline">perfiles</code> — 3 tablas.</td></tr>
+          <tr><td>Relaciones</td><td>Simples: <code class="inline">movimientos.categoria_id → categorias.id</code>, y ambas con <code class="inline">user_id → auth.users</code>. Nada de tipo muchos-a-muchos.</td></tr>
+          <tr><td>Migraciones</td><td>7 archivos SQL secuenciales en <code class="inline">supabase/migrations/</code> (001 a 007), más <code class="inline">schema.sql</code> como snapshot completo para proyectos nuevos. Se corren a mano en el SQL Editor de Supabase — no hay Prisma Migrate ni herramienta de migraciones automatizada.</td></tr>
+          <tr><td>Seeds</td><td>No hay script de seed aparte: la función <code class="inline">sembrar_categorias_default()</code> crea categorías por defecto vía trigger cuando se registra un usuario nuevo.</td></tr>
+          <tr><td>Funciones RPC</td><td>~12 funciones <code class="inline">plpgsql</code>/<code class="inline">sql</code> (agregaciones, administración, copiar mes, etc.), varias <code class="inline">security definer</code> para saltarse RLS de forma controlada.</td></tr>
+          <tr><td>Tamaño inicial estimado</td><td>Con 10–30 cuentas de uso personal (gastos/ingresos), del orden de unos pocos MB. Muy por debajo de cualquier límite de plan económico.</td></tr>
+        </table>
+      </div>
+      <div class="callout warn">
+        <span class="tag">Hallazgo — no es de hosting, es de modelo de datos</span>
+        <p>El esquema actual modela <b>gastos personales por cuenta de usuario</b> (una persona, sus movimientos, sus categorías). No existe ninguna tabla de <i>estudiantes</i>, <i>casos</i>, <i>profesionales asignados</i> ni nada que represente el dominio de un programa PIE escolar. Si NEXO PIE necesita llevar 500–1000 fichas de estudiantes, este esquema no las soporta hoy — es un rediseño de datos, no un problema de servidor. Vale la pena resolverlo antes de dimensionar hosting, porque cambia completamente el volumen y la forma de los datos.</p>
+      </div>
+      <p><b>¿Base de datos en el mismo servidor o administrada aparte?</b> Ya está resuelto: siempre administrada aparte (Supabase). No tiene sentido ni es necesario instalar Postgres en el hosting económico — de hecho la mayoría de los hostings compartidos baratos ni lo ofrecen.</p>
+    </section>
+
+    <!-- 4. ARCHIVOS Y ALMACENAMIENTO -->
+    <section class="prose">
+      <h2 id="storage"><span class="num">04</span>Archivos y almacenamiento</h2>
+      <div class="table-wrap">
+        <table>
+          <tr><th>Qué</th><th>Dónde vive</th></tr>
+          <tr><td>Fotos de comprobantes (<code class="inline">src/data/storage.js</code>)</td><td><b>Supabase Storage</b>, bucket privado <code class="inline">comprobantes</code>, un folder por usuario, con URLs firmadas de 1 hora. No toca el filesystem del servidor.</td></tr>
+          <tr><td>Exportación/importación de datos (<code class="inline">exportarImportarSeccion.js</code>)</td><td>Un JSON armado y descargado <b>en el navegador</b> (<code class="inline">construirArchivoExportacion</code>). No pasa por ningún servidor ni se guarda ahí.</td></tr>
+          <tr><td>PDFs / informes / documentos</td><td>No se generan. No hay librería de PDF en el proyecto.</td></tr>
+          <tr><td>Modelo de OCR + WASM (<code class="inline">assets/ocr</code>)</td><td>Archivos estáticos versionados en el repo: 8,7 MB (traineddata + wasm + worker). Se descargan al navegador la primera vez y quedan cacheados por el service worker.</td></tr>
+          <tr><td>Archivos temporales</td><td>Ninguno persistente — todo el procesamiento (OCR) es en memoria del navegador.</td></tr>
+        </table>
+      </div>
+      <p>Consecuencia práctica: el servidor de hosting <b>nunca escribe archivos de usuario</b>. Por eso un filesystem efímero (típico de PaaS baratos) no es un problema acá — no hay nada que dependa de persistir algo en disco del lado del servidor.</p>
+    </section>
+
+    <!-- 5. RECURSOS -->
+    <section class="prose">
+      <h2 id="recursos"><span class="num">05</span>Recursos necesarios</h2>
+      <p>Para el escenario planteado (1 colegio, 500–1000 estudiantes como universo de datos, 10–30 cuentas de profesionales usando el sistema):</p>
+      <div class="table-wrap">
+        <table>
+          <tr><td>CPU del hosting de archivos estáticos</td><td>Irrelevante — no ejecuta código, solo sirve bytes. Cualquier plan, incluso el más básico, sobra.</td></tr>
+          <tr><td>RAM del hosting</td><td>Irrelevante por la misma razón.</td></tr>
+          <tr><td>Almacenamiento del hosting</td><td>~15–20 MB alcanza hoy (11 MB de proyecto + margen). Sin PDFs ni uploads de servidor, no crece con el uso.</td></tr>
+          <tr><td>Ancho de banda del hosting</td><td>Bajo: 10–30 usuarios cargando una PWA que cachea el shell offline. El archivo pesado (8,7 MB de OCR) se descarga una sola vez por dispositivo gracias al service worker.</td></tr>
+          <tr><td>Usuarios concurrentes que soporta</td><td>El hosting estático no es el límite (miles, en la práctica). El límite real está en el plan de <b>Supabase</b> (conexiones de BD, cuota de Auth, ancho de banda de Storage) — con 10–30 usuarios el plan Free ya alcanza cómodo.</td></tr>
+          <tr><td>¿Necesita CDN?</td><td>No es obligatorio a esta escala, pero viene gratis si se elige Cloudflare Pages / Netlify / GitHub Pages, que ya sirven todo detrás de CDN sin costo extra.</td></tr>
+          <tr><td>¿Necesita almacenamiento externo?</td><td>Ya lo tiene (Supabase Storage). No hace falta contratar nada aparte para archivos.</td></tr>
+        </table>
+      </div>
+    </section>
+
+    <!-- 6. ENV VARS -->
+    <section class="prose">
+      <h2 id="env"><span class="num">06</span>Variables de entorno</h2>
+      <p>Sin secretos, solo nombres y dónde vive cada una:</p>
+      <div class="envgrid">
+        <div class="envcard"><div class="name">SUPABASE_URL</div><div class="where">Frontend — hardcodeada en <code class="inline">config.js</code>, pública a propósito.</div></div>
+        <div class="envcard"><div class="name">SUPABASE_ANON_KEY</div><div class="where">Frontend — misma lógica, protegida por RLS, no por secreto.</div></div>
+        <div class="envcard"><div class="name">SUPABASE_URL</div><div class="where">Edge Function <code class="inline">admin</code> — inyectada automáticamente por el runtime de Supabase.</div></div>
+        <div class="envcard"><div class="name">SUPABASE_ANON_KEY</div><div class="where">Edge Function <code class="inline">admin</code> — ídem.</div></div>
+        <div class="envcard"><div class="name">SUPABASE_SERVICE_ROLE_KEY</div><div class="where">Edge Function <code class="inline">admin</code> únicamente — nunca en el repo ni en el frontend.</div></div>
+      </div>
+      <p>No hay <code class="inline">AUTH_SECRET</code>, <code class="inline">NEXTAUTH_SECRET</code> ni API keys de terceros: toda la sesión y el JWT los maneja Supabase Auth. El hosting de archivos estáticos <b>no necesita ninguna variable de entorno</b> — no hay build ni proceso que las lea.</p>
+    </section>
+
+    <!-- 7. DEPENDENCIAS DEL SERVIDOR -->
+    <section class="prose">
+      <h2 id="deps"><span class="num">07</span>Dependencias del servidor</h2>
+      <div class="table-wrap">
+        <table>
+          <tr><td>Node.js en el hosting</td><td><span class="pill baja">No hace falta</span></td></tr>
+          <tr><td>npm/pnpm/yarn en el hosting</td><td><span class="pill baja">No hace falta</span></td></tr>
+          <tr><td>Prisma</td><td><span class="pill baja">No aplica</span></td></tr>
+          <tr><td>PostgreSQL propio</td><td><span class="pill baja">No — lo da Supabase</span></td></tr>
+          <tr><td>Chromium/Puppeteer</td><td><span class="pill baja">No existe en el código</span></td></tr>
+          <tr><td>LibreOffice / ImageMagick</td><td><span class="pill baja">No existen en el código</span></td></tr>
+          <tr><td>Python</td><td>Solo como herramienta de desarrollo (<code class="inline">scripts/subset-iconos.py</code>, genera un subset de íconos). No corre en producción.</td></tr>
+          <tr><td>Docker</td><td>No es necesario. Podría envolver un Nginx trivial si el panel de hosting elegido lo exige, pero no aporta nada funcional acá.</td></tr>
+          <tr><td>Cron jobs / workers</td><td>No hay ninguno en el proyecto.</td></tr>
+          <tr><td>Redis</td><td>No se usa.</td></tr>
+        </table>
+      </div>
+      <p>En una frase: el hosting solo necesita saber servir archivos estáticos por HTTPS. Eso es todo.</p>
+    </section>
+
+    <!-- 8. BUILD Y DESPLIEGUE -->
+    <section class="prose">
+      <h2 id="deploy"><span class="num">08</span>Build y despliegue</h2>
+      <div class="codebox">
+<span class="c"># instalación (solo para desarrollo/tests, no para producción)</span>
+npm install
+
+<span class="c"># build</span>
+<span class="c">— no existe paso de build. Los archivos se sirven tal cual están en el repo.</span>
+
+<span class="c"># inicio</span>
+<span class="c">— no hay proceso que "iniciar"; es servir estático (cualquier servidor web: Nginx, Apache, GitHub Pages, Cloudflare Pages...).</span>
+
+<span class="c"># prisma generate / migrate deploy</span>
+<span class="c">— no aplica. Los cambios de esquema se aplican corriendo el .sql correspondiente</span>
+<span class="c">  en el SQL Editor de Supabase (o `supabase db push` con el CLI).</span>
+
+<span class="c"># puerto</span>
+<span class="c">— el estándar del hosting elegido (80/443). No hay puerto de aplicación que configurar.</span>
+      </div>
+      <p><b>¿Docker?</b> No es necesario. <b>¿Deploy directo desde GitHub?</b> Sí, y de hecho ya funciona así hoy: el <code class="inline">README.md</code> documenta el deploy actual a GitHub Pages (rama <code class="inline">main</code>, carpeta raíz). El mismo patrón "conectar el repo y listo" funciona igual en Cloudflare Pages o Netlify, con la ventaja de admitir dominio propio con más comodidad.</p>
+      <h3>Procedimiento de deployment propuesto</h3>
+      <ol>
+        <li>Elegir el hosting de archivos estáticos (ver sección 10) y conectarlo al repositorio de GitHub.</li>
+        <li>Configurar el dominio propio (DNS del registrador → CNAME/A del hosting) y esperar el certificado HTTPS automático.</li>
+        <li>Actualizar <code class="inline">config.js</code> si cambia el proyecto de Supabase, y en Supabase → Authentication → URL Configuration, apuntar Site URL / Redirect URLs al dominio nuevo (hoy apunta a GitHub Pages).</li>
+        <li>Aplicar <code class="inline">supabase/schema.sql</code> (proyecto nuevo) o las migraciones pendientes (proyecto existente) en el SQL Editor.</li>
+        <li>Desplegar la Edge Function <code class="inline">admin</code> (<code class="inline">supabase functions deploy admin</code>).</li>
+        <li>Cada push a <code class="inline">main</code> despliega solo; no hay pipeline de build que mantener.</li>
+      </ol>
+    </section>
+
+    <!-- 9. SEGURIDAD -->
+    <section class="prose">
+      <h2 id="seguridad"><span class="num">09</span>Seguridad (técnica, no legal)</h2>
+      <p>Base sólida: RLS activo y correcto en las 3 tablas propias, operaciones de administrador protegidas por <code class="inline">security definer</code> + chequeo explícito de rol, y la <code class="inline">service_role key</code> correctamente aislada en la Edge Function (nunca en el repo). Riesgos a corregir antes de producción, de mayor a menor:</p>
+      <div class="table-wrap">
+        <table>
+          <tr><th>Severidad</th><th>Hallazgo</th></tr>
+          <tr><td><span class="pill media">Media</span></td><td>La Edge Function <code class="inline">admin</code> responde CORS con <code class="inline">Access-Control-Allow-Origin: "*"</code> — conviene restringirlo al dominio de producción.</td></tr>
+          <tr><td><span class="pill media">Media</span></td><td>El bucket <code class="inline">comprobantes</code> no tiene <code class="inline">file_size_limit</code> ni lista de MIME permitidos configurada del lado de Supabase Storage — el filtro por extensión hoy vive solo en el cliente (<code class="inline">storage.js</code>), que se puede saltar.</td></tr>
+          <tr><td><span class="pill media">Media</span></td><td><code class="inline">@supabase/supabase-js</code> se importa en vivo desde <code class="inline">esm.sh</code> en cada carga de la app, en vez de estar vendoreado como ya se hizo con Tesseract.js. Es dependencia de disponibilidad y de cadena de suministro en cada visita.</td></tr>
+          <tr><td><span class="pill alta">Alta</span></td><td>El email transaccional por defecto de Supabase tiene un límite de ~2–4 correos/hora. Con 10–30 cuentas de staff registrándose o pidiendo reset de contraseña en un lapso corto (arranque del colegio), se satura. El propio README ya lo marca como pendiente: hace falta SMTP propio antes de ir a producción real.</td></tr>
+          <tr><td><span class="pill alta">Alta</span></td><td>No hay backups automatizados en el proceso actual. El plan Free de Supabase no incluye point-in-time recovery. Con datos reales de personas (y potencialmente de estudiantes), esto no debería quedar en "fuera de alcance".</td></tr>
+          <tr><td><span class="pill baja">Baja</span></td><td>No hay rate limiting propio — se depende de los límites de plataforma de Supabase, razonable a esta escala pero vale tenerlo presente si el uso crece.</td></tr>
+        </table>
+      </div>
+    </section>
+
+    <!-- 10. TIPO DE HOSTING -->
+    <section class="prose">
+      <h2 id="tipo"><span class="num">10</span>Tipo de hosting que necesita</h2>
+      <p>Ninguna de las categorías A–E calza perfecto porque todas asumen que hay <i>algo</i> corriendo del lado del servidor. Acá no hay nada — es más simple que cualquiera de ellas. La clasificación correcta es:</p>
+      <div class="callout accent">
+        <span class="tag">Categoría real</span>
+        <p><b>A. Hosting estático / compartido tradicional</b> — y le sobra. Ya corre hoy en GitHub Pages, el hosting estático más básico que existe. Cualquier plan de hosting compartido barato que sirva HTML/CSS/JS (que es prácticamente todos) cumple. VPS (C), PaaS tipo Render/Railway (D) o Vercel (E) son sobre-ingeniería para este proyecto: están pensadas para correr procesos de servidor (Node, contenedores, funciones), y acá no hay ninguno que correr.</p>
+      </div>
+      <p>La única condición real a exigirle al hosting: que sirva archivos estáticos por HTTPS y permita apuntar un dominio propio. Nada más. La complejidad de "backend" (BD, Auth, Storage) ya está resuelta y facturada aparte por Supabase, independiente de esta decisión.</p>
+    </section>
+
+    <!-- 11. FICHA -->
+    <section class="prose">
+      <h2 id="ficha"><span class="num">11</span>Requisitos mínimos del servidor</h2>
+    </section>
+    <div class="wide">
+      <div class="spec">
+        <p class="spec-title">NEXO PIE — Requisitos de producción</p>
+        <dl>
+          <dt>Frontend</dt><dd>HTML/CSS/JS estático, sin framework, sin build</dd>
+          <dt>Backend</dt><dd>Ninguno propio — BaaS externo (Supabase: Postgres + Auth + Storage + 1 Edge Function)</dd>
+          <dt>Runtime</dt><dd>Ninguno en el hosting (el navegador es el runtime)</dd>
+          <dt>CPU</dt><dd>Irrelevante — servir estático</dd>
+          <dt>RAM mínima</dt><dd>Irrelevante — cualquier plan compartido básico</dd>
+          <dt>RAM recomendada</dt><dd>Irrelevante</dd>
+          <dt>Disco</dt><dd>~20 MB hoy</dd>
+          <dt>Base de datos</dt><dd>Administrada aparte — Supabase Postgres, plan Free o Pro según sección 12</dd>
+          <dt>Almacenamiento de archivos</dt><dd>Administrado aparte — Supabase Storage</dd>
+          <dt>Sistema operativo</dt><dd>El que traiga el hosting — no importa (Linux o Windows, cualquiera sirve archivos estáticos)</dd>
+          <dt>Dominio</dt><dd>Propio, apuntado por DNS al hosting elegido</dd>
+          <dt>SSL</dt><dd>Obligatorio — exigir Let's Encrypt/HTTPS automático incluido</dd>
+          <dt>Puerto</dt><dd>80/443 estándar — sin puerto de aplicación</dd>
+          <dt>Docker</dt><dd><span class="no">No</span></dd>
+          <dt>Backup</dt><dd>Pendiente de activar — depende del plan de Supabase, no del hosting estático</dd>
+        </dl>
+      </div>
+    </div>
+
+    <!-- 12. ARQUITECTURAS -->
+    <section class="prose">
+      <h2 id="arqs"><span class="num">12</span>Arquitectura recomendada</h2>
+      <p class="lead">Costos en USD, orientativos — verificar tarifas vigentes al momento de contratar.</p>
+    </section>
+    <div class="wide">
+      <div class="options">
+        <div class="opt a">
+          <div class="opt-head">
+            <div class="opt-eyebrow">Opción A</div>
+            <div class="opt-title">Muy económica</div>
+            <div class="opt-cost">$0<small>/mes + dominio</small></div>
+          </div>
+          <div class="opt-body">
+            <dl>
+              <dt>Hosting</dt><dd>Cloudflare Pages</dd>
+              <dt>BD</dt><dd>Supabase Free</dd>
+              <dt>Archivos</dt><dd>Supabase Storage Free (1 GB)</dd>
+              <dt>Dominio</dt><dd>~$10–15/año, aparte</dd>
+            </dl>
+            <h4>Ventajas</h4>
+            <ul class="pros">
+              <li>Costo mensual cero</li>
+              <li>Deploy automático desde GitHub</li>
+              <li>HTTPS incluido</li>
+            </ul>
+            <h4>Desventajas</h4>
+            <ul class="cons">
+              <li>Proyecto Supabase se pausa a los 7 días sin uso</li>
+              <li>Sin backups automáticos</li>
+              <li>Límite de email bajo (2–4/hora)</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="opt b">
+          <div class="opt-head">
+            <div class="opt-eyebrow">Opción B</div>
+            <div class="opt-title">Equilibrada</div>
+            <div class="opt-cost">~$25–30<small>/mes</small></div>
+          </div>
+          <div class="opt-body">
+            <dl>
+              <dt>Hosting</dt><dd>Cloudflare Pages</dd>
+              <dt>BD</dt><dd>Supabase Pro</dd>
+              <dt>Archivos</dt><dd>Supabase Storage (Pro)</dd>
+              <dt>Dominio</dt><dd>~$10–15/año, aparte</dd>
+            </dl>
+            <h4>Ventajas</h4>
+            <ul class="pros">
+              <li>Sin pausas por inactividad</li>
+              <li>Backups diarios automáticos (7 días)</li>
+              <li>Límites cómodos para 10–30 usuarios activos</li>
+            </ul>
+            <h4>Desventajas</h4>
+            <ul class="cons">
+              <li>Costo mensual recurrente</li>
+              <li>Sigue dependiendo enteramente de Supabase</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="opt c">
+          <div class="opt-head">
+            <div class="opt-eyebrow">Opción C</div>
+            <div class="opt-title">Escalable</div>
+            <div class="opt-cost">$25–200+<small>/mes, según uso</small></div>
+          </div>
+          <div class="opt-body">
+            <dl>
+              <dt>Hosting</dt><dd>Cloudflare Pages</dd>
+              <dt>BD</dt><dd>Supabase Pro/Team</dd>
+              <dt>Archivos</dt><dd>Supabase Storage a escala</dd>
+              <dt>Dominio</dt><dd>~$10–15/año, aparte</dd>
+            </dl>
+            <h4>Ventajas</h4>
+            <ul class="pros">
+              <li>Escala sin cambiar de proveedor de hosting</li>
+              <li>Sigue sin servidor propio que mantener</li>
+            </ul>
+            <h4>Desventajas</h4>
+            <ul class="cons">
+              <li>Requiere rediseñar el esquema para multi-colegio (ver sección 3) <b>antes</b> de escalar</li>
+              <li>Costo variable según colegios/usuarios/MAU</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="verdict">
+      <p class="eyebrow">Recomendación de infraestructura</p>
+      <h2 id="recomendacion" style="margin-top:0;">Para NEXO PIE</h2>
+      <p>No busques hosting Node.js, VPS ni PaaS — es más de lo que el proyecto necesita hoy. Lo que hay que contratar es <b>hosting de archivos estáticos con dominio propio y HTTPS</b>, punto. Concretamente:</p>
+      <ul>
+        <li><b>Hosting:</b> Cloudflare Pages (o Netlify) conectado al repo de GitHub, con el dominio propio apuntado ahí. Gratis en el volumen de tráfico esperado, y no exige aprender nada nuevo sobre el deploy actual.</li>
+        <li><b>Especificación mínima a exigir</b> si en cambio se prefiere un hosting compartido tradicional: que sirva archivos estáticos, soporte dominio propio con certificado SSL/Let's Encrypt automático, y permita subir archivos por Git o SFTP. Nada de CPU/RAM mínima real — hasta el plan más chico de cualquier proveedor cumple.</li>
+        <li><b>Base de datos/Auth/Storage:</b> se mantienen en Supabase, decisión independiente del hosting. Empezar en el plan Free; pasar a Pro (~$25/mes) apenas el colegio empiece a usarlo de verdad, sobre todo por backups y para que el proyecto no se pause.</li>
+        <li><b>Antes de ir a producción con datos reales de un colegio:</b> resolver el punto de la sección 3 (el esquema es de finanzas personales, no de un programa PIE con estudiantes) y los dos hallazgos de severidad alta de la sección 9 (SMTP propio y backups). Ninguno de los dos es un problema de hosting — son de datos y de configuración de Supabase.</li>
+      </ul>
+    </div>
+
+    <footer>
+      Auditoría basada en lectura directa del código del repositorio <code class="inline">finanzas-web</code> el 28 sep. 2026. No se modificó ningún archivo.
+    </footer>
+  </main>
+</div>

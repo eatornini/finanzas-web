@@ -20,6 +20,8 @@
     --acento: #0966DF;
     --acento-fg: #ffffff;
     --acento-tenue: #e8f0fe;
+    /* Fondo suave azulado de botones y del bloque destacado de saldo. */
+    --acento-suave: #E6EFF9;
     /* Halo de focus: mismo tono que el borde azul, muy sutil y sin
        desplazamiento, para que quede pegado al contorno del campo. */
     --anillo-focus: 0 0 0 2px color-mix(in srgb, var(--acento) 22%, transparent);
@@ -70,6 +72,7 @@
 
   @media (prefers-color-scheme: dark) {
     :root:not([data-tema="claro"]) {
+      color-scheme: dark;
       --bg: #121214;
       --bg-pagina: #0f0f11;
       --bg-elevado: #1b1c1f;
@@ -78,13 +81,14 @@
       --fg-tenue: #9a9aa2;
       --borde: #2e2e33;
       --acento: #0966DF;
-      --acento-fg: #0b0b0c;
+      --acento-fg: #ffffff;
       --acento-tenue: color-mix(in srgb, #5b9bd8 18%, transparent);
+      --acento-suave: color-mix(in srgb, var(--acento) 16%, var(--bg-elevado));
 
       --ingreso: #08A74F;
       --gasto: #FC1C27;
       --estimado: #0966DF;
-      --estimado-fg: #0b0b0c;
+      --estimado-fg: #ffffff;
       --pendiente: #e0a44a;
 
       --sombra-1: 0 1px 2px rgba(0, 0, 0, 0.28);
@@ -92,7 +96,14 @@
     }
   }
 
+  /* color-scheme explícito por tema: si no, controles nativos y el color
+     por defecto de <button> siguen al sistema y no al tema elegido. */
+  :root[data-tema="claro"] {
+    color-scheme: light;
+  }
+
   :root[data-tema="oscuro"] {
+    color-scheme: dark;
     --bg: #121214;
     --bg-pagina: #0f0f11;
     --bg-elevado: #1b1c1f;
@@ -101,13 +112,14 @@
     --fg-tenue: #9a9aa2;
     --borde: #2e2e33;
     --acento: #0966DF;
-    --acento-fg: #0b0b0c;
+    --acento-fg: #ffffff;
     --acento-tenue: color-mix(in srgb, #5b9bd8 18%, transparent);
+    --acento-suave: color-mix(in srgb, var(--acento) 16%, var(--bg-elevado));
 
     --ingreso: #08A74F;
     --gasto: #FC1C27;
     --estimado: #0966DF;
-    --estimado-fg: #0b0b0c;
+    --estimado-fg: #ffffff;
     --pendiente: #e0a44a;
 
     --sombra-1: 0 1px 2px rgba(0, 0, 0, 0.28);
@@ -459,7 +471,8 @@
     transition: background-color 0.12s ease, border-color 0.12s ease, filter 0.12s ease,
       transform 0.06s ease;
     /* background: color-mix(in hsl, var(--i-primary) 10%, transparent); */
-    background-color: #E6EFF9;
+    background-color: var(--acento-suave);
+    color: var(--fg);
     padding: .6em 1.3em;
     font-size: 15px;
      /* color: var(--acento);*/
@@ -524,9 +537,7 @@
   }
 
   /* Variante roja de .boton--primario para acciones destructivas
-     irreversibles (borrar todos los datos). Color de texto fijo en blanco
-     (no var(--acento-fg): ese token es oscuro en algunos temas, pensado
-     para el azul, no para --gasto). */
+     irreversibles (borrar todos los datos). Texto fijo en blanco sobre --gasto. */
   .boton--peligro {
     background: var(--gasto);
     color: #fff;
@@ -777,9 +788,7 @@
     flex: none;
     border-radius: var(--r-md);
     background: var(--acento);
-    /* Fijo en blanco (no var(--acento-fg)): ese token es casi negro en modo
-       oscuro, pensado para botones de acento, no para este ícono. */
-    color: #fff;
+    color: var(--acento-fg);
     font-weight: var(--peso-bold);
     font-size: var(--txt-lg);
   }
@@ -2854,7 +2863,7 @@ button.pendiente {
     gap: var(--esp-3);
     padding: var(--esp-5) var(--esp-3);
     border-radius: var(--r-lg);
-    background-color: #E6EFF9;
+    background-color: var(--acento-suave);
   }
 
   .saldo-hero-icono {
@@ -3422,7 +3431,7 @@ button.pendiente {
   }
 
   /* `color` explícito: sin él, la regla global `button.activo` pinta el
-     glifo con --acento-fg (blanco en modo claro) y el icono desaparece. */
+     glifo con --acento-fg (blanco) y el icono desaparece. */
   .cat-icono-op.activo {
     border-color: var(--acento);
     background: var(--acento-tenue);
@@ -3462,7 +3471,7 @@ button.pendiente {
   }
 
   .mov-seccion-icono--rojo {
-    color: #c0392b;
+    color: var(--gasto);
   }
 
   @media (max-width: 560px) {
@@ -4564,9 +4573,7 @@ button.pendiente {
     height: 72px;
     flex: none;
     border-radius: var(--r-lg);
-    /* Fijo en blanco (no var(--acento-fg)): ese token es casi negro en modo
-       oscuro, pensado para botones de acento, no para este ícono. */
-    color: #fff;
+    color: var(--acento-fg);
     background: var(--acento);
     box-shadow: 0 8px 20px color-mix(in srgb, var(--acento) 30%, transparent);
   }
