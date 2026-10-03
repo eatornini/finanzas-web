@@ -332,7 +332,13 @@ export async function montarMovimientos(
 
   async function abrirModalNuevo() {
     const cats = await asegurarCategorias();
-    abrirMovimientoForm({ modo, categorias: cats, onGuardado: alAgregarMovimiento });
+    // Abre en el tipo de la pestaña activa; desde "Todos" queda en gasto.
+    abrirMovimientoForm({
+      modo,
+      categorias: cats,
+      tipoInicial: vista === "ingreso" ? "ingreso" : "gasto",
+      onGuardado: alAgregarMovimiento,
+    });
   }
 
   buscador.addEventListener("input", pintarLista);

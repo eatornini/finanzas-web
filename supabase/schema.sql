@@ -355,7 +355,35 @@ grant execute on function sugerencias_comercio(text, text, text) to anon, authen
 -- movimientos 'estimado' del mes siguiente a p_desde y los reemplaza por una
 -- copia del mes de p_desde: los recurrentes mantienen su monto, el resto
 -- queda en 0; la fecha de la copia es el día 1 del mes destino con la misma
--- hora/minuto original. Devuelve la cantidad de movimientos copiados.
+-- hora/minuto original. Las cuotas "n/total" en nombre o detalle avanzan a
+-- n+1 y las ya terminadas (total/total) no se copian. Devuelve la cantidad
+-- de movimientos copiados.
+create or replace function siguiente_cuota(p text)
+returns text
+language sql immutable as $$
+  select case
+    when m is not null and m[1]::int < m[2]::int
+      then regexp_replace(
+        p,
+        '(?<!\d)\d{1,3}(\s*/\s*\d{1,3})(?!\d)',
+        (m[1]::int + 1)::text || '\1'
+      )
+    else p
+  end
+  from (select regexp_match(p, '(?<!\d)(\d{1,3})\s*/\s*(\d{1,3})(?!\d)') as m) s
+$$;
+
+-- true si el texto trae una cuota ya terminada ("10/10"): esa fila no se
+-- copia al mes siguiente porque el pago ya no existe.
+create or replace function cuota_terminada(p text)
+returns boolean
+language sql immutable as $$
+  select coalesce(m[1]::int > 0 and m[1]::int = m[2]::int, false)
+  from (select regexp_match(p, '(?<!\d)(\d{1,3})\s*/\s*(\d{1,3})(?!\d)') as m) s
+$$;
+
+-- Igual que en 003, pero nombre y detalle avanzan la cuota y las cuotas
+-- terminadas no se copian.
 create or replace function copiar_mes_estimado(p_desde date)
 returns integer
 language plpgsql as $$
@@ -374,7 +402,7 @@ begin
   insert into movimientos
     (nombre, monto, tipo, modo, pagado, activo, categoria_id, fecha, detalle, recurrente, frecuencia)
   select
-    nombre,
+    siguiente_cuota(nombre),
     case when recurrente then monto else 0 end,
     tipo,
     modo,
@@ -383,19 +411,23 @@ begin
     categoria_id,
     (v_desde_destino::timestamp + (fecha at time zone 'America/Santiago')::time)
       at time zone 'America/Santiago',
-    detalle,
+    siguiente_cuota(detalle),
     recurrente,
     frecuencia
   from movimientos
   where user_id = auth.uid()
     and modo = 'estimado'
-    and fecha_local between v_desde_origen and v_hasta_origen;
+    and fecha_local between v_desde_origen and v_hasta_origen
+    and not cuota_terminada(nombre)
+    and not cuota_terminada(detalle);
 
   get diagnostics v_n = row_count;
   return v_n;
 end;
 $$;
 
+grant execute on function siguiente_cuota(text) to anon, authenticated;
+grant execute on function cuota_terminada(text) to anon, authenticated;
 grant execute on function copiar_mes_estimado(date) to anon, authenticated;
 
 -- Bucket de Storage para imágenes de comprobantes (Fase 4b). Cada usuario

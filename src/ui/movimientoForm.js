@@ -137,6 +137,8 @@ export function abrirMovimientoForm({
   movimiento = null,
   valoresIniciales = null,
   archivoInicial = null,
+  // Tipo con el que abre un alta (la pestaña activa de Movimientos).
+  tipoInicial = "gasto",
   onGuardado,
 }) {
   const edicion = Boolean(movimiento);
@@ -144,7 +146,7 @@ export function abrirMovimientoForm({
   // valoresIniciales (de un OCR previo) solo prellena en alta, nunca pisa una edición.
   const inicial = edicion ? null : valoresIniciales;
 
-  let tipoActual = movimiento?.tipo || "gasto";
+  let tipoActual = movimiento?.tipo || tipoInicial;
   let categoriaId = movimiento?.categoria_id || null;
 
   const error = el("p", { class: "error", role: "alert" });
