@@ -378,6 +378,7 @@ export async function montarMovimientos(
     balanceMovilValor.textContent = prefs.get("ocultarTotal") ? "*****" : formatoCLP(balance);
     montarPanelResumen(aside, todos, paraTotales, {
       tipo,
+      modo,
       fechaRef,
       onCategoria: (catId) =>
         montarMovimientos(contenedor, { rango, modo, tipo, fechaRef, categoriaInicial: catId, irA }),

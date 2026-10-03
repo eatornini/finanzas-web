@@ -2967,6 +2967,75 @@ button.pendiente {
     font-variant-numeric: tabular-nums;
   }
 
+  /* --- Tarjeta "Estado de pagos" (solo modo estimado) --- */
+  .saldo-mini--pagado {
+    background: color-mix(in srgb, var(--ingreso) 12%, transparent);
+  }
+
+  .saldo-mini--pendiente {
+    background: color-mix(in srgb, var(--pendiente) 12%, transparent);
+  }
+
+  .saldo-mini-icono--pagado {
+    background: color-mix(in srgb, var(--ingreso) 22%, transparent);
+    color: var(--ingreso);
+  }
+
+  .saldo-mini-icono--pendiente {
+    background: color-mix(in srgb, var(--pendiente) 22%, transparent);
+    color: var(--pendiente);
+  }
+
+  .valor-pendiente {
+    color: var(--pendiente);
+  }
+
+  .pagos-avance {
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-2);
+  }
+
+  .pagos-avance-fila {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: var(--esp-2);
+    font-size: var(--txt-xs);
+  }
+
+  .pagos-avance-etiqueta {
+    font-weight: var(--peso-bold);
+    color: var(--fg);
+  }
+
+  .pagos-avance-total {
+    color: var(--fg-tenue);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .pagos-barra {
+    display: block;
+    height: 8px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: color-mix(in srgb, var(--pendiente) 18%, transparent);
+  }
+
+  .pagos-barra-relleno {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--ingreso);
+  }
+
+  .pagos-conteo {
+    margin: var(--esp-3) 0 0;
+    color: var(--fg-tenue);
+    font-size: var(--txt-xs);
+    text-align: center;
+  }
+
   .valor-ingreso {
     color: var(--ingreso);
   }
