@@ -351,6 +351,22 @@ $$;
 grant execute on function uso_categorias(text, text)             to anon, authenticated;
 grant execute on function sugerencias_comercio(text, text, text) to anon, authenticated;
 
+-- Categoría más usada para un comercio dado: permite preseleccionar la
+-- categoría cuando un comprobante leído por OCR trae un comercio ya usado.
+create or replace function categoria_por_comercio(p_tipo text, p_modo text, p_nombre text)
+returns uuid
+language sql stable as $$
+  select categoria_id
+  from movimientos
+  where tipo = p_tipo and modo = p_modo and categoria_id is not null
+    and nombre ilike p_nombre
+  group by categoria_id
+  order by count(*) desc
+  limit 1
+$$;
+
+grant execute on function categoria_por_comercio(text, text, text) to anon, authenticated;
+
 -- Copiar mes estimado al siguiente (Fase 2, herramientas de mes). Borra los
 -- movimientos 'estimado' del mes siguiente a p_desde y los reemplaza por una
 -- copia del mes de p_desde: los recurrentes mantienen su monto, el resto

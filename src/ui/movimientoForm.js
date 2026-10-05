@@ -1,7 +1,7 @@
 import { el, limpiar } from "./dom.js";
 import { montarModal } from "./modal.js";
 import { crearMovimiento, actualizarMovimiento, buscarMovimientoDuplicado } from "../data/movimientos.js";
-import { usoCategorias, sugerenciasComercio } from "../data/rpc.js";
+import { usoCategorias, sugerenciasComercio, categoriaPorComercio } from "../data/rpc.js";
 import { abrirCategoriaForm } from "./categoriaForm.js";
 import { formatoCLP, parseCLP } from "../logic/dinero.js";
 import { nodoIconoCategoria } from "./iconoCategoria.js";
@@ -314,7 +314,38 @@ export function abrirMovimientoForm({
     monto: inicial?.monto ? formatoMontoCampo(inicial.monto) : "",
     fecha: inicial?.fecha ? isoAInputLocal(inicial.fecha.toISOString()) : "",
     detalle: inicial?.detalle ? String(inicial.detalle).trim() : "",
+    // Categoría que esta misma sugerencia (por nombre de comercio) dejó
+    // seleccionada, para no pisar una elección manual del usuario si llega
+    // una respuesta tardía o se vuelve a cargar otro comprobante.
+    categoriaId: null,
   };
+
+  // Recuerda, por comercio, qué categoría usó la persona la última vez
+  // (`categoria_por_comercio` en Supabase) y la preselecciona cuando el OCR
+  // trae un nombre ya conocido. Solo pisa la categoría si sigue en blanco o
+  // si todavía tiene el valor que puso esta misma sugerencia antes — si el
+  // usuario ya eligió una categoría a mano, no se toca.
+  let categoriaSugSecuencia = 0;
+  async function sugerirCategoriaPorComercio(nombreComercio) {
+    const token = ++categoriaSugSecuencia;
+    let catId;
+    try {
+      catId = await categoriaPorComercio(tipoActual, modo, nombreComercio);
+    } catch {
+      return; // sin sugerencia: se completa a mano, como siempre
+    }
+    if (!catId || token !== categoriaSugSecuencia) return;
+    if (categoriaId && categoriaId !== ultimoOcr.categoriaId) return;
+    const existe = categorias.some(
+      (c) => c.id === catId && c.tipo === tipoActual && c.modo === modo
+    );
+    if (!existe) return;
+    categoriaId = catId;
+    ultimoOcr.categoriaId = catId;
+    pintarChips();
+    actualizarSelectorCategoria();
+    actualizarBotones();
+  }
 
   function aplicarValoresOcr(resultado) {
     const comercioOcr = resultado.comercio ? String(resultado.comercio).trim() : "";
@@ -354,8 +385,15 @@ export function abrirMovimientoForm({
       detalle.value = detalleOcr;
     }
 
-    ultimoOcr = { comercio: comercioOcr, monto: montoOcr, fecha: fechaOcr, detalle: detalleOcr };
+    ultimoOcr = {
+      comercio: comercioOcr,
+      monto: montoOcr,
+      fecha: fechaOcr,
+      detalle: detalleOcr,
+      categoriaId: null,
+    };
     actualizarBotones();
+    if (comercioOcr) sugerirCategoriaPorComercio(comercioOcr);
   }
 
   // Corre el pipeline de OCR sobre `file` y carga los resultados en el

@@ -12,3 +12,10 @@ export async function sugerenciasComercio(tipo, modo, query) {
     await supabase.rpc("sugerencias_comercio", { p_tipo: tipo, p_modo: modo, p_query: query })
   );
 }
+
+// uuid | null — categoría más usada antes para ese comercio exacto (tipo+modo).
+export async function categoriaPorComercio(tipo, modo, nombre) {
+  return verificar(
+    await supabase.rpc("categoria_por_comercio", { p_tipo: tipo, p_modo: modo, p_nombre: nombre })
+  );
+}
