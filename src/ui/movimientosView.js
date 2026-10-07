@@ -360,9 +360,11 @@ export async function montarMovimientos(
 
   async function recargar() {
     error.textContent = "";
+    const scrollPrevio = window.scrollY;
     try {
       todos = await listarMovimientos({ ...rango, modo });
       repintarTodo();
+      window.scrollTo(0, scrollPrevio);
     } catch (e) {
       todos = [];
       limpiar(lista);
