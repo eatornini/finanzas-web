@@ -1,5 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { fechasTendencia, calcularVariacion } from "../src/logic/reportes.js";
+import {
+  fechasTendencia,
+  calcularVariacion,
+  diasEnRango,
+  progresoPeriodo,
+  serieAcumulada,
+  proyectarCierre,
+} from "../src/logic/reportes.js";
 
 describe("fechasTendencia", () => {
   it("devuelve `cantidad` fechas terminando en fechaRef", () => {
@@ -42,5 +49,60 @@ describe("calcularVariacion", () => {
     const r = calcularVariacion(50, 0);
     expect(r.diferencia).toBe(50);
     expect(r.porcentaje).toBeNull();
+  });
+});
+
+describe("diasEnRango", () => {
+  it("cuenta inclusive ambos extremos", () => {
+    expect(diasEnRango("2026-09-01", "2026-09-30")).toBe(30);
+    expect(diasEnRango("2026-09-21", "2026-09-21")).toBe(1);
+  });
+});
+
+describe("progresoPeriodo", () => {
+  const rango = { desde: "2026-09-01", hasta: "2026-09-30" };
+
+  it("período en curso: hoy cae dentro del rango", () => {
+    const r = progresoPeriodo(rango, "2026-09-21");
+    expect(r).toEqual({ diasTotales: 30, diaCorte: 21, pct: 70, enCurso: true });
+  });
+
+  it("período cerrado: hoy es posterior al rango", () => {
+    const r = progresoPeriodo(rango, "2026-10-05");
+    expect(r).toEqual({ diasTotales: 30, diaCorte: 30, pct: 100, enCurso: false });
+  });
+
+  it("período futuro: hoy es anterior al rango", () => {
+    const r = progresoPeriodo(rango, "2026-08-15");
+    expect(r).toEqual({ diasTotales: 30, diaCorte: 0, pct: 0, enCurso: false });
+  });
+});
+
+describe("serieAcumulada", () => {
+  const rango = { desde: "2026-09-01", hasta: "2026-09-05" };
+  const movimientos = [
+    { tipo: "ingreso", monto: 1000, fecha_local: "2026-09-01" },
+    { tipo: "gasto", monto: 300, fecha_local: "2026-09-02" },
+    { tipo: "gasto", monto: 200, fecha_local: "2026-09-04" },
+  ];
+
+  it("acumula día por día sin inventar movimientos en días sin datos", () => {
+    const serie = serieAcumulada(movimientos, rango, 5);
+    expect(serie).toHaveLength(5);
+    expect(serie[0]).toMatchObject({ dia: 1, ingresos: 1000, gastos: 0, balance: 1000 });
+    expect(serie[1]).toMatchObject({ dia: 2, ingresos: 1000, gastos: 300, balance: 700 });
+    expect(serie[2]).toMatchObject({ dia: 3, ingresos: 1000, gastos: 300, balance: 700 });
+    expect(serie[3]).toMatchObject({ dia: 4, ingresos: 1000, gastos: 500, balance: 500 });
+    expect(serie[4]).toMatchObject({ dia: 5, ingresos: 1000, gastos: 500, balance: 500 });
+  });
+});
+
+describe("proyectarCierre", () => {
+  it("extiende linealmente el ritmo diario observado", () => {
+    expect(proyectarCierre(700, 7, 30)).toBe(3000);
+  });
+
+  it("null si todavía no hay ningún día con datos", () => {
+    expect(proyectarCierre(0, 0, 30)).toBeNull();
   });
 });

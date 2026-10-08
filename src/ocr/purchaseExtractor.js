@@ -38,7 +38,14 @@ const DOLLAR_REGEX = new RegExp(`\\$\\s*(${MONTO_NUM})`);
 const LABEL_MONTO_REGEX = new RegExp(`(?:Total|Monto|Importe|Valor|Pago)\\s*:?\\s*\\$?\\s*(${MONTO_NUM})`, "i");
 // "a\s*las" (no "a\s+las"): Tesseract a veces junta "a las" en "alas" sin
 // espacio (visto en capturas reales de Android, ej. "sept alas 21:45").
-const FECHA_TEXTO_REGEX = /(\d{1,2})\s+de\s+([a-zA-Záéíóúñ]+)\s+a\s*las\s+(\d{1,2}):(\d{2})/i;
+// El día admite letras que Tesseract confunde con dígitos (visto: "6" leído
+// como "ó" en "martes, ó de oct alas 08:02"); se normalizan con DIGITOS_OCR.
+const FECHA_TEXTO_REGEX = /(?<![\p{L}\d])([\dóòÓÒoOlI|SB]{1,2})\s+de\s+([a-zA-Záéíóúñ]+)\s+a\s*las\s+(\d{1,2}):(\d{2})/iu;
+const DIGITOS_OCR = { "ó": "6", "ò": "6", "Ó": "6", "Ò": "6", o: "0", O: "0", l: "1", I: "1", "|": "1", S: "5", B: "8" };
+
+function normalizarDigitosOcr(s) {
+  return [...s].map((c) => DIGITOS_OCR[c] ?? c).join("");
+}
 const HORA_REGEX = /(\d{1,2}):(\d{2})/;
 
 function aEnteroONull(s) {
@@ -136,7 +143,7 @@ function extractFechaHora(lines) {
   for (const line of lines) {
     const match = FECHA_TEXTO_REGEX.exec(line.text.trim());
     if (match) {
-      const day = aEnteroONull(match[1]);
+      const day = aEnteroONull(normalizarDigitosOcr(match[1]));
       const mesTexto = match[2].toLowerCase();
       // Google Wallet abrevia "septiembre" como "sept" (4 letras); el resto
       // de las abreviaturas chilenas usan 3 — se acepta el prefijo de 3 como

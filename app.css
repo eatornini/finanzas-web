@@ -2693,17 +2693,27 @@ button.pendiente {
     margin-top: var(--esp-3);
   }
 
+  /* Montos grandes ("$-1.251.392") no caben en tarjetas de ~150px con el
+     tamaño fijo: la fuente escala con el ancho de la tarjeta (cqi) y tiene
+     como techo el tamaño normal. */
+  .comparativa-tarjetas .tarjeta {
+    min-width: 0;
+    container-type: inline-size;
+  }
+
+  .comparativa-tarjetas .valor {
+    font-size: min(var(--txt-xl), 14cqi);
+    white-space: nowrap;
+  }
+
   .tarjeta-delta {
     font-size: var(--txt-xs);
     color: var(--fg-tenue);
   }
 
-  .tarjeta-delta--positivo {
-    color: var(--ingreso);
-  }
-
-  .tarjeta-delta--negativo {
-    color: var(--gasto);
+  .tarjeta--actual {
+    border-color: var(--acento);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--acento) 30%, transparent);
   }
 
   .tendencia-grafico {
@@ -2716,14 +2726,6 @@ button.pendiente {
     width: 100%;
     height: auto;
     max-height: 260px;
-  }
-
-  .tendencia-barra--ingreso {
-    fill: var(--ingreso);
-  }
-
-  .tendencia-barra--gasto {
-    fill: var(--gasto);
   }
 
   .tendencia-eje-etiqueta {
@@ -2756,36 +2758,220 @@ button.pendiente {
     flex: none;
   }
 
-  .tendencia-leyenda-punto--ingreso {
-    background: var(--ingreso);
-  }
-
-  .tendencia-leyenda-punto--gasto {
-    background: var(--gasto);
-  }
-
-  .tendencia-leyenda-punto--balance {
-    width: 12px;
-    height: 3px;
-    border-radius: 2px;
-    background: var(--acento);
-  }
-
   .tendencia-cero {
     stroke: var(--borde);
     stroke-width: 0.4;
   }
 
-  .tendencia-linea-balance {
+  /* --- Reportes: estado del período, tabla, balance y ritmo --- */
+  .reportes-hero {
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-3);
+  }
+
+  .reportes-progreso-pista {
+    width: 100%;
+    height: 6px;
+    border-radius: 999px;
+    background: var(--acento-tenue);
+    overflow: hidden;
+  }
+
+  .reportes-progreso-relleno {
+    height: 100%;
+    border-radius: 999px;
+    background: var(--acento);
+  }
+
+  .reportes-hero-metricas {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: var(--esp-4);
+  }
+
+  .reportes-hero-metrica {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .reportes-hero-metrica-nombre {
+    font-size: var(--txt-sm);
+    color: var(--fg-tenue);
+  }
+
+  .reportes-hero-metrica-valor {
+    font-size: var(--txt-xl);
+    font-weight: var(--peso-bold);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .reportes-hero-metrica-nota {
+    font-size: var(--txt-xs);
+    color: var(--fg-tenue);
+  }
+
+  .reportes-tabla-wrap {
+    overflow-x: auto;
+    margin-top: var(--esp-3);
+  }
+
+  .reportes-tabla {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--txt-sm);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .reportes-tabla th,
+  .reportes-tabla td {
+    padding: var(--esp-2) var(--esp-3);
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .reportes-tabla thead th {
+    color: var(--fg-tenue);
+    font-weight: var(--peso-medio);
+    border-bottom: 1px solid var(--borde);
+  }
+
+  .reportes-tabla thead th:first-child,
+  .reportes-tabla tbody th {
+    text-align: left;
+  }
+
+  .reportes-tabla tbody th {
+    color: var(--fg-tenue);
+    font-weight: var(--peso-medio);
+  }
+
+  .reportes-tag-actual {
+    display: inline-block;
+    margin-left: var(--esp-1);
+    padding: 1px 6px;
+    border-radius: 999px;
+    background: var(--acento-tenue);
+    color: var(--acento);
+    font-size: var(--txt-xs);
+    font-weight: var(--peso-medio);
+    vertical-align: middle;
+  }
+
+  .reportes-nota {
+    margin-top: var(--esp-2);
+    font-size: var(--txt-xs);
+    color: var(--fg-tenue);
+  }
+
+  .reportes-conclusion {
+    margin-top: var(--esp-3);
+    font-size: var(--txt-sm);
+    color: var(--fg);
+  }
+
+  .reportes-tabla-sin-datos {
+    color: var(--fg-tenue);
+    font-style: italic;
+  }
+
+  .valor-sin-datos {
+    color: var(--fg-tenue);
+    font-style: italic;
+    font-size: var(--txt-sm);
+  }
+
+  .balance-barra--positivo {
+    fill: var(--ingreso);
+  }
+
+  .balance-barra--negativo {
+    fill: var(--gasto);
+  }
+
+  .balance-barra--vacia {
+    stroke: var(--borde);
+    stroke-width: 1.2;
+    stroke-dasharray: 2 1.5;
+  }
+
+  .balance-barra-valor {
+    fill: var(--fg);
+    font-size: 3.4px;
+    font-weight: var(--peso-semibold);
+    text-anchor: middle;
+  }
+
+  .balance-barra-tag {
+    fill: var(--fg-tenue);
+    font-size: 3px;
+    text-anchor: middle;
+  }
+
+  .ritmo-linea {
     fill: none;
-    stroke: var(--acento);
-    stroke-width: 0.9;
+    stroke-width: 1.4;
     stroke-linejoin: round;
     stroke-linecap: round;
   }
 
-  .tendencia-punto-balance {
+  .ritmo-linea--anterior {
+    stroke: var(--fg-tenue);
+  }
+
+  .ritmo-linea--actual {
+    stroke: var(--gasto);
+  }
+
+  .ritmo-linea-hoy {
+    stroke: var(--acento);
+    stroke-width: 0.6;
+    stroke-dasharray: 2 2;
+  }
+
+  .ritmo-etiqueta-hoy {
     fill: var(--acento);
+    font-size: 3.2px;
+    text-anchor: middle;
+  }
+
+  .ritmo-leyenda-punto--anterior {
+    background: var(--fg-tenue);
+  }
+
+  .ritmo-leyenda-punto--actual {
+    background: var(--gasto);
+  }
+
+  .reportes-interpretacion-principal {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--esp-2);
+    margin-top: var(--esp-2);
+    font-size: var(--txt-base);
+    font-weight: var(--peso-semibold);
+  }
+
+  .reportes-interpretacion-secundarias {
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-2);
+    margin-top: var(--esp-3);
+    padding: 0;
+    list-style: none;
+    color: var(--fg-tenue);
+  }
+
+  .reportes-interpretacion-item {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--esp-2);
+    font-size: var(--txt-sm);
+  }
+
+  .reportes-interpretacion-icono {
+    flex: none;
   }
 
   /* --- Panel lateral: resumen, dona, actividad --- */
