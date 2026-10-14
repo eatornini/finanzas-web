@@ -4641,6 +4641,20 @@ button.pendiente {
     width: 100%;
   }
 
+  /* Botón "Continuar con Google": mismo contorno que el secundario, con el
+     logo a color a la izquierda del texto. */
+  .login-boton-google {
+    width: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--esp-2);
+  }
+
+  .login-boton-google svg {
+    flex-shrink: 0;
+  }
+
   .login-enlace {
     border: none;
     background: transparent;

@@ -12,6 +12,19 @@ export async function iniciarSesion(email, password) {
   if (error) throw error;
 }
 
+// Redirige a Google y vuelve al sitio con la sesión en el hash; el cliente
+// de Supabase la detecta al cargar y el router reacciona vía alCambiarSesion.
+// Una cuenta nueva pasa por el mismo trigger que el registro con email, así
+// que queda 'pendiente' hasta que un admin la apruebe. Si ya existe una
+// cuenta con ese email verificado, Supabase la vincula automáticamente.
+export async function iniciarConGoogle() {
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: { redirectTo: urlSitio() },
+  });
+  if (error) throw error;
+}
+
 // Crea la cuenta. El trigger de la base deja el perfil en estado 'pendiente';
 // un admin debe aprobarlo antes de que el usuario acceda a la app.
 export async function registrarse(email, password) {

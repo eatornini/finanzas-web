@@ -1,5 +1,5 @@
 import { el, limpiar } from "./dom.js";
-import { iniciarSesion, registrarse, enviarResetPassword } from "../auth.js";
+import { iniciarSesion, iniciarConGoogle, registrarse, enviarResetPassword } from "../auth.js";
 import { validarRegistro } from "../logic/cuentas.js";
 import {
   graficoIcono,
@@ -17,6 +17,7 @@ import {
   usuarioMasIcono,
   flechaDer,
   logoAppIcono,
+  googleLogo,
 } from "./iconos.js";
 
 // Vista de acceso con tres modos dentro de la misma tarjeta .login:
@@ -132,6 +133,31 @@ export function montarLogin(contenedor) {
     ];
   }
 
+  // Divisor "o" + botón "Continuar con Google". Sirve tanto para entrar como
+  // para crear cuenta: si el email no existe, Supabase la crea (pendiente).
+  function bloqueGoogle() {
+    const boton = el(
+      "button",
+      { type: "button", class: "boton--secundario login-boton-google" },
+      [googleLogo(), el("span", { text: "Continuar con Google" })]
+    );
+    boton.addEventListener("click", async () => {
+      if (cargando) return;
+      limpiarMensajes();
+      cargando = true;
+      boton.disabled = true;
+      try {
+        await iniciarConGoogle();
+        // El navegador sale hacia Google; no hay nada más que hacer acá.
+      } catch (_e) {
+        error.textContent = "No se pudo conectar con Google. Intenta de nuevo.";
+        cargando = false;
+        boton.disabled = false;
+      }
+    });
+    return [el("div", { class: "login-divisor" }, [el("span", { text: "o" })]), boton];
+  }
+
   const error = el("p", { class: "error", role: "alert" });
   const aviso = el("p", { class: "login-aviso" });
 
@@ -185,6 +211,7 @@ export function montarLogin(contenedor) {
       campoPass,
       el("div", { class: "login-olvido" }, [enlace("¿Olvidaste tu contraseña?", "reset")]),
       boton,
+      ...bloqueGoogle(),
       error,
       ...pieAlternativo("¿No tienes una cuenta?", "Crear cuenta", usuarioMasIcono, "registro")
     );
@@ -220,6 +247,7 @@ export function montarLogin(contenedor) {
       campoPass,
       campoPass2,
       boton,
+      ...bloqueGoogle(),
       error,
       aviso,
       ...pieAlternativo("¿Ya tienes cuenta?", "Iniciar sesión", null, "login")
