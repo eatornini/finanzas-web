@@ -58,7 +58,7 @@ function isoAInputLocal(iso) {
 // WebViews de Android no soportan navigator.clipboard.read() con
 // imágenes) — en cualquiera de esos casos, quien llama cae al selector de
 // archivo normal, así que acá no hace falta distinguir el motivo del fallo.
-async function leerImagenPortapapeles() {
+export async function leerImagenPortapapeles() {
   if (!navigator.clipboard || !navigator.clipboard.read) return null;
   try {
     const items = await navigator.clipboard.read();

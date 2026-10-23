@@ -11,11 +11,13 @@ import {
   cerrarIcono,
   intercambioIcono,
   calendarioIcono,
+  listaIcono,
 } from "./iconos.js";
 import { colorMovimiento } from "./iconosCategoria.js";
 import { nodoIconoCategoria } from "./iconoCategoria.js";
 import { montarPanelResumen } from "./panelResumenView.js";
 import { abrirMovimientoForm } from "./movimientoForm.js";
+import { importarListaMovimientos } from "./importarListaForm.js";
 import { filtrarParaCalculos, calcularTotales } from "../logic/totales.js";
 import { agruparPorFecha, agruparPorCategoria } from "../logic/agrupacionMovimientos.js";
 import { etiquetaDia, etiquetaPeriodo } from "../logic/periodos.js";
@@ -193,6 +195,27 @@ export async function montarMovimientos(
     [mas(), el("span", { class: "fab-agregar-texto", text: "Agregar" })]
   );
 
+  // Alta masiva: OCR de capturas del listado del banco (varias filas).
+  const btnImportar = el(
+    "button",
+    {
+      class: "boton--secundario boton--secundario-icono",
+      type: "button",
+      title: "Importar movimientos desde captura",
+      "aria-label": "Importar movimientos desde captura",
+      onClick: async () => {
+        const cats = await asegurarCategorias();
+        importarListaMovimientos({
+          modo,
+          categorias: cats,
+          tipoInicial: vista === "ingreso" ? "ingreso" : "gasto",
+          onGuardado: alAgregarMovimiento,
+        });
+      },
+    },
+    [listaIcono()]
+  );
+
   const lista = el("div", { class: "lista lista-grupos" });
   const contador = el("p", { class: "contador-lista" });
 
@@ -216,6 +239,7 @@ export async function montarMovimientos(
         backdropFiltros,
         panelFiltros,
       ]),
+      btnImportar,
       btnAgregar,
     ]),
   ]);

@@ -1238,6 +1238,65 @@
     max-width: 640px;
   }
 
+  /* --- Importar movimientos (alta masiva desde captura) --- */
+  .importar-resumen {
+    margin: var(--esp-3) 0;
+    color: var(--fg-tenue);
+  }
+
+  .importar-lista {
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-2);
+  }
+
+  .importar-fila {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--esp-3);
+    padding: var(--esp-3);
+    border-radius: var(--r-md);
+    background: var(--bg-sutil);
+  }
+
+  .importar-fila > input[type="checkbox"] {
+    flex: none;
+    width: 20px;
+    height: 20px;
+    margin-top: 10px;
+  }
+
+  .importar-campos {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-2);
+  }
+
+  .importar-campos-fila {
+    display: flex;
+    gap: var(--esp-2);
+  }
+
+  .importar-campos-fila > input {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .importar-aviso:empty {
+    display: none;
+  }
+
+  .importar-aviso {
+    font-size: 0.85em;
+    color: var(--gasto);
+  }
+
+  .importar-fila--duplicado {
+    opacity: 0.7;
+  }
+
   /* Pie sticky con acciones (Cancelar / Aceptar). */
   .modal-pie {
     position: sticky;

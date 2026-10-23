@@ -2,6 +2,7 @@ import { detectarTipoDocumento } from "./documentTypeDetector.js";
 import { parsearTransferencia } from "./transferenciaParser.js";
 import { parsearCompra } from "./purchaseExtractor.js";
 import { parsearComprobanteTabular } from "./comprobanteTabularParser.js";
+import { parsearListaMovimientos } from "./listaMovimientosParser.js";
 
 // Los agregadores de pago (TUU, Mercado Pago, etc.) anteponen su marca y un
 // asterisco al nombre real del comercio: "TUU*ALMACEN DON JUAN",
@@ -35,4 +36,14 @@ export function analizarComprobante({ lineas, bloques }) {
 
   const r = parsearCompra(lineas, bloques);
   return { ...r, comercio: limpiarComercio(r.comercio), detalle: null, tipo: "compra" };
+}
+
+// Captura con varios movimientos (listado del banco). Devuelve
+// [{ comercio, monto, fecha, signo }] con el comercio ya limpio de prefijos
+// de agregador, igual que en un comprobante suelto.
+export function analizarLista({ lineas }, hoy = new Date()) {
+  return parsearListaMovimientos(lineas, hoy).map((f) => ({
+    ...f,
+    comercio: limpiarComercio(f.comercio),
+  }));
 }
