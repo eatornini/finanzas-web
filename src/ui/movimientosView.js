@@ -195,26 +195,59 @@ export async function montarMovimientos(
     [mas(), el("span", { class: "fab-agregar-texto", text: "Agregar" })]
   );
 
-  // Alta masiva: OCR de capturas del listado del banco (varias filas).
-  const btnImportar = el(
+  // Flecha pegada a la derecha de "Agregar": despliega más formas de alta.
+  // Por ahora solo la masiva (OCR de capturas del listado del banco).
+  const menuAgregar = el("div", { class: "agregar-menu", role: "menu", hidden: "true" }, [
+    el(
+      "button",
+      {
+        type: "button",
+        role: "menuitem",
+        onClick: async () => {
+          cerrarMenuAgregar();
+          const cats = await asegurarCategorias();
+          importarListaMovimientos({
+            modo,
+            categorias: cats,
+            tipoInicial: vista === "ingreso" ? "ingreso" : "gasto",
+            onGuardado: alAgregarMovimiento,
+          });
+        },
+      },
+      [listaIcono(), el("span", { text: "Importar movimientos" })]
+    ),
+  ]);
+  const btnMenuAgregar = el(
     "button",
     {
-      class: "boton--secundario boton--secundario-icono",
+      class: "boton--primario agregar-split-flecha",
       type: "button",
-      title: "Importar movimientos desde captura",
-      "aria-label": "Importar movimientos desde captura",
-      onClick: async () => {
-        const cats = await asegurarCategorias();
-        importarListaMovimientos({
-          modo,
-          categorias: cats,
-          tipoInicial: vista === "ingreso" ? "ingreso" : "gasto",
-          onGuardado: alAgregarMovimiento,
-        });
-      },
+      "aria-label": "Más opciones para agregar",
+      "aria-haspopup": "menu",
+      "aria-expanded": "false",
+      onClick: () => (menuAgregar.hidden ? abrirMenuAgregar() : cerrarMenuAgregar()),
     },
-    [listaIcono()]
+    [chevronAbajo()]
   );
+  const agregarSplit = el("div", { class: "agregar-split" }, [btnAgregar, btnMenuAgregar, menuAgregar]);
+  function alClickFueraMenu(ev) {
+    if (!agregarSplit.contains(ev.target)) cerrarMenuAgregar();
+  }
+  function alTeclearMenu(ev) {
+    if (ev.key === "Escape") cerrarMenuAgregar();
+  }
+  function abrirMenuAgregar() {
+    menuAgregar.hidden = false;
+    btnMenuAgregar.setAttribute("aria-expanded", "true");
+    document.addEventListener("click", alClickFueraMenu, true);
+    document.addEventListener("keydown", alTeclearMenu);
+  }
+  function cerrarMenuAgregar() {
+    menuAgregar.hidden = true;
+    btnMenuAgregar.setAttribute("aria-expanded", "false");
+    document.removeEventListener("click", alClickFueraMenu, true);
+    document.removeEventListener("keydown", alTeclearMenu);
+  }
 
   const lista = el("div", { class: "lista lista-grupos" });
   const contador = el("p", { class: "contador-lista" });
@@ -239,8 +272,7 @@ export async function montarMovimientos(
         backdropFiltros,
         panelFiltros,
       ]),
-      btnImportar,
-      btnAgregar,
+      agregarSplit,
     ]),
   ]);
 

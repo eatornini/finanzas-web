@@ -1965,17 +1965,96 @@
     height: 20px;
   }
 
+  /* "Agregar" + flecha de menú pegada a la derecha (split button). */
+  .agregar-split {
+    position: relative;
+    display: inline-flex;
+    align-items: stretch;
+  }
+
+  .agregar-split .fab-agregar {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  .agregar-split-flecha {
+    padding: 0 0.6em;
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    border-left: 1px solid color-mix(in srgb, var(--acento-fg) 35%, transparent);
+  }
+
+  .agregar-split-flecha svg {
+    width: 18px;
+    height: 18px;
+    transition: transform 0.2s;
+  }
+
+  .agregar-split-flecha[aria-expanded="true"] svg {
+    transform: rotate(180deg);
+  }
+
+  .agregar-menu {
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    z-index: 40;
+    min-width: 220px;
+    padding: var(--esp-2);
+    border-radius: var(--r-md);
+    background: var(--bg-elevado);
+    border: 1px solid color-mix(in srgb, var(--fg) 12%, transparent);
+    box-shadow: 0 8px 24px color-mix(in srgb, black 18%, transparent);
+  }
+
+  .agregar-menu[hidden] {
+    display: none;
+  }
+
+  .agregar-menu button {
+    display: flex;
+    align-items: center;
+    gap: var(--esp-2);
+    width: 100%;
+    padding: var(--esp-2) var(--esp-3);
+    border: 0;
+    background: transparent;
+    color: var(--fg);
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  .agregar-menu button svg {
+    width: 18px;
+    height: 18px;
+    color: var(--acento);
+  }
+
   @media (max-width: 720px) {
-    .fab-agregar {
+    /* En móvil el grupo entero flota abajo a la derecha. */
+    .agregar-split {
       position: fixed;
       right: var(--esp-4);
       bottom: calc(var(--esp-4) + env(safe-area-inset-bottom, 0px));
       z-index: 30;
+    }
+
+    .agregar-menu {
+      top: auto;
+      bottom: calc(100% + 8px);
+    }
+
+    .fab-agregar {
       width: 56px;
       height: 56px;
       padding: 0;
-      border-radius: 50%;
+      border-radius: 28px 0 0 28px;
       justify-content: center;
+    }
+
+    .agregar-split-flecha {
+      height: 56px;
+      border-radius: 0 28px 28px 0;
     }
 
     .fab-agregar-texto {
