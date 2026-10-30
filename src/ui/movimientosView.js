@@ -303,7 +303,11 @@ export async function montarMovimientos(
 
   // icono (opcional): se pinta entre el chevron y la etiqueta — el
   // calendario en los grupos por fecha.
-  function grupoHeader(claveGrupo, etiqueta, movimientosGrupo, icono = null) {
+  // `filasWrap` es el contenedor de las filas del grupo: el toggle lo
+  // muestra/oculta directamente, sin repintar la lista — repintar vaciaba
+  // `lista` un instante, el documento se achicaba y el navegador movía el
+  // scroll (se notaba al acoplar grupos del final de la lista).
+  function grupoHeader(claveGrupo, etiqueta, movimientosGrupo, icono, filasWrap) {
     const colapsado = colapsados.has(claveGrupo);
     const { balance } = calcularTotales(movimientosGrupo);
     const signo = balance >= 0 ? "+" : "−";
@@ -325,10 +329,13 @@ export async function montarMovimientos(
       ]
     );
     btn.addEventListener("click", () => {
-      if (colapsados.has(claveGrupo)) colapsados.delete(claveGrupo);
-      else colapsados.add(claveGrupo);
+      const ahoraColapsado = !filasWrap.hidden;
+      filasWrap.hidden = ahoraColapsado;
+      btn.classList.toggle("colapsado", ahoraColapsado);
+      btn.setAttribute("aria-expanded", String(!ahoraColapsado));
+      if (ahoraColapsado) colapsados.add(claveGrupo);
+      else colapsados.delete(claveGrupo);
       prefs.set("gruposColapsados", [...colapsados]);
-      pintarLista();
     });
     return { btn, colapsado };
   }
@@ -491,14 +498,13 @@ export async function montarMovimientos(
     // Cada grupo es una tarjeta propia: encabezado (fecha/categoría + total)
     // y, debajo, sus movimientos. Sin tarjeta contenedora general.
     function pintarGrupo(claveGrupo, etiqueta, movimientosGrupo, icono) {
-      const { btn, colapsado } = grupoHeader(claveGrupo, etiqueta, movimientosGrupo, icono);
-      const tarjeta = el("section", { class: "panel-tarjeta lista-grupo" }, [btn]);
-      if (!colapsado) {
-        for (const m of movimientosGrupo) {
-          tarjeta.append(fila(m, recargar, error, modo, asegurarCategorias));
-        }
+      const filasWrap = el("div", { class: "lista-grupo-filas" });
+      const { btn, colapsado } = grupoHeader(claveGrupo, etiqueta, movimientosGrupo, icono, filasWrap);
+      filasWrap.hidden = colapsado;
+      for (const m of movimientosGrupo) {
+        filasWrap.append(fila(m, recargar, error, modo, asegurarCategorias));
       }
-      lista.append(tarjeta);
+      lista.append(el("section", { class: "panel-tarjeta lista-grupo" }, [btn, filasWrap]));
     }
 
     badge.textContent = String(todos.length);

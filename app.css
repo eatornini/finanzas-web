@@ -2541,21 +2541,17 @@
 
   /* Los botones de acción (activar/desactivar, borrar) solo aparecen al
      pasar el mouse sobre el movimiento — bajan el ruido visual de la lista.
-     Solo en dispositivos con hover real: en touch (`hover: none`) quedan
-     siempre visibles, porque ahí no existe un "pasar el mouse" que los
-     revele. El foco por teclado también los revela, para no romper el
-     acceso sin mouse. */
-  @media (hover: hover) {
-    .fila .acciones .boton--icono {
-      opacity: 0;
-      transition: opacity 0.15s ease;
-    }
+     Aplica en todos los modos y anchos (también en touch/móvil). El foco por
+     teclado también los revela, para no romper el acceso sin mouse. */
+  .fila .acciones .boton--icono {
+    opacity: 0;
+    transition: opacity 0.15s ease;
+  }
 
-    .fila:hover .acciones .boton--icono,
-    .fila:focus-within .acciones .boton--icono,
-    .fila .acciones .boton--icono:focus-visible {
-      opacity: 1;
-    }
+  .fila:hover .acciones .boton--icono,
+  .fila:focus-within .acciones .boton--icono,
+  .fila .acciones .boton--icono:focus-visible {
+    opacity: 1;
   }
 
   .fila.tipo-ingreso .monto {
