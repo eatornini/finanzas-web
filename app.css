@@ -1,4 +1,4 @@
-@layer tokens, base, layout, componentes, utilidades;
+@layer tokens, base, layout, componentes, utilidades, rediseno;
 
 @font-face {
   font-family: "Material Symbols";
@@ -11,12 +11,12 @@
     color-scheme: light dark;
 
     --bg: #ffffff;
-    --bg-pagina: #f7f8fa;
+    --bg-pagina: #f5f6f8;
     --bg-elevado: #ffffff;
-    --bg-sutil: #F3F7FB;
-    --fg: #17181c;
-    --fg-tenue: #6b6f76;
-    --borde: #e6e7eb;
+    --bg-sutil: #f2f4f7;
+    --fg: #101828;
+    --fg-tenue: #5b6474;
+    --borde: #e4e7ec;
     --acento: #0966DF;
     --acento-fg: #ffffff;
     --acento-tenue: #e8f0fe;
@@ -26,11 +26,11 @@
        desplazamiento, para que quede pegado al contorno del campo. */
     --anillo-focus: 0 0 0 2px color-mix(in srgb, var(--acento) 22%, transparent);
 
-    --ingreso: #08A74F;
-    --gasto: #FC1C27;
+    --ingreso: #0f7a4a;
+    --gasto: #d92d20;
     --estimado: #0966DF;
     --estimado-fg: #ffffff;
-    --pendiente: #a56a12;
+    --pendiente: #9a5b00;
 
     --esp-1: 2px;
     --esp-2: 8px;
@@ -41,7 +41,7 @@
 
     --r-sm: 8px;
     --r-md: 10px;
-    --r-lg: 3px;
+    --r-lg: 14px;
     --r-pill: 999px;
 
     --txt-xs: 0.85rem;
@@ -73,23 +73,23 @@
   @media (prefers-color-scheme: dark) {
     :root:not([data-tema="claro"]) {
       color-scheme: dark;
-      --bg: #121214;
-      --bg-pagina: #0f0f11;
-      --bg-elevado: #1b1c1f;
-      --bg-sutil: #202024;
-      --fg: #ececee;
-      --fg-tenue: #9a9aa2;
-      --borde: #2e2e33;
+      --bg: #12161c;
+      --bg-pagina: #0e1116;
+      --bg-elevado: #161b22;
+      --bg-sutil: #1b212a;
+      --fg: #e6e9ef;
+      --fg-tenue: #9aa4b2;
+      --borde: #2a313c;
       --acento: #0966DF;
       --acento-fg: #ffffff;
       --acento-tenue: color-mix(in srgb, #5b9bd8 18%, transparent);
       --acento-suave: color-mix(in srgb, var(--acento) 16%, var(--bg-elevado));
 
-      --ingreso: #08A74F;
-      --gasto: #FC1C27;
+      --ingreso: #3dd68c;
+      --gasto: #f97066;
       --estimado: #0966DF;
       --estimado-fg: #ffffff;
-      --pendiente: #e0a44a;
+      --pendiente: #f0b44c;
 
       --sombra-1: 0 1px 2px rgba(0, 0, 0, 0.28);
       --sombra-popover: 0 8px 24px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
@@ -104,23 +104,23 @@
 
   :root[data-tema="oscuro"] {
     color-scheme: dark;
-    --bg: #121214;
-    --bg-pagina: #0f0f11;
-    --bg-elevado: #1b1c1f;
-    --bg-sutil: #202024;
-    --fg: #ececee;
-    --fg-tenue: #9a9aa2;
-    --borde: #2e2e33;
+    --bg: #12161c;
+    --bg-pagina: #0e1116;
+    --bg-elevado: #161b22;
+    --bg-sutil: #1b212a;
+    --fg: #e6e9ef;
+    --fg-tenue: #9aa4b2;
+    --borde: #2a313c;
     --acento: #0966DF;
     --acento-fg: #ffffff;
     --acento-tenue: color-mix(in srgb, #5b9bd8 18%, transparent);
     --acento-suave: color-mix(in srgb, var(--acento) 16%, var(--bg-elevado));
 
-    --ingreso: #08A74F;
-    --gasto: #FC1C27;
+    --ingreso: #3dd68c;
+    --gasto: #f97066;
     --estimado: #0966DF;
     --estimado-fg: #ffffff;
-    --pendiente: #e0a44a;
+    --pendiente: #f0b44c;
 
     --sombra-1: 0 1px 2px rgba(0, 0, 0, 0.28);
     --sombra-popover: 0 8px 24px rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.3);
@@ -1941,16 +1941,16 @@
       width: 100%;
     }
 
-    .movimientos-principal .lista-acciones {
+    .movimientos-encabezado .lista-acciones {
       width: 100%;
     }
 
-    .movimientos-principal .campo-busqueda {
+    .movimientos-encabezado .campo-busqueda {
       flex: 1;
       min-width: 0;
     }
 
-    .movimientos-principal .campo-busqueda input {
+    .movimientos-encabezado .campo-busqueda input {
       width: 100%;
     }
   }
@@ -6335,6 +6335,623 @@ color-mix(in srgb, var(--acento) 16%, transparent);
     .resumen-act-monto {
       grid-column: 3;
       grid-row: 1 / span 2;
+    }
+  }
+}
+
+/* ==========================================================================
+   Rediseño v3.61 — capa final: gana sobre las anteriores sin tocarlas.
+   Franja de KPIs, lista más limpia (montos neutros, círculo de pago en
+   Estimado, Hoy/Ayer en Real), Real/Estimado segmentado y barra inferior
+   en móvil. Colores siempre desde los tokens (respeta el acento elegido y
+   ambos temas).
+   ========================================================================== */
+@layer rediseno {
+  body {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* --- Tokens de controles segmentados y campos (cambian por tema) --- */
+  :root {
+    --seg-pista: var(--bg-sutil);
+    --seg-activo: var(--bg-elevado);
+    --seg-sombra: 0 1px 2px rgba(16, 24, 40, 0.08);
+    --campo-fondo: var(--bg-elevado);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-tema="claro"]) {
+      --seg-pista: var(--bg-pagina);
+      --seg-activo: var(--borde);
+      --seg-sombra: none;
+      --campo-fondo: var(--bg-pagina);
+    }
+  }
+
+  :root[data-tema="oscuro"] {
+    --seg-pista: var(--bg-pagina);
+    --seg-activo: var(--borde);
+    --seg-sombra: none;
+    --campo-fondo: var(--bg-pagina);
+  }
+
+  /* --- Barra de la lista: pestañas + buscador + filtros --- */
+  .movimientos-barra.panel-tarjeta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--esp-3);
+    padding: 12px 14px;
+    box-shadow: none;
+  }
+
+  .movimientos-barra .tabs-vista {
+    gap: 2px;
+    padding: 3px;
+    border: 0;
+    border-radius: var(--r-md);
+    background: var(--seg-pista);
+  }
+
+  .movimientos-barra .tabs-vista button {
+    padding: 7px 14px;
+    border: 0;
+    border-radius: 7px;
+    font-size: 14px;
+    font-weight: var(--peso-medio);
+    color: var(--fg-tenue);
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .movimientos-barra .tabs-vista button:not(.activo):hover {
+    color: var(--fg);
+    background: transparent;
+  }
+
+  .movimientos-barra .tabs-vista button.activo {
+    font-weight: var(--peso-semibold);
+    color: var(--fg);
+    background: var(--seg-activo);
+    box-shadow: var(--seg-sombra);
+  }
+
+  .movimientos-barra .lista-acciones {
+    flex: 1 1 260px;
+    min-width: 0;
+  }
+
+  .movimientos-barra .campo-busqueda {
+    flex: 1;
+    min-width: 0;
+    height: 40px;
+    border-radius: var(--r-md);
+    background: var(--campo-fondo);
+  }
+
+  .movimientos-barra .campo-busqueda svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .movimientos-barra .campo-busqueda input {
+    width: 100%;
+    min-width: 0;
+    font-size: 14px;
+    color: var(--fg);
+    background: transparent;
+  }
+
+  .movimientos-barra .boton--filtros {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    justify-content: center;
+    border: 1px solid var(--borde);
+    border-radius: var(--r-md);
+    background: var(--bg-elevado);
+    color: var(--fg-tenue);
+  }
+
+  .movimientos-barra .boton--filtros:hover {
+    color: var(--fg);
+  }
+
+  .movimientos-barra .boton--filtros.activo {
+    border-color: var(--acento);
+    background: var(--acento-tenue);
+    color: color-mix(in srgb, var(--acento) 72%, var(--fg));
+  }
+
+  @media (max-width: 720px) {
+    .movimientos-barra.panel-tarjeta {
+      padding: 10px;
+      gap: var(--esp-2);
+    }
+
+    .movimientos-barra .tabs-vista {
+      display: flex;
+      flex: 1 1 100%;
+    }
+
+    .movimientos-barra .tabs-vista button {
+      flex: 1;
+    }
+
+    .movimientos-barra .lista-acciones {
+      flex-basis: 100%;
+    }
+  }
+
+  /* --- Barra superior --- */
+  /* Sem/Mes/Año y Real/Estimado: caja de esquinas suaves (no píldora) con
+     botones de 7px. El período activo va en contraste invertido (texto
+     claro sobre oscuro en tema claro, y al revés en oscuro); el modo activo
+     va en el tinte del acento, para distinguir los dos controles. */
+  .selector-periodo .selector-tipo,
+  .selector-modo {
+    gap: 2px;
+    flex-wrap: nowrap;
+    padding: 3px;
+    border: 1px solid var(--borde);
+    border-radius: var(--r-md);
+    background: var(--bg-elevado);
+  }
+
+  .selector-periodo .selector-tipo button,
+  .selector-modo button {
+    padding: 6px 12px;
+    border: 0;
+    border-radius: 7px;
+    font-size: 13px;
+    font-weight: var(--peso-medio);
+    color: var(--fg-tenue);
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .selector-periodo .selector-tipo button:not(.activo):hover,
+  .selector-modo button:not(.activo):hover {
+    color: var(--fg);
+    background: transparent;
+  }
+
+  .selector-periodo .selector-tipo button.activo {
+    font-weight: var(--peso-semibold);
+    color: var(--bg-elevado);
+    background: var(--fg);
+  }
+
+  .selector-modo button.activo {
+    font-weight: var(--peso-semibold);
+    color: color-mix(in srgb, var(--acento) 72%, var(--fg));
+    background: var(--acento-tenue);
+  }
+
+  .navegador-periodo {
+    border-radius: var(--r-md);
+    background: var(--bg-elevado);
+  }
+
+  .selector-periodo .selector-tipo button:focus-visible,
+  .selector-modo button:focus-visible {
+    outline: 2px solid var(--acento);
+    outline-offset: 1px;
+  }
+
+  /* --- Estructura de Movimientos --- */
+  .vista-movimientos {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--esp-5);
+  }
+
+  .movimientos-cuerpo {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) var(--ancho-lateral);
+    align-items: start;
+    gap: var(--esp-5);
+  }
+
+  .movimientos-principal {
+    gap: var(--esp-4);
+  }
+
+  /* --- Franja de KPIs --- */
+  .kpis {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: var(--esp-4);
+  }
+
+  .kpi {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+    padding: 16px 18px;
+    border: 1px solid var(--borde);
+    border-radius: var(--r-lg);
+    background: var(--bg-elevado);
+  }
+
+  .kpi-etiqueta {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    font-weight: var(--peso-medio);
+    color: var(--fg-tenue);
+  }
+
+  .kpi-etiqueta-icono {
+    display: inline-flex;
+  }
+
+  .kpi-etiqueta-icono svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .kpi--ingreso .kpi-etiqueta-icono {
+    color: var(--ingreso);
+  }
+
+  .kpi--gasto .kpi-etiqueta-icono {
+    color: var(--gasto);
+  }
+
+  .kpi--pagos .kpi-etiqueta-icono {
+    color: var(--ingreso);
+  }
+
+  .kpi-pct {
+    margin-left: auto;
+    font-weight: var(--peso-semibold);
+  }
+
+  .kpi-valor {
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    color: var(--fg);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .kpi-valor-sufijo {
+    font-size: 14px;
+    font-weight: var(--peso-medio);
+    letter-spacing: 0;
+    color: var(--fg-tenue);
+  }
+
+  .kpi-desc {
+    font-size: 12px;
+    color: var(--fg-tenue);
+  }
+
+  .kpi-barra {
+    display: block;
+    height: 6px;
+    border-radius: var(--r-pill);
+    background: color-mix(in srgb, var(--fg) 10%, transparent);
+    overflow: hidden;
+  }
+
+  .kpi-barra-relleno {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--ingreso);
+  }
+
+  /* Saldo: la única tarjeta con color pleno, para que sea lo primero que
+     se lee. Usa el acento elegido por la persona. */
+  .kpi--destacado {
+    border-color: transparent;
+    background: var(--acento);
+  }
+
+  .kpi--destacado .kpi-etiqueta,
+  .kpi--destacado .kpi-desc {
+    color: color-mix(in srgb, var(--acento-fg) 82%, transparent);
+  }
+
+  .kpi--destacado .kpi-valor {
+    font-size: 28px;
+    color: var(--acento-fg);
+  }
+
+  /* --- Tarjeta de grupo (día en Real, categoría en Estimado) --- */
+  .lista {
+    gap: var(--esp-3);
+  }
+
+  .lista-grupo.panel-tarjeta {
+    padding: 0;
+    overflow: hidden;
+    box-shadow: none;
+  }
+
+  .lista-grupo .lista-grupo-titulo {
+    margin: 0;
+    padding: 12px 16px;
+    border-radius: 0;
+    background: var(--bg-sutil);
+    font-size: 13px;
+    color: var(--fg);
+  }
+
+  .lista-grupo .lista-grupo-titulo:not(.colapsado) {
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--borde);
+  }
+
+  .lista-grupo-titulo .lista-grupo-chevron {
+    color: var(--fg-tenue);
+  }
+
+  .lista-grupo-etiqueta::first-letter {
+    text-transform: uppercase;
+  }
+
+  .lista-grupo-relativo {
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    color: color-mix(in srgb, var(--acento) 72%, var(--fg));
+    background: var(--acento-tenue);
+  }
+
+  .lista-grupo-total {
+    display: inline-flex;
+    gap: var(--esp-3);
+    font-weight: var(--peso-semibold);
+  }
+
+  .lista-grupo-total-ingreso {
+    color: var(--ingreso);
+  }
+
+  .lista-grupo-total-gasto {
+    color: var(--fg);
+  }
+
+  .lista-grupo .fila {
+    min-height: 60px;
+    padding: 10px 16px;
+  }
+
+  .lista-grupo .fila:hover {
+    background: color-mix(in srgb, var(--fg) 3%, transparent);
+  }
+
+  .fila .nombre {
+    font-size: 14px;
+    font-weight: var(--peso-medio);
+  }
+
+  /* Montos: gris oscuro para gastos (en la pestaña Gastos todo es gasto, el
+     rojo no informaba nada); verde con "+" solo para ingresos. */
+  .fila.tipo-gasto .monto {
+    color: var(--fg);
+  }
+
+  .fila .monto {
+    font-size: 14px;
+    font-weight: var(--peso-semibold);
+  }
+
+  .fila--inactiva .monto {
+    color: var(--fg-tenue);
+    text-decoration: line-through;
+  }
+
+  /* --- Círculo de pago (modo Estimado) --- */
+  .fila--con-check {
+    grid-template-columns: auto auto minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      "check icono nombre acciones monto"
+      "check icono meta   acciones monto";
+  }
+
+  /* En Movimientos/Estimado el grupo ya es la categoría: el icono de cada
+     fila repetía lo mismo, así que se oculta y queda solo el círculo. */
+  .vista-movimientos[data-modo="estimado"] .fila-icono {
+    display: none;
+  }
+
+  .vista-movimientos[data-modo="estimado"] .fila--con-check {
+    grid-template-columns: auto minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      "check nombre acciones monto"
+      "check meta   acciones monto";
+  }
+
+  /* El grupo ya nombra la categoría: debajo del nombre solo queda el
+     estado "Pagado" cuando corresponde. */
+  .vista-movimientos[data-modo="estimado"] .fila .cat,
+  .vista-movimientos[data-modo="estimado"] .fila-meta-sep {
+    display: none;
+  }
+
+  .vista-movimientos[data-modo="estimado"] .fila {
+    align-content: center;
+  }
+
+  .vista-movimientos[data-modo="estimado"] .fila .nombre {
+    top: 0;
+  }
+
+  .fila-check {
+    grid-area: check;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    margin: -6px -6px -6px -10px;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .fila-check-circulo {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border: 2px solid color-mix(in srgb, var(--fg) 30%, transparent);
+    border-radius: 50%;
+    color: transparent;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+  }
+
+  .fila-check-circulo svg {
+    width: 13px;
+    height: 13px;
+    stroke-width: 3;
+  }
+
+  .fila-check:hover .fila-check-circulo {
+    border-color: var(--ingreso);
+  }
+
+  .fila-check:focus-visible {
+    outline: 2px solid var(--acento);
+    outline-offset: -4px;
+  }
+
+  .fila-check--pagado .fila-check-circulo {
+    border-color: var(--ingreso);
+    background: var(--ingreso);
+    color: var(--bg-elevado);
+  }
+
+  .fila-pagada .nombre {
+    color: var(--fg-tenue);
+    text-decoration: line-through;
+  }
+
+  .fila-pagada .monto {
+    color: var(--fg-tenue);
+  }
+
+  .fila-estado-pagado {
+    font-size: var(--txt-xs);
+    font-weight: var(--peso-semibold);
+    line-height: 2;
+    color: var(--ingreso);
+  }
+
+  /* --- Panel lateral --- */
+  .panel-lateral .panel-tarjeta {
+    padding: 18px 20px;
+  }
+
+  /* --- Barra inferior (solo móvil) --- */
+  .nav-inferior {
+    display: none;
+  }
+
+  @media (max-width: 1080px) {
+    .movimientos-cuerpo {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .kpis {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 720px) {
+    .kpis {
+      gap: var(--esp-3);
+    }
+
+    .kpi {
+      padding: 12px 14px;
+    }
+
+    .kpi-valor {
+      font-size: 20px;
+    }
+
+    .kpi--destacado,
+    .kpis > .kpi:last-child {
+      grid-column: 1 / -1;
+    }
+
+    .kpi--destacado .kpi-valor {
+      font-size: 28px;
+    }
+
+    .lista-grupo .fila {
+      padding: 10px 12px;
+    }
+
+    .lista-grupo .lista-grupo-titulo {
+      padding: 10px 12px;
+      flex-wrap: wrap;
+    }
+
+    .nav-inferior {
+      position: fixed;
+      inset: auto 0 0 0;
+      z-index: 35;
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      padding: 4px 4px env(safe-area-inset-bottom, 0px);
+      border-top: 1px solid var(--borde);
+      background: var(--bg-elevado);
+    }
+
+    .nav-inferior-boton {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      min-height: 56px;
+      padding: 0;
+      border: 0;
+      border-radius: var(--r-md);
+      background: transparent;
+      font-size: 11px;
+      font-weight: var(--peso-medio);
+      color: var(--fg-tenue);
+    }
+
+    .nav-inferior-boton .nav-icono svg {
+      width: 22px;
+      height: 22px;
+    }
+
+    .nav-inferior-boton.activo {
+      color: var(--acento);
+      font-weight: var(--peso-semibold);
+      background: transparent;
+    }
+
+    /* "Más" en la barra inferior abre el menú completo: el ☰ sobraba. */
+    .boton-menu {
+      display: none;
+    }
+
+    .principal {
+      padding-bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+    }
+
+    .agregar-split {
+      bottom: calc(76px + env(safe-area-inset-bottom, 0px));
     }
   }
 }

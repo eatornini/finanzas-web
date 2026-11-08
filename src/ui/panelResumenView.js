@@ -1,23 +1,14 @@
-// Panel lateral de la vista Movimientos: resumen del período, gastos por
-// categoría (lista con barras horizontales) y actividad reciente.
+// Vista Movimientos: franja de KPIs arriba (saldo, ingresos, gastos y
+// pagos o gasto diario según el modo) y panel lateral con los gastos por
+// categoría (lista con barras horizontales).
 import { el, limpiar } from "./dom.js";
 import { calcularTotales, desglosarPorPago } from "../logic/totales.js";
 import { formatoCLP } from "../logic/dinero.js";
+import { diasTranscurridos } from "../logic/presentacion.js";
 import { prefs } from "../prefs.js";
-import {
-  flechaArribaCirculo,
-  flechaAbajoCirculo,
-  billeteraIcono,
-  ojoIcono,
-  ojoTachadoIcono,
-  graficoTortaIcono,
-  reloj3Icono,
-  check,
-  relojIcono,
-} from "./iconos.js";
+import { flechaArribaCirculo, flechaAbajoCirculo, graficoTortaIcono, relojIcono, check } from "./iconos.js";
 import { iconoSemanticoCategoria } from "./iconosCategoria.js";
 import { iconoTitulo } from "./tituloVista.js";
-import { etiquetaPeriodo } from "../logic/periodos.js";
 
 const PALETA_DONA = [
   "#c0392b", "#2563a8", "#a56a12", "#6b46c1", "#1b7f4d", "#c2185b", "#00796b",
@@ -27,105 +18,100 @@ function valorOculto(valor) {
   return prefs.get("ocultarTotal") ? "*****" : formatoCLP(valor);
 }
 
-// Tarjeta mini de Ingresos / Gastos (fondo tintado del color, icono, valor).
-function miniSaldo(fabricaIcono, clase, etiqueta, valor, claseValor) {
-  return el("div", { class: `saldo-mini saldo-mini--${clase}` }, [
-    el("span", { class: `saldo-mini-icono saldo-mini-icono--${clase}` }, [fabricaIcono()]),
-    el("span", { class: "saldo-mini-etiqueta", text: etiqueta }),
-    el("span", { class: `saldo-mini-valor ${claseValor}`, text: valorOculto(valor) }),
+const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
+
+function kpi({ clase = "", icono = null, etiqueta, extraEtiqueta = null, valor, claseValor = "", hijos = [], desc }) {
+  return el("div", { class: `kpi ${clase}`.trim() }, [
+    el("span", { class: "kpi-etiqueta" }, [
+      icono ? el("span", { class: "kpi-etiqueta-icono" }, [icono()]) : null,
+      el("span", { text: etiqueta }),
+      extraEtiqueta,
+    ]),
+    el("span", { class: `kpi-valor ${claseValor}`.trim() }, [].concat(valor)),
+    ...hijos,
+    desc ? el("span", { class: "kpi-desc", text: desc }) : null,
   ]);
 }
 
-function tarjetaResumen(periodoTexto, movimientos, onToggleOcultar) {
-  const { ingresos, gastos, balance } = calcularTotales(movimientos);
-  const oculto = prefs.get("ocultarTotal");
-  const btnOjo = el(
-    "button",
+function barra(pct, etiquetaAria) {
+  const relleno = el("span", { class: "kpi-barra-relleno" });
+  relleno.style.width = `${pct}%`;
+  return el(
+    "span",
     {
-      class: "boton--icono boton-ojo",
-      "aria-label": oculto ? "Mostrar totales" : "Ocultar totales",
-      title: oculto ? "Mostrar totales" : "Ocultar totales",
-      "aria-pressed": String(oculto),
-      onClick: onToggleOcultar,
+      class: "kpi-barra",
+      role: "progressbar",
+      "aria-valuemin": "0",
+      "aria-valuemax": "100",
+      "aria-valuenow": String(pct),
+      "aria-label": etiquetaAria,
     },
-    [oculto ? ojoTachadoIcono() : ojoIcono()]
+    [relleno]
   );
-
-  return el("section", { class: "panel-tarjeta tarjeta-saldo" }, [
-    el("div", { class: "saldo-cabecera" }, [
-      el("span", { class: "saldo-cabecera-icono" }, [billeteraIcono()]),
-      el("span", { class: "saldo-cabecera-titulo", text: "Saldo disponible" }),
-      el("span", { class: "saldo-cabecera-periodo", text: periodoTexto }),
-      btnOjo,
-    ]),
-    el("div", { class: "saldo-hero" }, [
-      el("span", { class: "saldo-hero-icono" }, [billeteraIcono()]),
-      el("div", { class: "saldo-hero-txt" }, [
-        el("span", { class: "saldo-hero-etiqueta", text: "Saldo disponible" }),
-        el("span", {
-          class: `saldo-hero-valor ${balance >= 0 ? "valor-balance" : "valor-gasto"}`,
-          text: valorOculto(balance),
-        }),
-        el("span", { class: "saldo-hero-desc", text: "Ingresos – Gastos del período" }),
-      ]),
-    ]),
-    el("div", { class: "saldo-mini-fila" }, [
-      miniSaldo(flechaArribaCirculo, "ingreso", "Ingresos", ingresos, "valor-ingreso"),
-      miniSaldo(flechaAbajoCirculo, "gasto", "Gastos", gastos, "valor-gasto"),
-    ]),
-  ]);
 }
 
-// Solo modo estimado: cuánto de los gastos del período ya se pagó y cuánto
-// queda pendiente, con una barra de avance. Va debajo de "Saldo disponible".
-function tarjetaPagos(movimientos) {
+// Cuarta tarjeta del modo Estimado: avance de pagos de los gastos.
+function kpiPagos(movimientos) {
   const gastos = movimientos.filter((m) => m.tipo === "gasto");
   const { total, pagado, pendiente } = desglosarPorPago(gastos);
   const nPagados = gastos.filter((m) => m.pagado === true).length;
-  const nPendientes = gastos.length - nPagados;
   const pct = total.gastos > 0 ? Math.round((pagado.gastos / total.gastos) * 100) : 0;
+  return kpi({
+    clase: "kpi--pagos",
+    icono: check,
+    etiqueta: "Pagado",
+    extraEtiqueta: el("span", { class: "kpi-pct valor-ingreso", text: `${pct}%` }),
+    valor: [
+      String(nPagados),
+      el("span", { class: "kpi-valor-sufijo", text: ` de ${plural(gastos.length, "pago", "pagos")}` }),
+    ],
+    hijos: [barra(pct, "Porcentaje de gastos pagados")],
+    desc: gastos.length
+      ? `${valorOculto(pagado.gastos)} pagado · ${valorOculto(pendiente.gastos)} por pagar`
+      : "Sin gastos en este período.",
+  });
+}
 
-  const relleno = el("span", { class: "pagos-barra-relleno" });
-  relleno.style.width = `${pct}%`;
+// Cuarta tarjeta del modo Real: gasto diario promedio con lo ya registrado.
+function kpiGastoDiario(gastos, rango) {
+  const dias = rango ? diasTranscurridos(rango) : 0;
+  return kpi({
+    icono: relojIcono,
+    etiqueta: "Gasto diario promedio",
+    valor: dias > 0 ? valorOculto(gastos / dias) : "—",
+    desc: dias > 0 ? `En ${plural(dias, "día", "días")} del período` : "El período aún no comienza",
+  });
+}
 
-  const plural = (n, uno, varios) => `${n} ${n === 1 ? uno : varios}`;
-
-  return el("section", { class: "panel-tarjeta tarjeta-pagos" }, [
-    el("div", { class: "saldo-cabecera" }, [
-      el("span", { class: "saldo-cabecera-icono" }, [check()]),
-      el("span", { class: "saldo-cabecera-titulo", text: "Estado de pagos" }),
-    ]),
-    gastos.length
-      ? el("div", { class: "pagos-avance" }, [
-          el("div", { class: "pagos-avance-fila" }, [
-            el("span", { class: "pagos-avance-etiqueta", text: `Pagado ${pct}%` }),
-            el("span", { class: "pagos-avance-total", text: `de ${valorOculto(total.gastos)}` }),
-          ]),
-          el(
-            "span",
-            {
-              class: "pagos-barra",
-              role: "progressbar",
-              "aria-valuemin": "0",
-              "aria-valuemax": "100",
-              "aria-valuenow": String(pct),
-              "aria-label": "Porcentaje de gastos pagados",
-            },
-            [relleno]
-          ),
-        ])
-      : null,
-    el("div", { class: "saldo-mini-fila" }, [
-      miniSaldo(check, "pagado", "Total pagado", pagado.gastos, "valor-ingreso"),
-      miniSaldo(relojIcono, "pendiente", "Por pagar", pendiente.gastos, "valor-pendiente"),
-    ]),
-    el("p", {
-      class: "pagos-conteo",
-      text: gastos.length
-        ? `${plural(nPagados, "gasto pagado", "gastos pagados")} · ${plural(nPendientes, "pendiente", "pendientes")}`
-        : "Sin gastos en este período.",
+export function montarKpis(contenedor, movimientos, { modo, rango }) {
+  limpiar(contenedor);
+  const { ingresos, gastos, balance } = calcularTotales(movimientos);
+  const nIng = movimientos.filter((m) => m.tipo === "ingreso").length;
+  const nGas = movimientos.filter((m) => m.tipo === "gasto").length;
+  contenedor.append(
+    kpi({
+      clase: "kpi--destacado",
+      etiqueta: "Saldo disponible",
+      valor: valorOculto(balance),
+      claseValor: balance < 0 ? "kpi-valor--negativo" : "",
+      desc: "Ingresos − gastos del período",
     }),
-  ]);
+    kpi({
+      icono: flechaArribaCirculo,
+      clase: "kpi--ingreso",
+      etiqueta: "Ingresos",
+      valor: valorOculto(ingresos),
+      desc: plural(nIng, "ingreso", "ingresos"),
+    }),
+    kpi({
+      icono: flechaAbajoCirculo,
+      clase: "kpi--gasto",
+      etiqueta: "Gastos",
+      valor: valorOculto(gastos),
+      desc: plural(nGas, "gasto", "gastos"),
+    }),
+    modo === "estimado" ? kpiPagos(movimientos) : kpiGastoDiario(gastos, rango)
+  );
 }
 
 function agruparPorCategoria(movimientos) {
@@ -152,7 +138,7 @@ function tarjetaCategorias(movimientos, onCategoria, irA) {
       ? el("button", {
           class: "enlace-ver",
           type: "button",
-          text: "Ver todas →",
+          text: "Ver todas",
           onClick: () => irA("resumen"),
         })
       : null;
@@ -213,63 +199,9 @@ function tarjetaCategorias(movimientos, onCategoria, irA) {
   return el("section", { class: "panel-tarjeta" }, [cabecera, lista]);
 }
 
-function tarjetaActividad(movimientos) {
-  const recientes = movimientos.slice(0, 5);
-  const lista = el(
-    "ul",
-    { class: "actividad-lista" },
-    recientes.map((m) => {
-      const esIngreso = m.tipo === "ingreso";
-      const icono = el(
-        "span",
-        { class: `actividad-icono actividad-icono--${esIngreso ? "ingreso" : "gasto"}` },
-        [esIngreso ? flechaArribaCirculo() : flechaAbajoCirculo()]
-      );
-      const signo = m.tipo === "ingreso" ? "+" : "−";
-      return el("li", {}, [
-        icono,
-        el("div", { class: "actividad-info" }, [
-          el("span", { class: "actividad-nombre", text: m.nombre }),
-          el("span", { class: "actividad-categoria", text: m.categoria ? m.categoria.nombre : "Sin categoría" }),
-        ]),
-        el("span", {
-          class: `actividad-monto ${m.tipo === "ingreso" ? "valor-ingreso" : "valor-gasto"}`,
-          text: `${signo}${formatoCLP(m.monto)}`,
-        }),
-      ]);
-    })
-  );
-
-  return el("section", { class: "panel-tarjeta panel-tarjeta--actividad" }, [
-    el("h3", {}, [iconoTitulo(reloj3Icono), "Actividad reciente"]),
-    recientes.length
-      ? lista
-      : el("p", { class: "vacio", text: "Sin movimientos recientes." }),
-  ]);
-}
-
-export function montarPanelResumen(
-  contenedor,
-  movimientosTodos,
-  movimientosParaTotales,
-  { tipo, modo, fechaRef, onCategoria, irA }
-) {
+// Panel lateral: solo los gastos por categoría. (Saldo y pagos viven en la
+// franja de KPIs; "Actividad reciente" se quitó porque repetía la lista.)
+export function montarPanelResumen(contenedor, movimientosParaTotales, { onCategoria, irA }) {
   limpiar(contenedor);
-  function toggleOcultar() {
-    prefs.set("ocultarTotal", !prefs.get("ocultarTotal"));
-    montarPanelResumen(contenedor, movimientosTodos, movimientosParaTotales, {
-      tipo,
-      modo,
-      fechaRef,
-      onCategoria,
-      irA,
-    });
-  }
-  const periodoTexto = fechaRef ? etiquetaPeriodo(fechaRef, tipo) : "";
-  contenedor.append(tarjetaResumen(periodoTexto, movimientosParaTotales, toggleOcultar));
-  if (modo === "estimado") contenedor.append(tarjetaPagos(movimientosParaTotales));
-  contenedor.append(
-    tarjetaCategorias(movimientosParaTotales, onCategoria, irA),
-    tarjetaActividad(movimientosTodos)
-  );
+  contenedor.append(tarjetaCategorias(movimientosParaTotales, onCategoria, irA));
 }

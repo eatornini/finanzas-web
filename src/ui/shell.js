@@ -175,42 +175,34 @@ export function montarShell(contenedor, sesion, perfil) {
     }
   }
 
-  const etiquetaModo = {};
-  for (const m of ["real", "estimado"]) {
-    etiquetaModo[m] = el("span", {
-      class: "modo-etiqueta",
-      text: m === "real" ? "Real" : "Estimado",
-    });
-  }
-  function alternarModo() {
-    modo = modo === "real" ? "estimado" : "real";
+  // Real / Estimado como control segmentado: queda explícito cuál está
+  // activo (antes era un switch con etiquetas a los lados).
+  function elegirModo(nuevo) {
+    if (modo === nuevo) return;
+    modo = nuevo;
     prefs.set("modo", modo);
     sincronizarModo();
     pintarVista();
   }
-  const switchModo = el(
-    "button",
-    {
+  const btnModo = {};
+  for (const m of ["real", "estimado"]) {
+    btnModo[m] = el("button", {
       type: "button",
-      class: "modo-switch",
-      role: "switch",
-      "aria-label": "Alternar entre Real y Estimado",
-      onClick: alternarModo,
-    },
-    [el("span", { class: "modo-switch-circulo" })]
-  );
+      text: m === "real" ? "Real" : "Estimado",
+      onClick: () => elegirModo(m),
+    });
+  }
   function sincronizarModo() {
     for (const m of ["real", "estimado"]) {
-      etiquetaModo[m].classList.toggle("activo", modo === m);
+      btnModo[m].classList.toggle("activo", modo === m);
+      btnModo[m].setAttribute("aria-pressed", String(modo === m));
     }
-    switchModo.setAttribute("aria-checked", String(modo === "estimado"));
-    switchModo.classList.toggle("modo-switch--estimado", modo === "estimado");
   }
-  const selectorModo = el("div", { class: "selector-modo" }, [
-    etiquetaModo.real,
-    switchModo,
-    etiquetaModo.estimado,
-  ]);
+  const selectorModo = el(
+    "div",
+    { class: "selector-tipo selector-modo", role: "group", "aria-label": "Modo" },
+    [btnModo.real, btnModo.estimado]
+  );
 
   // Ocultar/mostrar montos: global (topbar), afecta a toda la app —
   // antes vivía solo en el encabezado de Resumen.
@@ -317,8 +309,37 @@ export function montarShell(contenedor, sesion, perfil) {
       [el("span", { class: "nav-icono" }, [v.icono()]), v.titulo]
     )
   );
+  // Barra inferior (solo móvil, ver CSS): las tres vistas más usadas y
+  // "Más", que abre el mismo drawer con el menú completo.
+  const CLAVES_INFERIOR = ["movimientos", "resumen", "categorias"];
+  const botonesInferior = CLAVES_INFERIOR.map((clave) => {
+    const v = VISTAS.find((x) => x.clave === clave);
+    return el(
+      "button",
+      { type: "button", class: "nav-inferior-boton", "data-clave": clave, onClick: () => irA(clave) },
+      [el("span", { class: "nav-icono" }, [v.icono()]), el("span", { text: v.titulo })]
+    );
+  });
+  const btnMas = el(
+    "button",
+    { type: "button", class: "nav-inferior-boton", "aria-label": "Más opciones", onClick: () => abrirDrawer() },
+    [el("span", { class: "nav-icono" }, [menuIcono()]), el("span", { text: "Más" })]
+  );
+  const navInferior = el("nav", { class: "nav-inferior", "aria-label": "Navegación principal" }, [
+    ...botonesInferior,
+    btnMas,
+  ]);
+
   function sincronizarNav() {
     botonesNav.forEach((b, i) => b.classList.toggle("activo", VISTAS[i].clave === activa));
+    const enInferior = CLAVES_INFERIOR.includes(activa);
+    botonesInferior.forEach((b) => {
+      const act = b.dataset.clave === activa;
+      b.classList.toggle("activo", act);
+      if (act) b.setAttribute("aria-current", "page");
+      else b.removeAttribute("aria-current");
+    });
+    btnMas.classList.toggle("activo", !enInferior);
   }
   const nav = el("nav", { class: "nav" }, botonesNav);
 
@@ -391,13 +412,13 @@ export function montarShell(contenedor, sesion, perfil) {
   ]);
 
   const piePagina = el("footer", { class: "pie-app" }, [
-    el("span", { text: "Finanzas v3.60" }),
+    el("span", { text: "Finanzas v3.63" }),
     el("span", { class: "pie-punto", text: "·" }),
     el("span", { text: "Tus datos están seguros" }),
   ]);
 
   const principal = el("div", { class: "principal" }, [topbar, cuerpo, piePagina]);
-  const app = el("div", { class: "app" }, [sidebar, drawerFondo, principal]);
+  const app = el("div", { class: "app" }, [sidebar, drawerFondo, principal, navInferior]);
 
   contenedor.append(app);
   sincronizarTipo();

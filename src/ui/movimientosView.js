@@ -15,13 +15,14 @@ import {
 } from "./iconos.js";
 import { colorMovimiento } from "./iconosCategoria.js";
 import { nodoIconoCategoria } from "./iconoCategoria.js";
-import { montarPanelResumen } from "./panelResumenView.js";
+import { montarPanelResumen, montarKpis } from "./panelResumenView.js";
 import { abrirMovimientoForm } from "./movimientoForm.js";
 import { importarListaMovimientos } from "./importarListaForm.js";
 import { filtrarParaCalculos, calcularTotales } from "../logic/totales.js";
 import { agruparPorFecha, agruparPorCategoria } from "../logic/agrupacionMovimientos.js";
 import { etiquetaDia, etiquetaPeriodo } from "../logic/periodos.js";
 import { formatoCLP } from "../logic/dinero.js";
+import { nombreVisible, etiquetaRelativaDia } from "../logic/presentacion.js";
 import { prefs } from "../prefs.js";
 import { tituloVista } from "./tituloVista.js";
 
@@ -37,7 +38,8 @@ export async function montarMovimientos(
   const buscador = el("input", {
     class: "buscador",
     type: "search",
-    placeholder: "Buscar…",
+    placeholder: "Buscar movimiento…",
+    "aria-label": "Buscar movimientos",
   });
   const btnFiltros = el(
     "button",
@@ -252,42 +254,48 @@ export async function montarMovimientos(
   const lista = el("div", { class: "lista lista-grupos" });
   const contador = el("p", { class: "contador-lista" });
 
-  // Solo mobile (CSS): balance del período arriba de todo, además del panel
-  // de resumen completo que ya se ve más abajo (aside) — no lo reemplaza.
-  const balanceMovilValor = el("span", { class: "balance-movil-valor valor-balance" });
-  const balanceMovil = el("div", { class: "balance-movil" }, [
-    el("span", { class: "balance-movil-etiqueta", text: "Balance actual" }),
-    balanceMovilValor,
-  ]);
+  // Franja de KPIs (saldo, ingresos, gastos y pagos/gasto diario): ocupa
+  // todo el ancho, entre el encabezado y la lista. En móvil reemplaza al
+  // antiguo "Balance actual".
+  const kpis = el("section", { class: "kpis", "aria-label": "Resumen del período" });
 
   // Encabezado de la página: vive sobre el fondo general, FUERA de la tarjeta.
   // A la izquierda: icono + título + contador + subtítulo. A la derecha,
   // en la misma fila: buscador, filtros y el botón "Agregar" al final.
   const encabezado = el("header", { class: "movimientos-encabezado" }, [
     tituloVista(intercambioIcono, ["Movimientos", badge], subtitulo),
-    el("div", { class: "movimientos-encabezado-acciones" }, [
-      el("div", { class: "lista-acciones" }, [
-        el("div", { class: "campo-busqueda" }, [lupaIcono(), buscador]),
-        btnFiltros,
-        backdropFiltros,
-        panelFiltros,
-      ]),
-      agregarSplit,
+    el("div", { class: "movimientos-encabezado-acciones" }, [agregarSplit]),
+  ]);
+
+  // Barra de la lista: pestañas Todos/Gastos/Ingresos + buscador + filtros,
+  // en una sola tarjeta justo encima de los grupos (antes el buscador vivía
+  // en el encabezado, lejos de lo que filtra).
+  const barraLista = el("div", { class: "panel-tarjeta movimientos-barra" }, [
+    tabsVista,
+    el("div", { class: "lista-acciones" }, [
+      el("div", { class: "campo-busqueda" }, [lupaIcono(), buscador]),
+      btnFiltros,
+      backdropFiltros,
+      panelFiltros,
     ]),
   ]);
 
   // Cada grupo (fecha o categoría) se pinta como su propia tarjeta
   // independiente dentro de `lista`; no hay una tarjeta contenedora general.
   const principal = el("div", { class: "movimientos-principal" }, [
-    encabezado,
-    balanceMovil,
-    tabsVista,
+    barraLista,
     error,
     lista,
     contador,
   ]);
   const aside = el("aside", { class: "panel-lateral" });
-  contenedor.append(el("div", { class: "vista-movimientos" }, [principal, aside]));
+  contenedor.append(
+    el("div", { class: "vista-movimientos", "data-modo": modo }, [
+      encabezado,
+      kpis,
+      el("div", { class: "movimientos-cuerpo" }, [principal, aside]),
+    ])
+  );
 
   // La clase marca cuál svg del encabezado rota al colapsar (el icono del
   // grupo, si hay, no debe rotar).
@@ -307,10 +315,21 @@ export async function montarMovimientos(
   // muestra/oculta directamente, sin repintar la lista — repintar vaciaba
   // `lista` un instante, el documento se achicaba y el navegador movía el
   // scroll (se notaba al acoplar grupos del final de la lista).
-  function grupoHeader(claveGrupo, etiqueta, movimientosGrupo, icono, filasWrap) {
+  function grupoHeader(claveGrupo, etiqueta, movimientosGrupo, icono, filasWrap, etiquetaRelativa = null) {
     const colapsado = colapsados.has(claveGrupo);
-    const { balance } = calcularTotales(movimientosGrupo);
-    const signo = balance >= 0 ? "+" : "−";
+    // El total del encabezado sigue la misma regla que los totales del
+    // período: los inactivos no suman (salvo estimado + "incluir inactivos").
+    const { ingresos, gastos } = calcularTotales(
+      filtrarParaCalculos(movimientosGrupo, { modo, incluirInactivos: prefs.get("incluirInactivos") })
+    );
+    const totales = el("span", { class: "lista-grupo-total" }, [
+      ingresos > 0
+        ? el("span", { class: "lista-grupo-total-ingreso", text: `+ ${formatoCLP(ingresos)}` })
+        : null,
+      gastos > 0 || ingresos === 0
+        ? el("span", { class: "lista-grupo-total-gasto", text: `− ${formatoCLP(gastos)}` })
+        : null,
+    ]);
     const btn = el(
       "button",
       {
@@ -321,11 +340,9 @@ export async function montarMovimientos(
       [
         chevronConClase(),
         icono ? el("span", { class: "lista-grupo-icono" }, [icono()]) : null,
-        el("span", { text: etiqueta }),
-        el("span", {
-          class: "lista-grupo-total",
-          text: `${signo} ${formatoCLP(Math.abs(balance))}`,
-        }),
+        etiquetaRelativa ? el("span", { class: "lista-grupo-relativo", text: etiquetaRelativa }) : null,
+        el("span", { class: "lista-grupo-etiqueta", text: etiqueta }),
+        totales,
       ]
     );
     btn.addEventListener("click", () => {
@@ -445,12 +462,8 @@ export async function montarMovimientos(
       modo,
       incluirInactivos: prefs.get("incluirInactivos"),
     });
-    const { balance } = calcularTotales(paraTotales);
-    balanceMovilValor.textContent = prefs.get("ocultarTotal") ? "*****" : formatoCLP(balance);
-    montarPanelResumen(aside, todos, paraTotales, {
-      tipo,
-      modo,
-      fechaRef,
+    montarKpis(kpis, paraTotales, { modo, rango });
+    montarPanelResumen(aside, paraTotales, {
       onCategoria: (catId) =>
         montarMovimientos(contenedor, { rango, modo, tipo, fechaRef, categoriaInicial: catId, irA }),
       irA,
@@ -497,9 +510,16 @@ export async function montarMovimientos(
 
     // Cada grupo es una tarjeta propia: encabezado (fecha/categoría + total)
     // y, debajo, sus movimientos. Sin tarjeta contenedora general.
-    function pintarGrupo(claveGrupo, etiqueta, movimientosGrupo, icono) {
+    function pintarGrupo(claveGrupo, etiqueta, movimientosGrupo, icono, etiquetaRelativa = null) {
       const filasWrap = el("div", { class: "lista-grupo-filas" });
-      const { btn, colapsado } = grupoHeader(claveGrupo, etiqueta, movimientosGrupo, icono, filasWrap);
+      const { btn, colapsado } = grupoHeader(
+        claveGrupo,
+        etiqueta,
+        movimientosGrupo,
+        icono,
+        filasWrap,
+        etiquetaRelativa
+      );
       filasWrap.hidden = colapsado;
       for (const m of movimientosGrupo) {
         filasWrap.append(fila(m, recargar, error, modo, asegurarCategorias));
@@ -531,7 +551,13 @@ export async function montarMovimientos(
       }
     } else {
       for (const grupo of ordenarGruposPorMonto(agruparPorFecha(filtrados))) {
-        pintarGrupo(`real:${grupo.clave}`, etiquetaDia(grupo.clave), grupo.movimientos, calendarioIcono);
+        pintarGrupo(
+          `real:${grupo.clave}`,
+          etiquetaDia(grupo.clave),
+          grupo.movimientos,
+          calendarioIcono,
+          etiquetaRelativaDia(grupo.clave)
+        );
       }
     }
     contador.textContent = `Mostrando ${filtrados.length} de ${todos.length} movimientos`;
@@ -597,12 +623,18 @@ export function fila(m, recargar, error, modo, asegurarCategorias) {
   const controles = [toggleActivo, borrar];
 
   const metaHijos = [el("span", { class: "cat", text: cat })];
+  // Modo estimado: círculo a la izquierda para marcar pagado/pendiente (antes
+  // era un badge "Pendiente" junto a la categoría). Misma acción de siempre.
+  let checkPagado = null;
   if (modo === "estimado") {
-    const togglePagado = el(
+    checkPagado = el(
       "button",
       {
-        class: (m.pagado ? "pagado" : "pendiente") + " mov-badge-estado",
-        text: m.pagado ? "Pagado" : "Pendiente",
+        type: "button",
+        class: "fila-check" + (m.pagado ? " fila-check--pagado" : ""),
+        "aria-pressed": String(m.pagado === true),
+        "aria-label": m.pagado ? `Marcar como pendiente: ${m.nombre}` : `Marcar como pagado: ${m.nombre}`,
+        title: m.pagado ? "Pagado (clic para marcar pendiente)" : "Pendiente (clic para marcar pagado)",
         onClick: async () => {
           try {
             await actualizarMovimiento(m.id, { pagado: !m.pagado });
@@ -612,9 +644,14 @@ export function fila(m, recargar, error, modo, asegurarCategorias) {
           }
         },
       },
-      []
+      [el("span", { class: "fila-check-circulo" }, [check()])]
     );
-    metaHijos.push(el("span", { class: "fila-meta-sep", text: "·" }), togglePagado);
+    if (m.pagado) {
+      metaHijos.push(
+        el("span", { class: "fila-meta-sep", text: "·" }),
+        el("span", { class: "fila-estado-pagado", text: "Pagado" })
+      );
+    }
   }
   // Inactivo va junto a los demás badges de estado (al lado de Pendiente),
   // no pegado al nombre.
@@ -625,13 +662,15 @@ export function fila(m, recargar, error, modo, asegurarCategorias) {
 
   const claseFila =
     `fila fila--editable tipo-${m.tipo}` +
+    (checkPagado ? " fila--con-check" : "") +
     (modo === "estimado" && m.pagado ? " fila-pagada" : "") +
     (inactivo ? " fila--inactiva" : "");
 
   // Toda la fila abre la edición. Se ignoran los clics que nacen en los
   // controles propios (activar/desactivar, borrar, badge Pagado/Pendiente),
   // que tienen su propia acción.
-  const esControl = (nodo) => nodo instanceof Element && nodo.closest(".acciones, .mov-badge-estado");
+  const esControl = (nodo) =>
+    nodo instanceof Element && nodo.closest(".acciones, .mov-badge-estado, .fila-check");
 
   return el(
     "div",
@@ -653,9 +692,12 @@ export function fila(m, recargar, error, modo, asegurarCategorias) {
       },
     },
     [
+      checkPagado,
       iconoFila,
       el("div", { class: "fila-principal" }, [
-        el("span", { class: "fila-nombre-linea" }, [el("span", { class: "nombre", text: m.nombre })]),
+        el("span", { class: "fila-nombre-linea" }, [
+          el("span", { class: "nombre", text: nombreVisible(m.nombre) }),
+        ]),
       ]),
       el("span", { class: "fila-meta" }, metaHijos),
       el("div", { class: "acciones" }, controles),
