@@ -108,3 +108,58 @@ describe("analizarComprobante", () => {
     expect(r.monto).toBe(2000);
   });
 });
+
+describe("analizarComprobante — detalle de compra BCI", () => {
+  function frag(text, fila, x = 0, ancho = 120) {
+    return { text, top: fila * 40, bottom: fila * 40 + 24, height: 24, left: x, right: x + ancho };
+  }
+  const detalle = (comercioFrags) => [
+    frag("08/11/2026", 0, 10, 80),
+    frag("Compra con Tarjeta de Débito en RIKO", 0, 140, 230),
+    frag("POLLO 11001SANTIAGCHL", 0.6, 140, 160),
+    frag("$4.100", 0, 420, 50),
+    frag("Detalle del movimiento", 2, 30, 200),
+    frag("Fecha de la compra:", 3, 50, 150),
+    frag("08/11/2026", 3, 210),
+    frag("Hora de la compra:", 4, 50, 150),
+    frag("20:25", 4, 210, 50),
+    frag("Fecha contable", 5, 50, 150),
+    frag("09/11/2026", 5, 210),
+    frag("Tipo de compra:", 6, 50, 150),
+    frag("Presencial", 6, 210),
+    ...comercioFrags,
+    frag("Tipo de movimiento:", 8, 50, 150),
+    frag("Nacional", 8, 210),
+    frag("N° de tarjeta:", 9, 50, 150),
+    frag("**** 5925", 9, 210),
+    frag("Código transacción:", 10, 50, 150),
+    frag("212660943953106644", 10, 210, 180),
+  ];
+
+  it("quita el código de comuna y país del nombre del comercio", () => {
+    const lineas = detalle([
+      frag("Nombre del comercio:", 7, 50, 150),
+      frag("RIKO POLLO 11001SANTIAGCHL", 7, 210, 220),
+    ]);
+    const r = analizarComprobante({ lineas, bloques: [] });
+    expect(r.comercio).toBe("RIKO POLLO");
+    expect(r.monto).toBe(4100);
+    expect(r.fecha.getHours()).toBe(20);
+    expect(r.fecha.getMinutes()).toBe(25);
+  });
+
+  it("sin la etiqueta del comercio, lo toma del encabezado del movimiento", () => {
+    const lineas = detalle([frag("RIKO POLLO 11001SANTIAGCHL", 7, 210, 220)]);
+    const r = analizarComprobante({ lineas, bloques: [] });
+    expect(r.comercio).toBe("RIKO POLLO");
+    expect(r.monto).toBe(4100);
+  });
+
+  it("quita el CHL final pegado al nombre", () => {
+    const lineas = detalle([
+      frag("Nombre del comercio:", 7, 50, 150),
+      frag("RESTAURANTE PARRICALAMA CHL", 7, 210, 220),
+    ]);
+    expect(analizarComprobante({ lineas, bloques: [] }).comercio).toBe("RESTAURANTE PARRICALAMA");
+  });
+});

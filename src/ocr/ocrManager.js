@@ -10,9 +10,22 @@ import { parsearListaMovimientos } from "./listaMovimientosParser.js";
 // después del "*" — el prefijo de la marca no es el comercio.
 const PREFIJO_AGREGADOR_REGEX = /^\s*[A-Za-z][A-Za-z0-9]+(?:\s+[A-Za-z0-9]+)?\s*\*\s*/;
 
+// Los bancos (BCI, Transbank) agregan al final del nombre el código de
+// comuna/ciudad y el país, a veces pegados: "RIKO POLLO 11001SANTIAGCHL",
+// "RESTAURANTE PARRICALAMA CHL". Se quitan: un token final que empieza con
+// 3+ dígitos ("11001SANTIAGCHL") y un "CHL" final suelto.
+const SUFIJO_UBICACION_REGEX = /\s+\d{3,}[A-Za-z]*\s*$/;
+const SUFIJO_PAIS_REGEX = /\s+CHL\s*$/i;
+
 function limpiarComercio(comercio) {
   if (!comercio) return comercio;
-  return comercio.replace(PREFIJO_AGREGADOR_REGEX, "").trim() || null;
+  const limpio = comercio
+    .replace(PREFIJO_AGREGADOR_REGEX, "")
+    .replace(SUFIJO_UBICACION_REGEX, "")
+    .replace(SUFIJO_PAIS_REGEX, "")
+    .trim();
+  // Si la limpieza se comió todo, mejor el original que nada.
+  return limpio || comercio.trim() || null;
 }
 
 // { lineas, bloques } ya construidos por construirBloques(). Devuelve

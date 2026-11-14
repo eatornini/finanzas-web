@@ -6483,6 +6483,649 @@ color-mix(in srgb, var(--acento) 16%, transparent);
     }
   }
 
+  /* ======================================================================
+     Resumen y Reportes (v3.66): aviso/conclusión arriba, KPIs comunes,
+     gráficos a todo el ancho con ejes redondos y textos legibles.
+     ====================================================================== */
+
+  /* --- Aviso del período (Resumen) --- */
+  .resumen-aviso {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--esp-4);
+    padding: 14px 18px;
+    border: 1px solid var(--borde);
+    border-radius: var(--r-lg);
+    background: var(--bg-elevado);
+  }
+
+  .resumen-aviso--negativo {
+    border-color: color-mix(in srgb, var(--gasto) 40%, var(--borde));
+    background: color-mix(in srgb, var(--gasto) 8%, var(--bg-elevado));
+  }
+
+  .resumen-aviso--positivo {
+    border-color: color-mix(in srgb, var(--ingreso) 40%, var(--borde));
+    background: color-mix(in srgb, var(--ingreso) 7%, var(--bg-elevado));
+  }
+
+  .resumen-aviso-icono {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: none;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--r-md);
+    color: var(--acento);
+    background: var(--acento-tenue);
+  }
+
+  .resumen-aviso--negativo .resumen-aviso-icono {
+    color: var(--gasto);
+    background: color-mix(in srgb, var(--gasto) 16%, transparent);
+  }
+
+  .resumen-aviso--positivo .resumen-aviso-icono {
+    color: var(--ingreso);
+    background: color-mix(in srgb, var(--ingreso) 16%, transparent);
+  }
+
+  .resumen-aviso-icono svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .resumen-aviso-txt {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  .resumen-aviso-titulo {
+    font-size: 14px;
+    font-weight: var(--peso-semibold);
+    color: var(--fg);
+  }
+
+  .resumen-aviso-detalle {
+    font-size: 13px;
+    color: var(--fg-tenue);
+  }
+
+  .resumen-aviso-accion {
+    align-self: center;
+    white-space: nowrap;
+  }
+
+  /* --- Valores con color dentro de los KPIs --- */
+  .kpi-valor.valor-gasto {
+    color: var(--gasto);
+  }
+
+  .kpi-valor.valor-ingreso {
+    color: var(--ingreso);
+  }
+
+  .kpi-chip {
+    padding: 2px 7px;
+    border-radius: 5px;
+    font-size: 11px;
+    font-weight: var(--peso-semibold);
+    color: var(--pendiente);
+    background: color-mix(in srgb, var(--pendiente) 16%, transparent);
+  }
+
+  /* Proyección: no es un dato real, se distingue con borde punteado. */
+  .kpi--estimacion {
+    border: 1px dashed color-mix(in srgb, var(--fg) 30%, transparent);
+    background: transparent;
+  }
+
+  /* --- Cabecera de tarjetas con gráfico --- */
+  .evo-cabecera {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--esp-3) var(--esp-5);
+    margin-bottom: var(--esp-3);
+  }
+
+  .evo-cabecera .resumen-card-head-txt {
+    margin-right: auto;
+  }
+
+  .evo-leyenda {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--esp-2) var(--esp-4);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-size: 12px;
+    color: var(--fg-tenue);
+  }
+
+  .evo-leyenda li {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .evo-leyenda-barra {
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    background: color-mix(in srgb, var(--fg) 30%, transparent);
+  }
+
+  .evo-leyenda-barra--ingreso {
+    background: color-mix(in srgb, var(--ingreso) 75%, transparent);
+  }
+
+  .evo-leyenda-linea {
+    width: 16px;
+    height: 3px;
+    border-radius: 2px;
+    background: var(--acento);
+  }
+
+  .evo-leyenda-linea--anterior {
+    background: color-mix(in srgb, var(--fg) 40%, transparent);
+  }
+
+  .evo-leyenda-punto {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--ingreso);
+  }
+
+  .evo-selector {
+    gap: 2px;
+    padding: 3px;
+    border: 0;
+    border-radius: var(--r-md);
+    background: var(--seg-pista);
+  }
+
+  .evo-selector button {
+    padding: 6px 12px;
+    border: 0;
+    border-radius: 7px;
+    font-size: 13px;
+    font-weight: var(--peso-medio);
+    color: var(--fg-tenue);
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .evo-selector button:not(.activo):hover {
+    color: var(--fg);
+    background: transparent;
+  }
+
+  .evo-selector button.activo {
+    font-weight: var(--peso-semibold);
+    color: var(--fg);
+    background: var(--seg-activo);
+    box-shadow: var(--seg-sombra);
+  }
+
+  /* --- Gráficos SVG (unidades del viewBox: 1000 de ancho en escritorio) --- */
+  .evo-lienzo {
+    position: relative;
+  }
+
+  .evo-svg {
+    display: block;
+    width: 100%;
+    height: auto;
+    overflow: visible;
+    font-family: inherit;
+  }
+
+  .evo-grid {
+    stroke: var(--borde);
+    stroke-width: 1;
+    stroke-dasharray: 2 4;
+  }
+
+  .evo-cero {
+    stroke: color-mix(in srgb, var(--fg) 35%, transparent);
+    stroke-width: 1;
+  }
+
+  .evo-eje-valor,
+  .evo-eje-etiqueta,
+  .cmp-hoy-etiqueta,
+  .cmp-diff-sub,
+  .hist-nota {
+    font-size: 13px;
+    fill: var(--fg-tenue);
+  }
+
+  .evo-eje-valor {
+    text-anchor: end;
+  }
+
+  .evo-eje-etiqueta,
+  .cmp-hoy-etiqueta,
+  .hist-balance,
+  .hist-mes,
+  .hist-nota {
+    text-anchor: middle;
+  }
+
+  .evo-zona-negativa {
+    fill: var(--gasto);
+    opacity: 0.07;
+  }
+
+  .evo-barra {
+    fill: color-mix(in srgb, var(--fg) 26%, transparent);
+    transition: fill 0.1s ease;
+  }
+
+  .evo-barra--activa {
+    fill: color-mix(in srgb, var(--fg) 50%, transparent);
+  }
+
+  .evo-linea-balance {
+    fill: none;
+    stroke: var(--acento);
+    stroke-width: 2.5;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+  }
+
+  .evo-marca {
+    stroke: var(--bg-elevado);
+    stroke-width: 2;
+  }
+
+  .evo-marca--balance {
+    fill: var(--acento);
+  }
+
+  .evo-marca--ingreso {
+    fill: var(--ingreso);
+  }
+
+  .evo-etiqueta-ingreso {
+    font-size: 13px;
+    font-weight: var(--peso-semibold);
+    fill: var(--ingreso);
+  }
+
+  .evo-punto--gasto {
+    background: color-mix(in srgb, var(--fg) 45%, transparent);
+  }
+
+  .evo-punto--ingreso {
+    background: var(--ingreso);
+  }
+
+  .evo-punto--balance,
+  .evo-punto--actual {
+    background: var(--acento);
+  }
+
+  .evo-punto--anterior {
+    background: color-mix(in srgb, var(--fg) 40%, transparent);
+  }
+
+  .evo-tooltip-pista {
+    margin: var(--esp-2) 0 0;
+    font-size: 11px;
+    color: var(--fg-tenue);
+  }
+
+  /* --- Comparación con el período anterior (Reportes) --- */
+  .cmp-linea {
+    fill: none;
+    stroke-width: 2.5;
+    stroke-linejoin: round;
+  }
+
+  .cmp-linea--anterior {
+    stroke: color-mix(in srgb, var(--fg) 40%, transparent);
+  }
+
+  .cmp-linea--actual {
+    stroke: var(--acento);
+    stroke-width: 3;
+  }
+
+  .cmp-hoy {
+    stroke: var(--fg-tenue);
+    stroke-width: 1;
+    stroke-dasharray: 3 4;
+  }
+
+  .cmp-llave {
+    stroke-width: 2;
+  }
+
+  .cmp-llave--bien {
+    stroke: var(--ingreso);
+  }
+
+  .cmp-llave--mal {
+    stroke: var(--gasto);
+  }
+
+  .cmp-diff {
+    font-size: 15px;
+    font-weight: 700;
+    stroke: none;
+  }
+
+  .cmp-diff.cmp-llave--bien {
+    fill: var(--ingreso);
+  }
+
+  .cmp-diff.cmp-llave--mal {
+    fill: var(--gasto);
+  }
+
+  .cmp-punto {
+    stroke: var(--bg-elevado);
+    stroke-width: 2;
+  }
+
+  .cmp-punto--actual {
+    fill: var(--acento);
+  }
+
+  .cmp-punto--anterior {
+    fill: color-mix(in srgb, var(--fg) 45%, var(--bg-elevado));
+  }
+
+  .cmp-resumenes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: var(--esp-3);
+    margin-top: var(--esp-4);
+  }
+
+  .cmp-resumen {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px 14px;
+    border-radius: var(--r-md);
+    background: var(--bg-sutil);
+  }
+
+  .cmp-resumen--actual {
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--acento) 60%, transparent);
+  }
+
+  .cmp-resumen-etq {
+    font-size: 12px;
+    color: var(--fg-tenue);
+  }
+
+  .cmp-resumen-txt {
+    font-size: 13px;
+    color: var(--fg);
+  }
+
+  .cmp-resumen-txt .valor-gasto,
+  .cmp-resumen-txt .valor-ingreso {
+    font-weight: var(--peso-semibold);
+  }
+
+  /* --- Historial (Reportes) --- */
+  .hist-barra--ingreso {
+    fill: color-mix(in srgb, var(--ingreso) 75%, transparent);
+  }
+
+  .hist-barra--gasto {
+    fill: color-mix(in srgb, var(--fg) 30%, transparent);
+  }
+
+  .hist-balance {
+    font-size: 14px;
+    font-weight: 700;
+  }
+
+  .hist-balance--neg {
+    fill: var(--gasto);
+  }
+
+  .hist-balance--pos {
+    fill: var(--ingreso);
+  }
+
+  .hist-mes {
+    font-size: 14px;
+    font-weight: var(--peso-semibold);
+    fill: var(--fg);
+  }
+
+  .hist-nota {
+    font-size: 12px;
+  }
+
+  .hist-tabla td {
+    text-align: right;
+    color: var(--fg);
+  }
+
+  .hist-tabla th[scope="row"] {
+    text-align: left;
+    font-weight: var(--peso-semibold);
+  }
+
+  .hist-tabla thead th:not(:first-child) {
+    text-align: right;
+  }
+
+  /* --- Reportes: línea de período y conclusión --- */
+  .reportes-periodo {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--esp-2) var(--esp-3);
+    margin: calc(var(--esp-2) * -1) 0 var(--esp-4);
+    font-size: 13px;
+    color: var(--fg-tenue);
+  }
+
+  .reportes-periodo-barra {
+    display: block;
+    width: 120px;
+    height: 6px;
+    border-radius: var(--r-pill);
+    background: color-mix(in srgb, var(--fg) 12%, transparent);
+    overflow: hidden;
+  }
+
+  .reportes-periodo-relleno {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: color-mix(in srgb, var(--fg) 45%, transparent);
+  }
+
+  .reportes-conclusion-card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--esp-2);
+    padding: 18px 20px;
+    border: 1px solid var(--borde);
+    border-left-width: 4px;
+    border-radius: var(--r-lg);
+    background: var(--bg-elevado);
+  }
+
+  .reportes-conclusion-card--negativo {
+    border-left-color: var(--pendiente);
+  }
+
+  .reportes-conclusion-card--positivo {
+    border-left-color: var(--ingreso);
+  }
+
+  .reportes-conclusion-etq {
+    font-size: 12px;
+    font-weight: var(--peso-semibold);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--fg-tenue);
+  }
+
+  .reportes-conclusion-titulo {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--fg);
+  }
+
+  .reportes-conclusion-puntos {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--esp-2) var(--esp-6, 28px);
+    margin: var(--esp-1) 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: 13px;
+    color: var(--fg-tenue);
+  }
+
+  .reportes-conclusion-puntos li {
+    display: flex;
+    align-items: center;
+    gap: var(--esp-2);
+  }
+
+  .reportes-conclusion-icono {
+    display: inline-flex;
+    flex: none;
+  }
+
+  .reportes-conclusion-icono svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .reportes-conclusion-icono--bien {
+    color: var(--ingreso);
+  }
+
+  .reportes-conclusion-icono--mal {
+    color: var(--gasto);
+  }
+
+  .reportes-conclusion-icono--alerta {
+    color: var(--pendiente);
+  }
+
+  .reportes-conclusion-icono--info {
+    color: var(--acento);
+  }
+
+  /* --- Resumen: categorías y mayores gastos --- */
+  .resumen-gastos-cat-nombre-grupo {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1px;
+    min-width: 0;
+  }
+
+  .resumen-gastos-cat-detalle {
+    max-width: 100%;
+    overflow: hidden;
+    font-size: 12px;
+    color: var(--fg-tenue);
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  .resumen-gastos-cat-lista {
+    flex: 1 1 260px;
+    min-width: 0;
+  }
+
+  .resumen-sin-categoria {
+    display: flex;
+    align-items: center;
+    gap: var(--esp-3);
+    width: 100%;
+    margin-top: var(--esp-4);
+    padding: 10px 12px;
+    border: 1px dashed color-mix(in srgb, var(--fg) 25%, transparent);
+    border-radius: var(--r-md);
+    background: var(--bg-sutil);
+    font-size: 13px;
+    color: var(--fg);
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .resumen-sin-categoria svg {
+    width: 16px;
+    height: 16px;
+    flex: none;
+    color: var(--pendiente);
+  }
+
+  .resumen-sin-categoria-txt {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .resumen-sin-categoria-accion {
+    font-weight: var(--peso-semibold);
+    color: color-mix(in srgb, var(--acento) 72%, var(--fg));
+  }
+
+  .resumen-mayores-lista {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .resumen-mayores-monto {
+    font-weight: var(--peso-semibold);
+    color: var(--fg);
+  }
+
+  @media (max-width: 720px) {
+    .evo-eje-valor,
+    .evo-eje-etiqueta,
+    .cmp-hoy-etiqueta,
+    .cmp-diff-sub,
+    .hist-nota,
+    .evo-etiqueta-ingreso {
+      font-size: 11px;
+    }
+
+    .cmp-diff,
+    .hist-balance,
+    .hist-mes {
+      font-size: 12px;
+    }
+
+    .resumen-aviso {
+      flex-wrap: wrap;
+    }
+
+    .resumen-aviso-txt {
+      flex: 1 1 calc(100% - 56px);
+    }
+
+    .resumen-aviso-accion {
+      margin-left: 52px;
+    }
+  }
+
   /* --- Barra superior --- */
   /* Sem/Mes/Año y Real/Estimado: caja de esquinas suaves (no píldora) con
      botones de 7px. El período activo va en contraste invertido (texto

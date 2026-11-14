@@ -13,6 +13,10 @@ describe("formatoCLP", () => {
     expect(formatoCLP(null)).toBe("$0");
     expect(formatoCLP(undefined)).toBe("$0");
   });
+  it("pone el signo menos antes del símbolo", () => {
+    expect(formatoCLP(-43404)).toBe("−$43.404");
+    expect(formatoCLP(-0.4)).toBe("$0");
+  });
 });
 
 describe("parseCLP", () => {

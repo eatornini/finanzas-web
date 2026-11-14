@@ -429,6 +429,8 @@ export function abrirMovimientoForm({
       // de monto ni con "$", solo tomó el primer número suelto) cuenta como
       // faltante para los reintentos, y un monto confiable de un reintento
       // le gana. Ver extractMontoAdivinado en transferenciaParser.js.
+      // `montoAusente` (detalle BCI sin etiqueta de monto) también reintenta:
+      // el "$4.100" de la fila del movimiento puede aparecer con otro PSM.
       const faltaMonto = (r) => !r.monto || r.montoDudoso;
       const mejorMonto = (actual, otro) =>
         otro.monto && (!actual.monto || (actual.montoDudoso && !otro.montoDudoso));
@@ -453,6 +455,7 @@ export function abrirMovimientoForm({
               ...resultado,
               monto: resultadoAlt.monto,
               montoDudoso: resultadoAlt.montoDudoso,
+              montoAusente: false,
               comercio: resultado.comercio ?? resultadoAlt.comercio,
               fecha: resultado.fecha ?? resultadoAlt.fecha,
             };
@@ -483,6 +486,7 @@ export function abrirMovimientoForm({
               ...resultado,
               monto: resultadoInv.monto,
               montoDudoso: resultadoInv.montoDudoso,
+              montoAusente: false,
               comercio: resultado.comercio ?? resultadoInv.comercio,
               fecha: resultado.fecha ?? resultadoInv.fecha,
             };
@@ -499,7 +503,12 @@ export function abrirMovimientoForm({
       const faltantes = [];
       if (!resultado.monto) faltantes.push("el monto");
       if (!resultado.fecha) faltantes.push("la fecha");
-      if (faltantes.length === 0 && resultado.montoDudoso) {
+      if (resultado.montoAusente && !resultado.monto && resultado.fecha) {
+        estadoOcr.textContent = "No se detectó el monto. Completalo a mano.";
+        debugOcrTexto.textContent = debugSecciones.join("\n\n");
+        debugOcr.hidden = false;
+        monto.focus();
+      } else if (faltantes.length === 0 && resultado.montoDudoso) {
         estadoOcr.textContent = "Revisá el monto: no se pudo leer con seguridad.";
         debugOcrTexto.textContent = debugSecciones.join("\n\n");
         debugOcr.hidden = false;

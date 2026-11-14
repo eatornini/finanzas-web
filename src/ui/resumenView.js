@@ -1,11 +1,9 @@
 import { el, elSvg, limpiar } from "./dom.js";
 import { listarMovimientos } from "../data/movimientos.js";
-import {
-  calcularTotales,
-  desglosarPorPago,
-  filtrarParaCalculos,
-} from "../logic/totales.js";
-import { formatoCLP } from "../logic/dinero.js";
+import { calcularTotales, filtrarParaCalculos } from "../logic/totales.js";
+import { formatoCLP, formatoCLPCompacto } from "../logic/dinero.js";
+import { ticksAgradables, indicesEtiquetas } from "../logic/escalas.js";
+import { nombreVisible } from "../logic/presentacion.js";
 import { prefs } from "../prefs.js";
 import {
   tendenciaCombinadaIcono,
@@ -13,15 +11,17 @@ import {
   graficoTortaIcono,
   reloj3Icono,
   bombillaIcono,
-  calendarioIcono,
-  flechaArribaCirculo,
-  flechaAbajoCirculo,
-  billeteraIcono,
+  alertaIcono,
+  check,
+  etiquetaIcono,
+  puntosIcono,
 } from "./iconos.js";
 import { tituloVista, iconoTitulo } from "./tituloVista.js";
 import { nodoIconoCategoria } from "./iconoCategoria.js";
 import { colorMovimiento } from "./iconosCategoria.js";
-import { rangoPeriodo, etiquetaPeriodo } from "../logic/periodos.js";
+import { etiquetaPeriodo } from "../logic/periodos.js";
+import { montarKpis } from "./panelResumenView.js";
+import { medidasGrafico, crearTooltip } from "./graficos.js";
 
 const MESES_ABBR = [
   "ene", "feb", "mar", "abr", "may", "jun",
@@ -76,28 +76,6 @@ function bloqueEncabezado(tipo, acciones) {
   ]);
 }
 
-function metricaTarjeta(fabricaIcono, claseIcono, nombre, valor, claseValor, desc) {
-  return el("div", { class: "metrica-tarjeta" }, [
-    el("span", { class: `metrica-icono metrica-icono--${claseIcono}` }, [fabricaIcono()]),
-    el("div", { class: "metrica-cuerpo" }, [
-      el("span", { class: "metrica-nombre", text: nombre }),
-      el("span", { class: `metrica-valor ${claseValor}`, text: valorOculto(valor) }),
-      el("span", { class: "metrica-desc", text: desc }),
-    ]),
-  ]);
-}
-
-function desgloseItem(nombre, t) {
-  return el("div", { class: "resumen-desglose-item" }, [
-    el("span", { class: "resumen-desglose-nombre", text: nombre }),
-    el("span", { class: "resumen-desglose-val", text: valorOculto(t.balance) }),
-    el("span", {
-      class: "resumen-desglose-detalle",
-      text: `${valorOculto(t.ingresos)} ingresos · ${valorOculto(t.gastos)} gastos`,
-    }),
-  ]);
-}
-
 export function tarjetaHead(fabricaIcono, titulo, sub, extra) {
   return el("div", { class: "resumen-card-head" }, [
     el("div", { class: "resumen-card-head-txt" }, [
@@ -112,18 +90,6 @@ const MESES_LARGO = [
   "enero", "febrero", "marzo", "abril", "mayo", "junio",
   "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
 ];
-
-const GRANULARIDADES_VS = [
-  { clave: "dia", etiqueta: "Día" },
-  { clave: "semana", etiqueta: "Semana" },
-  { clave: "mes", etiqueta: "Mes" },
-];
-
-const COMPACTO_CLP = new Intl.NumberFormat("es-CL", { notation: "compact", maximumFractionDigits: 1 });
-
-function valorEjeOculto(valor) {
-  return prefs.get("ocultarTotal") ? "•••" : `$${COMPACTO_CLP.format(valor)}`;
-}
 
 // Todos los días (YYYY-MM-DD, zona local) entre desde y hasta, inclusive.
 function diasDelRango(desde, hasta) {
@@ -251,246 +217,211 @@ function serieVs(movimientos, rango, granularidad) {
     return serieVsPorTramos(
       movimientos,
       mesesDelRango(rangoVisible.desde, rangoVisible.hasta),
-      (f) => tituloMes(f.desde),
+      (f) => {
+        const d = new Date(`${f.desde}T12:00:00`);
+        const abbr = MESES_ABBR[d.getMonth()];
+        return `${abbr[0].toUpperCase()}${abbr.slice(1)}`;
+      },
       (f) => tituloMes(f.desde)
     );
   }
   return serieVsPorDia(movimientos, rangoVisible);
 }
 
-function puntoLeyendaVs(clase, texto) {
-  return el("li", { class: "vsgrafico-leyenda-item" }, [
-    el("span", { class: `vsgrafico-punto vsgrafico-punto--${clase}` }),
-    texto,
-  ]);
+// --- Evolución del período --------------------------------------------------
+//
+// Un solo gráfico: barras con el gasto de cada día/semana/mes y una línea
+// con el balance ACUMULADO. Los ingresos no van como serie aparte (un sueldo
+// del día 1 aplastaba la escala del resto): se marcan como puntos verdes
+// sobre la línea de balance, con su monto. La zona bajo $0 se sombrea para
+// que se note en qué momento el período pasó a negativo.
+
+const GRANULARIDADES_POR_TIPO = {
+  semana: ["dia"],
+  mes: ["dia", "semana"],
+  año: ["mes", "semana", "dia"],
+};
+const ETIQUETA_GRANULARIDAD = { dia: "Día", semana: "Semana", mes: "Mes" };
+
+function valorEje(valor) {
+  return prefs.get("ocultarTotal") ? "•••" : formatoCLPCompacto(valor);
 }
 
-function indicadorVs(clase, nombre, valor, desc, claseValor) {
-  return el("div", { class: "vsgrafico-resumen-item" }, [
-    el("span", { class: `vsgrafico-punto vsgrafico-punto--${clase}` }),
-    el("div", { class: "vsgrafico-resumen-txt" }, [
-      el("span", { class: "vsgrafico-resumen-nombre", text: nombre }),
-      el("span", { class: `vsgrafico-resumen-valor ${claseValor || ""}`.trim(), text: valorOculto(valor) }),
-      el("span", { class: "vsgrafico-resumen-desc", text: desc }),
-    ]),
-  ]);
-}
-
-// SVG de líneas (sin librerías externas, mismo enfoque que el resto de
-// gráficos de la app): dos polylines (ingresos/gastos) sobre una grilla
-// sutil, con zonas invisibles por punto para el tooltip al pasar el mouse.
-function graficoVsLineas(puntos) {
-  // En escritorio el viewBox es ancho y bajo (ANCHO grande): el gráfico se
-  // ve compacto porque todo (fuente, grosor de línea, radio de puntos) se
-  // escala según el ancho real del contenedor / ANCHO. En un celular esa
-  // misma relación deja el ancho real MUY chico (~300-360px), así que ese
-  // mismo factor de escala achica el texto y las líneas hasta ser
-  // ilegibles — no alcanza con hacer el viewBox "más alto" nada más. Por
-  // eso en móvil se usa un ANCHO de viewBox más chico (sube el factor de
-  // escala = todo se ve más grande en píxeles reales) Y un ALTO
-  // proporcionalmente mucho mayor (más alto que ancho = más espacio
-  // vertical para las variaciones).
-  const movil = window.matchMedia("(max-width: 720px)").matches;
-  const ANCHO = movil ? 300 : 600;
-  const ALTO = movil ? 220 : 160;
-  const M_IZQ = movil ? 40 : 46;
-  const M_DER = movil ? 8 : 10;
-  const M_TOP = movil ? 10 : 14;
-  const M_INF = movil ? 22 : 26;
-  const radioMarca = movil ? 3.2 : 2.6;
-  // Balance es un acumulado, no un dato puntual del período como
-  // ingresos/gastos: su marca es ligeramente más chica para que la línea
-  // azul pese menos visualmente que las otras dos series.
-  const radioMarcaBalance = movil ? 2.6 : 2.1;
-  const anchoTrazo = ANCHO - M_IZQ - M_DER;
-  const altoTrazo = ALTO - M_TOP - M_INF;
+function graficoEvolucion(puntos, granularidad, onAbrir) {
+  const M = medidasGrafico();
+  const anchoTrazo = M.ancho - M.izq - M.der;
+  const altoTrazo = M.alto - M.top - M.inf;
   const n = puntos.length;
-  // El balance acumulado puede ser negativo (gastos > ingresos), a
-  // diferencia de ingresos/gastos que nunca bajan de 0 — por eso el
-  // dominio del eje Y arranca en el mínimo real (puede ser < 0) en vez de
-  // asumir siempre 0 como piso.
-  const valores = puntos.flatMap((p) => [p.ingresos, p.gastos, p.balanceAcumulado]);
-  const maxValor = Math.max(1, ...valores);
-  const minValor = Math.min(0, ...valores);
-  const rangoValores = maxValor - minValor || 1;
-  const hayNegativos = minValor < 0;
+  const oculto = prefs.get("ocultarTotal");
 
-  const x = (i) => (n > 1 ? M_IZQ + (i / (n - 1)) * anchoTrazo : M_IZQ + anchoTrazo / 2);
-  const y = (v) => M_TOP + altoTrazo - ((v - minValor) / rangoValores) * altoTrazo;
-
-  // Grilla horizontal muy sutil: piso, mitad y techo del dominio real
-  // (no siempre 0-máximo: si hay balance negativo el piso baja de 0).
-  const nodosGrilla = [0, 0.5, 1].flatMap((frac) => {
-    const valor = minValor + rangoValores * frac;
-    const cy = M_TOP + altoTrazo * (1 - frac);
-    return [
-      elSvg("line", { x1: M_IZQ, y1: cy, x2: ANCHO - M_DER, y2: cy, class: "vsgrafico-grid" }),
-      elSvg("text", { x: M_IZQ - 6, y: cy + 3, class: "vsgrafico-eje-valor" }, [valorEjeOculto(valor)]),
-    ];
-  });
-
-  // Referencia visual explícita en $0: solo hace falta dibujarla aparte
-  // cuando cae DENTRO del gráfico y no coincide ya con la grilla (piso o
-  // techo) — o sea, cuando hay tramo negativo y otro positivo.
-  const nodoCero =
-    hayNegativos && maxValor > 0
-      ? elSvg("line", {
-          x1: M_IZQ,
-          y1: y(0),
-          x2: ANCHO - M_DER,
-          y2: y(0),
-          class: "vsgrafico-cero",
-        })
-      : null;
-
-  // Etiquetas del eje X: un subconjunto para no recargar el gráfico.
-  const maxEtiquetas = movil ? 4 : 7;
-  const indicesEtiquetas = new Set();
-  if (n <= maxEtiquetas) {
-    for (let i = 0; i < n; i++) indicesEtiquetas.add(i);
-  } else {
-    const paso = (n - 1) / (maxEtiquetas - 1);
-    for (let k = 0; k < maxEtiquetas; k++) indicesEtiquetas.add(Math.round(k * paso));
-  }
-  const nodosEjeX = [...indicesEtiquetas].map((i) =>
-    elSvg("text", { x: x(i), y: ALTO - 8, class: "vsgrafico-eje-etiqueta" }, [puntos[i].etiquetaEje])
+  const escala = ticksAgradables(
+    Math.min(0, ...puntos.map((p) => p.balanceAcumulado)),
+    Math.max(1, ...puntos.map((p) => Math.max(p.gastos, p.balanceAcumulado))),
+    M.movil ? 4 : 5
   );
+  const y = (v) => M.top + altoTrazo - ((v - escala.min) / (escala.max - escala.min)) * altoTrazo;
+  const slot = anchoTrazo / n;
+  const cx = (i) => M.izq + slot * (i + 0.5);
+  const anchoBarra = Math.max(2, Math.min(slot * 0.62, M.movil ? 18 : 44));
+  const y0 = y(0);
 
-  const puntosIngreso = puntos.map((p, i) => `${x(i).toFixed(1)},${y(p.ingresos).toFixed(1)}`).join(" ");
-  const puntosGasto = puntos.map((p, i) => `${x(i).toFixed(1)},${y(p.gastos).toFixed(1)}`).join(" ");
-  const puntosBalance = puntos
-    .map((p, i) => `${x(i).toFixed(1)},${y(p.balanceAcumulado).toFixed(1)}`)
-    .join(" ");
-
-  const nodosMarcas = puntos.flatMap((p, i) => [
-    p.ingresos > 0
-      ? elSvg("circle", {
-          cx: x(i),
-          cy: y(p.ingresos),
-          r: radioMarca,
-          class: "vsgrafico-marca vsgrafico-marca--ingreso",
-        })
-      : null,
-    p.gastos > 0
-      ? elSvg("circle", {
-          cx: x(i),
-          cy: y(p.gastos),
-          r: radioMarca,
-          class: "vsgrafico-marca vsgrafico-marca--gasto",
-        })
-      : null,
-    // El balance sí se marca en 0: a diferencia de ingresos/gastos, un
-    // balance en cero es información real (ingresos == gastos), no
-    // ausencia de dato.
-    elSvg("circle", {
-      cx: x(i),
-      cy: y(p.balanceAcumulado),
-      r: radioMarcaBalance,
-      class: "vsgrafico-marca vsgrafico-marca--balance",
-    }),
-  ]);
-
-  const guia = elSvg("line", { x1: 0, y1: M_TOP, x2: 0, y2: M_TOP + altoTrazo, class: "vsgrafico-guia" });
-
-  const tooltip = el("div", { class: "vsgrafico-tooltip", role: "tooltip" });
-
-  function mostrarTooltip(i) {
-    const p = puntos[i];
-    const cx = x(i);
-    guia.setAttribute("x1", cx);
-    guia.setAttribute("x2", cx);
-    guia.classList.add("vsgrafico-guia--activa");
-
-    limpiar(tooltip);
-    tooltip.append(
-      el("p", { class: "vsgrafico-tooltip-titulo", text: p.titulo }),
-      el("div", { class: "vsgrafico-tooltip-fila" }, [
-        el("span", { class: "vsgrafico-punto vsgrafico-punto--ingreso" }),
-        el("span", { text: "Ingresos" }),
-        el("span", { class: "vsgrafico-tooltip-valor", text: valorOculto(p.ingresos) }),
-      ]),
-      el("div", { class: "vsgrafico-tooltip-fila" }, [
-        el("span", { class: "vsgrafico-punto vsgrafico-punto--gasto" }),
-        el("span", { text: "Gastos" }),
-        el("span", { class: "vsgrafico-tooltip-valor", text: valorOculto(p.gastos) }),
-      ]),
-      el("div", { class: "vsgrafico-tooltip-fila" }, [
-        el("span", { class: "vsgrafico-punto vsgrafico-punto--balance" }),
-        el("span", { text: "Balance acumulado" }),
-        el("span", { class: "vsgrafico-tooltip-valor", text: valorOculto(p.balanceAcumulado) }),
-      ])
+  const nodos = [];
+  if (escala.min < 0) {
+    nodos.push(
+      elSvg("rect", { x: M.izq, y: y0, width: anchoTrazo, height: M.top + altoTrazo - y0, class: "evo-zona-negativa" })
     );
-
-    const pct = (cx / ANCHO) * 100;
-    tooltip.style.left = `${pct}%`;
-    tooltip.style.transform = pct < 15 ? "translateX(0)" : pct > 85 ? "translateX(-100%)" : "translateX(-50%)";
-    tooltip.classList.add("vsgrafico-tooltip--visible");
+  }
+  for (const v of escala.ticks) {
+    nodos.push(
+      elSvg("line", { x1: M.izq, y1: y(v), x2: M.ancho - M.der, y2: y(v), class: v === 0 ? "evo-cero" : "evo-grid" }),
+      elSvg("text", { x: M.izq - 8, y: y(v) + 4, class: "evo-eje-valor" }, [valorEje(v)])
+    );
   }
 
-  function ocultarTooltip() {
-    guia.classList.remove("vsgrafico-guia--activa");
-    tooltip.classList.remove("vsgrafico-tooltip--visible");
-  }
-
-  const nodosZonas = puntos.map((p, i) => {
-    const paso = n > 1 ? anchoTrazo / (n - 1) : anchoTrazo;
+  const barras = puntos.map((p, i) => {
+    const alto = p.gastos > 0 ? Math.max(y0 - y(p.gastos), 1.5) : 0;
     return elSvg("rect", {
-      x: x(i) - paso / 2,
-      y: M_TOP,
-      width: paso,
-      height: altoTrazo,
-      class: "vsgrafico-zona",
-      onMouseenter: () => mostrarTooltip(i),
-      onMouseleave: ocultarTooltip,
-      onClick: () => mostrarTooltip(i),
+      x: cx(i) - anchoBarra / 2,
+      y: y0 - alto,
+      width: anchoBarra,
+      height: alto,
+      rx: Math.min(4, anchoBarra / 3),
+      class: "evo-barra",
     });
   });
+  nodos.push(...barras);
 
-  const svg = elSvg("svg", { viewBox: `0 0 ${ANCHO} ${ALTO}`, class: "vsgrafico-svg" }, [
-    ...nodosGrilla,
-    nodoCero,
-    elSvg("polyline", { points: puntosIngreso, class: "vsgrafico-linea vsgrafico-linea--ingreso" }),
-    elSvg("polyline", { points: puntosGasto, class: "vsgrafico-linea vsgrafico-linea--gasto" }),
-    elSvg("polyline", { points: puntosBalance, class: "vsgrafico-linea vsgrafico-linea--balance" }),
-    ...nodosMarcas,
-    guia,
-    ...nodosEjeX,
-    ...nodosZonas,
-  ]);
+  for (const i of indicesEtiquetas(n, M.movil ? 4 : 8)) {
+    nodos.push(elSvg("text", { x: cx(i), y: M.alto - 8, class: "evo-eje-etiqueta" }, [puntos[i].etiquetaEje]));
+  }
 
-  return el("div", { class: "vsgrafico-lienzo", onMouseleave: ocultarTooltip }, [svg, tooltip]);
-}
+  const linea = puntos.map((p, i) => `${cx(i).toFixed(1)},${y(p.balanceAcumulado).toFixed(1)}`).join(" ");
+  nodos.push(elSvg("polyline", { points: linea, class: "evo-linea-balance" }));
 
-function seccionIngresoGasto(movimientos, rango, granularidad, totales, enPeriodo, tipo, titulo, onCambiarGranularidad) {
-  const { ingresos, gastos, balance } = totales;
-
-  const selector = el(
-    "div",
-    { class: "selector-tipo vsgrafico-selector" },
-    GRANULARIDADES_VS.map((g) =>
-      el("button", {
-        class: g.clave === granularidad ? "activo" : "",
-        text: g.etiqueta,
-        onClick: () => onCambiarGranularidad(g.clave),
+  const conIngreso = puntos.map((p, i) => ({ p, i })).filter(({ p }) => p.ingresos > 0);
+  for (const { p, i } of puntos.map((p, i) => ({ p, i }))) {
+    nodos.push(
+      elSvg("circle", {
+        cx: cx(i),
+        cy: y(p.balanceAcumulado),
+        r: p.ingresos > 0 ? (M.movil ? 5 : 6) : M.movil ? 2.4 : 3,
+        class: p.ingresos > 0 ? "evo-marca evo-marca--ingreso" : "evo-marca evo-marca--balance",
       })
-    )
+    );
+  }
+  // Monto de cada ingreso junto a su marca (solo si son pocos, para no
+  // llenar el gráfico de rótulos).
+  // Si dos ingresos quedan muy cerca, solo se rotula el primero (el resto
+  // se ve en el tooltip) para que los montos no se encimen.
+  if (!oculto && conIngreso.length <= 6) {
+    const separacion = M.movil ? 70 : 150;
+    let ultimoX = -Infinity;
+    for (const { p, i } of conIngreso) {
+      if (cx(i) - ultimoX < separacion) continue;
+      ultimoX = cx(i);
+      const derecha = cx(i) < M.izq + anchoTrazo * 0.75;
+      nodos.push(
+        elSvg(
+          "text",
+          {
+            x: cx(i) + (derecha ? 10 : -10),
+            y: Math.max(M.top + 10, y(p.balanceAcumulado) - 10),
+            class: "evo-etiqueta-ingreso",
+            "text-anchor": derecha ? "start" : "end",
+          },
+          [`+${formatoCLP(p.ingresos)}`]
+        )
+      );
+    }
+  }
+
+  const tooltip = crearTooltip();
+  let activo = null;
+  const pista =
+    typeof onAbrir === "function"
+      ? window.matchMedia("(hover: hover)").matches
+        ? "Clic para ver sus movimientos"
+        : "Toca de nuevo para ver sus movimientos"
+      : null;
+
+  function mostrar(i) {
+    activo = i;
+    barras.forEach((b, k) => b.classList.toggle("evo-barra--activa", k === i));
+    const p = puntos[i];
+    const filas = [{ clase: "gasto", nombre: "Gasto", valor: valorOculto(p.gastos) }];
+    if (p.ingresos > 0) filas.push({ clase: "ingreso", nombre: "Ingreso", valor: valorOculto(p.ingresos) });
+    filas.push({ clase: "balance", nombre: "Balance acumulado", valor: valorOculto(p.balanceAcumulado) });
+    tooltip.mostrar(cx(i), M.ancho, p.titulo, filas, pista);
+  }
+  function ocultar() {
+    activo = null;
+    barras.forEach((b) => b.classList.remove("evo-barra--activa"));
+    tooltip.ocultar();
+  }
+
+  // Zonas invisibles por punto: hover muestra el detalle; en Semana/Mes un
+  // clic (o un segundo toque en móvil) abre Movimientos en ese tramo.
+  const zonas = puntos.map((p, i) =>
+    elSvg("rect", {
+      x: M.izq + slot * i,
+      y: M.top,
+      width: slot,
+      height: altoTrazo,
+      class: "vsgrafico-zona",
+      onMouseenter: () => mostrar(i),
+      onClick: () => {
+        if (typeof onAbrir === "function" && (activo === i || window.matchMedia("(hover: hover)").matches)) {
+          onAbrir(p);
+        } else {
+          mostrar(i);
+        }
+      },
+    })
   );
 
-  const resumen = el("div", { class: "vsgrafico-resumen" }, [
-    indicadorVs("ingreso", "Ingresos", ingresos, `Total ${delPeriodo(tipo)}`, "valor-ingreso"),
-    indicadorVs("gasto", "Gastos", gastos, `Total ${delPeriodo(tipo)}`, "valor-gasto"),
-    // A diferencia de la tarjeta superior (que pinta el balance en rojo si
-    // es negativo), aquí se mantiene siempre azul: la negatividad ya se
-    // comunica con el signo del número y la posición bajo la línea $0.
-    indicadorVs("balance", "Balance", balance, "Balance acumulado", "valor-balance"),
+  const svg = elSvg(
+    "svg",
+    {
+      viewBox: `0 0 ${M.ancho} ${M.alto}`,
+      class: "evo-svg",
+      role: "img",
+      "aria-label": `Gasto por ${ETIQUETA_GRANULARIDAD[granularidad].toLowerCase()} y balance acumulado`,
+    },
+    [...nodos, ...zonas]
+  );
+  return el("div", { class: "vsgrafico-lienzo evo-lienzo", onMouseleave: ocultar }, [svg, tooltip.nodo]);
+}
+
+function seccionEvolucion(movimientos, rango, tipo, granularidad, enPeriodo, onCambiarGranularidad, irA) {
+  const opciones = GRANULARIDADES_POR_TIPO[tipo] || ["dia"];
+  const gran = opciones.includes(granularidad) ? granularidad : opciones[0];
+
+  const selector =
+    opciones.length > 1
+      ? el(
+          "div",
+          { class: "selector-tipo evo-selector", role: "group", "aria-label": "Agrupar por" },
+          opciones.map((g) =>
+            el("button", {
+              type: "button",
+              class: g === gran ? "activo" : "",
+              "aria-pressed": String(g === gran),
+              text: ETIQUETA_GRANULARIDAD[g],
+              onClick: () => onCambiarGranularidad(g),
+            })
+          )
+        )
+      : null;
+
+  const leyenda = el("ul", { class: "evo-leyenda" }, [
+    el("li", {}, [el("span", { class: "evo-leyenda-barra" }), "Gasto"]),
+    el("li", {}, [el("span", { class: "evo-leyenda-linea" }), "Balance acumulado"]),
+    el("li", {}, [el("span", { class: "evo-leyenda-punto" }), "Ingreso"]),
   ]);
 
-  // El balance de cada punto es ACUMULADO (ingresos y gastos sumados desde
-  // el inicio del período hasta ese punto) — no el balance del tramo
-  // individual. Así el último punto siempre coincide con `balance`, que
-  // viene de calcularTotales() sobre el mismo conjunto de movimientos: una
-  // sola fuente de verdad para el gráfico y para la tarjeta superior.
-  const puntos = serieVs(movimientos, rango, granularidad);
+  // El balance de cada punto es ACUMULADO desde el inicio del período, así
+  // el último coincide con el balance de la franja de KPIs.
+  const puntos = serieVs(movimientos, rango, gran);
   let acumIngresos = 0;
   let acumGastos = 0;
   for (const p of puntos) {
@@ -500,23 +431,28 @@ function seccionIngresoGasto(movimientos, rango, granularidad, totales, enPeriod
   }
   const hayDatos = puntos.some((p) => p.ingresos > 0 || p.gastos > 0);
 
-  const cuerpo = el("div", { class: "vsgrafico-cuerpo" }, [
-    resumen,
-    hayDatos
-      ? graficoVsLineas(puntos)
-      : el("p", { class: "vacio", text: "Sin movimientos en este período." }),
-    hayDatos
-      ? el("ul", { class: "vsgrafico-leyenda" }, [
-          puntoLeyendaVs("ingreso", "Ingresos"),
-          puntoLeyendaVs("gasto", "Gastos"),
-          puntoLeyendaVs("balance", "Balance"),
-        ])
-      : null,
-  ]);
+  // Semana y Mes: tocar un tramo abre Movimientos en ese período (antes lo
+  // hacía la tarjeta "Gastos por semana", que quedó integrada aquí).
+  const onAbrir =
+    typeof irA === "function" && (gran === "semana" || gran === "mes")
+      ? (p) => irA("movimientos", { tipo: gran, fecha: p.clave })
+      : null;
 
-  return el("section", { class: "panel-tarjeta resumen-vs" }, [
-    tarjetaHead(graficoIcono, titulo, `Evolución de tus ingresos, gastos y balance en ${enPeriodo}.`, selector),
-    cuerpo,
+  return el("section", { class: "panel-tarjeta resumen-evo" }, [
+    el("div", { class: "evo-cabecera" }, [
+      el("div", { class: "resumen-card-head-txt" }, [
+        el("h3", {}, [iconoTitulo(graficoIcono), `Evolución ${delPeriodo(tipo)}`]),
+        el("p", {
+          class: "resumen-card-sub",
+          text: `Gasto por ${ETIQUETA_GRANULARIDAD[gran].toLowerCase()} y balance acumulado en ${enPeriodo}.`,
+        }),
+      ]),
+      hayDatos ? leyenda : null,
+      selector,
+    ]),
+    hayDatos
+      ? graficoEvolucion(puntos, gran, onAbrir)
+      : el("p", { class: "vacio", text: "Sin movimientos en este período." }),
   ]);
 }
 
@@ -569,120 +505,6 @@ export function estadoSemana(semana, hoy) {
   if (hoy < semana.desde) return "futura";
   if (hoy <= semana.hasta) return "en_curso";
   return "pasada";
-}
-
-// Solo tiene sentido cuando el período mostrado es un mes calendario
-// completo (varias semanas) — en vista semana o año no hay nada que agrupar.
-function seccionGastosSemana(movimientos, rango, enPeriodo, irA) {
-  const hoy = ymdLocal(new Date());
-  const semanas = agruparGastosPorSemana(movimientos, rango).map((s) => ({
-    ...s,
-    estado: estadoSemana(s, hoy),
-  }));
-  const sub = `Distribución de tus gastos durante ${enPeriodo}.`;
-  const cabecera = tarjetaHead(calendarioIcono, "Gastos por semana", sub);
-
-  // Solo semanas ya empezadas (en curso o pasadas) cuentan como "con datos":
-  // una semana futura no tiene gasto real que mostrar, solo ausencia de dato.
-  const conDatos = semanas.filter((s) => s.estado !== "futura");
-  const totalMes = conDatos.reduce((sum, s) => sum + s.total, 0);
-
-  if (conDatos.length === 0 || totalMes <= 0) {
-    return el("section", { class: "panel-tarjeta resumen-semanas" }, [
-      cabecera,
-      el("p", { class: "vacio", text: "Sin gastos en este período." }),
-    ]);
-  }
-
-  // Solo semanas YA TERMINADAS compiten por "Mayor gasto": una semana en
-  // curso todavía puede sumar más antes de terminar, así que su total no es
-  // definitivo. Pasa a ser candidata recién en el render donde ya cruzó su
-  // domingo (estadoSemana la reclasifica sola, sin nada hardcodeado).
-  const pasadas = conDatos.filter((s) => s.estado === "pasada");
-  const maxTotalPasadas = pasadas.length ? Math.max(...pasadas.map((s) => s.total)) : null;
-  const mayor = maxTotalPasadas !== null ? pasadas.find((s) => s.total === maxTotalPasadas) : null;
-  const enCurso = semanas.find((s) => s.estado === "en_curso") || null;
-
-  // El ancho de las barras sigue escalando contra la semana con más gasto
-  // entre TODAS las que tienen datos (incluida la en curso) — es solo
-  // proporción visual entre filas, no decide el título "Mayor gasto".
-  const maxTotal = Math.max(...conDatos.map((s) => s.total));
-
-  // Semanas sin ningún gasto (futuras siempre, o pasadas/en curso donde
-  // simplemente no se gastó nada) no aportan información — se omiten de la
-  // lista en vez de mostrar una fila vacía o "Aún no disponible".
-  const filas = semanas
-    .filter((s) => s.total > 0)
-    .map((s) => {
-      const etiquetaNodo = el("span", { class: "resumen-semanas-rango", text: etiquetaSemana(s) });
-      const esPico = s === mayor;
-      const anchoBarra = Math.max((s.total / maxTotal) * 100, 4);
-      const relleno = el("span", {
-        class: `resumen-semanas-barra-relleno${esPico ? " resumen-semanas-barra-relleno--pico" : ""}`,
-      });
-      relleno.style.width = `${anchoBarra}%`;
-      const pct = totalMes > 0 ? Math.round((s.total / totalMes) * 100) : 0;
-
-      // Tocar la fila abre Movimientos en vista semanal, en esa semana.
-      const clickeable = typeof irA === "function";
-      const abrir = () => irA("movimientos", { tipo: "semana", fecha: s.desde });
-
-      return el(
-        "div",
-        {
-          class: `resumen-semanas-fila${esPico ? " resumen-semanas-fila--pico" : ""}${
-            clickeable ? " resumen-semanas-fila--clickable" : ""
-          }`,
-          ...(clickeable
-            ? {
-                role: "button",
-                tabindex: "0",
-                "aria-label": `Ver movimientos de ${etiquetaSemana(s)}`,
-                onClick: abrir,
-                onKeydown: (ev) => {
-                  if (ev.key === "Enter" || ev.key === " ") {
-                    ev.preventDefault();
-                    abrir();
-                  }
-                },
-              }
-            : {}),
-        },
-        [
-          etiquetaNodo,
-          el("div", { class: "resumen-semanas-barra-pista" }, [relleno]),
-          el("span", { class: "resumen-semanas-monto", text: valorOculto(s.total) }),
-          s.estado === "en_curso"
-            ? el("span", { class: "resumen-semanas-pct resumen-semanas-pct--curso", text: "En curso" })
-            : el("span", { class: "resumen-semanas-pct", text: `${pct}%` }),
-        ]
-      );
-    });
-
-  const destacadas = el(
-    "div",
-    { class: "resumen-semanas-destacadas" },
-    [
-      mayor
-        ? el("span", { class: "resumen-semanas-destacada" }, [
-            el("span", { class: "resumen-semanas-destacada-etq", text: "Mayor gasto" }),
-            `: ${etiquetaSemana(mayor)} · ${valorOculto(mayor.total)}`,
-          ])
-        : null,
-      enCurso
-        ? el("span", { class: "resumen-semanas-destacada" }, [
-            el("span", { class: "resumen-semanas-destacada-etq", text: "Semana en curso" }),
-            `: ${etiquetaSemana(enCurso)} · ${valorOculto(enCurso.total)}`,
-          ])
-        : null,
-    ]
-  );
-
-  return el("section", { class: "panel-tarjeta resumen-semanas" }, [
-    cabecera,
-    el("div", { class: "resumen-semanas-lista" }, filas),
-    mayor || enCurso ? destacadas : null,
-  ]);
 }
 
 // Agrupa los gastos del período por categoría, mayor a menor.
@@ -748,200 +570,293 @@ function donutGastos(filas, total, referencias, activar, desactivar, centro) {
   return wrap;
 }
 
-function seccionGastosCategoria(movimientos, enPeriodo, verCategoria) {
-  const grupos = agruparGastos(movimientos);
-  const total = grupos.reduce((s, g) => s + g.total, 0);
-  const card = el("section", { class: "panel-tarjeta resumen-gastos-cat" });
-  const sub = `Principales categorías de gasto en ${enPeriodo}.`;
+// "Otras": todo lo que queda fuera de las 5 categorías con más gasto.
+const TOPE_CATEGORIAS = 5;
 
-  if (total <= 0) {
-    card.append(
-      tarjetaHead(graficoTortaIcono, "Gastos por categoría", sub),
-      el("p", { class: "vacio", text: "Sin gastos en este período." })
-    );
-    return card;
-  }
-
-  const cuerpo = el("div", { class: "resumen-gastos-cat-fila" });
-  card.append(tarjetaHead(graficoTortaIcono, "Gastos por categoría", sub), cuerpo);
-
-  function pintar() {
-    limpiar(cuerpo);
-
-    // clave -> { li, grupo, segmento } — se completa con el segmento al
-    // construir la dona. Al pasar el mouse por una fila o por su porción de
-    // la dona, se resalta la otra mitad y el centro muestra el total de esa
-    // categoría; al sacar el mouse, todo vuelve a "Total gastos".
-    const referencias = new Map();
-    const centroTotal = el("span", { class: "dona-total", text: valorOculto(total) });
-    const centroEtiqueta = el("span", { class: "dona-etiqueta", text: "Total gastos" });
-    const centro = el("div", { class: "dona-centro" }, [centroTotal, centroEtiqueta]);
-
-    function activar(clave) {
-      const ref = referencias.get(clave);
-      if (!ref) return;
-      for (const [k, r] of referencias) {
-        const esEsta = k === clave;
-        r.li.classList.toggle("resumen-gastos-cat-item--activo", esEsta);
-        if (r.segmento) r.segmento.classList.toggle("dona-segmento--atenuado", !esEsta);
-      }
-      centroTotal.textContent = valorOculto(ref.grupo.total);
-      centroEtiqueta.textContent = ref.grupo.nombre;
-    }
-
-    function desactivar() {
-      for (const [, r] of referencias) {
-        r.li.classList.remove("resumen-gastos-cat-item--activo");
-        if (r.segmento) r.segmento.classList.remove("dona-segmento--atenuado");
-      }
-      centroTotal.textContent = valorOculto(total);
-      centroEtiqueta.textContent = "Total gastos";
-    }
-
-    const lista = el(
-      "ul",
-      { class: "resumen-gastos-cat-lista" },
-      grupos.map((g, i) => {
-        const pct = Math.round((g.total / total) * 100);
-        const color = g.color || PALETA_DONA[i % PALETA_DONA.length];
-        const icono = el("span", { class: "resumen-gastos-cat-icono" }, [
-          nodoIconoCategoria(g.categoria, g.nombre),
-        ]);
-        icono.style.background = `color-mix(in srgb, ${color} 16%, transparent)`;
-        icono.style.color = color;
-        const clickeable = g.clave !== "sin" && typeof verCategoria === "function";
-        const li = el(
-          "li",
-          {
-            class: `resumen-gastos-cat-item${clickeable ? " resumen-gastos-cat-item--clickable" : ""}`,
-            ...(clickeable
-              ? {
-                  role: "button",
-                  tabindex: "0",
-                  "aria-label": `Ver detalle de ${g.nombre}`,
-                  onClick: () => verCategoria(g.clave),
-                  onKeydown: (ev) => {
-                    if (ev.key === "Enter" || ev.key === " ") {
-                      ev.preventDefault();
-                      verCategoria(g.clave);
-                    }
-                  },
-                }
-              : {}),
-            onMouseenter: () => activar(g.clave),
-            onMouseleave: () => desactivar(),
-          },
-          [
-            icono,
-            el("span", { class: "resumen-gastos-cat-nombre-grupo" }, [
-              el("span", { class: "resumen-gastos-cat-nombre", text: g.nombre }),
-              el("span", { class: "resumen-gastos-cat-cantidad", text: String(g.cantidad) }),
-            ]),
-            el("span", { class: "resumen-gastos-cat-monto", text: valorOculto(g.total) }),
-            el("span", { class: "resumen-gastos-cat-pct" }, [
-              el("span", { class: "resumen-gastos-cat-pct-valor", text: `${pct}%` }),
-            ]),
-          ]
-        );
-        referencias.set(g.clave, { li, grupo: g });
-        return li;
-      })
-    );
-
-    cuerpo.append(lista, donutGastos(grupos, total, referencias, activar, desactivar, centro));
-  }
-
-  pintar();
-  return card;
+function textoCantidad(n) {
+  return `${n} ${n === 1 ? "movimiento" : "movimientos"}`;
 }
 
-function seccionActividad(movimientos, enPeriodo, irA) {
-  const card = el("section", { class: "panel-tarjeta resumen-actividad" });
-  const recientes = movimientos.slice(0, 5); // ya ordenados por fecha desc
-  const sub = `Últimos movimientos de ${enPeriodo}.`;
-  const verTodos =
-    typeof irA === "function"
-      ? el("button", {
-          class: "enlace-ver",
-          type: "button",
-          text: "Ver todos →",
-          onClick: () => irA("movimientos"),
-        })
-      : null;
+function pctCategoria(parte, total) {
+  if (total <= 0 || parte <= 0) return "0%";
+  const pct = (parte / total) * 100;
+  return pct < 1 ? "<1%" : `${Math.round(pct)}%`;
+}
 
-  if (!recientes.length) {
-    card.append(
-      tarjetaHead(reloj3Icono, "Actividad reciente", sub, verTodos),
-      el("p", { class: "vacio", text: "Sin movimientos en este período." })
-    );
+// Top 5 + "Otras" (con los nombres de lo que agrupa). Con pocas categorías
+// se muestran todas tal cual.
+function categoriasVisibles(grupos) {
+  if (grupos.length <= TOPE_CATEGORIAS + 1) return grupos;
+  const top = grupos.slice(0, TOPE_CATEGORIAS);
+  const resto = grupos.slice(TOPE_CATEGORIAS);
+  const nombres = resto.map((g) => g.nombre);
+  const detalle =
+    nombres.length <= 3 ? nombres.join(", ") : `${nombres.slice(0, 3).join(", ")} y ${nombres.length - 3} más`;
+  return [
+    ...top,
+    {
+      clave: "otras",
+      nombre: "Otras",
+      detalle,
+      categoria: null,
+      color: "#8a8f98",
+      total: resto.reduce((s, g) => s + g.total, 0),
+      cantidad: resto.reduce((s, g) => s + g.cantidad, 0),
+      esOtras: true,
+    },
+  ];
+}
+
+function seccionGastosCategoria(movimientos, enPeriodo, verCategoria, irA) {
+  const todos = agruparGastos(movimientos);
+  const total = todos.reduce((s, g) => s + g.total, 0);
+  const card = el("section", { class: "panel-tarjeta resumen-gastos-cat" });
+  const verTodas =
+    typeof irA === "function"
+      ? el("button", { class: "enlace-ver", type: "button", text: "Ver todas", onClick: () => irA("categorias") })
+      : null;
+  const cabecera = tarjetaHead(graficoTortaIcono, "Gastos por categoría", `Dónde se fue tu dinero en ${enPeriodo}.`, verTodas);
+
+  if (total <= 0) {
+    card.append(cabecera, el("p", { class: "vacio", text: "Sin gastos en este período." }));
     return card;
   }
 
-  const oculto = prefs.get("ocultarTotal");
+  const grupos = categoriasVisibles(todos);
+  const sinCategoria = todos.find((g) => g.clave === "sin") || null;
+  const cuerpo = el("div", { class: "resumen-gastos-cat-fila" });
+  card.append(cabecera, cuerpo);
+
+  // clave -> { li, grupo, segmento }: al pasar el mouse por una fila o por
+  // su porción de la dona se resalta la otra mitad y el centro muestra el
+  // total de esa categoría; al salir vuelve a "Total gastos".
+  const referencias = new Map();
+  const centroTotal = el("span", { class: "dona-total", text: valorOculto(total) });
+  const centroEtiqueta = el("span", { class: "dona-etiqueta", text: "Total gastos" });
+  const centro = el("div", { class: "dona-centro" }, [centroTotal, centroEtiqueta]);
+
+  function activar(clave) {
+    const ref = referencias.get(clave);
+    if (!ref) return;
+    for (const [k, r] of referencias) {
+      const esEsta = k === clave;
+      r.li.classList.toggle("resumen-gastos-cat-item--activo", esEsta);
+      if (r.segmento) r.segmento.classList.toggle("dona-segmento--atenuado", !esEsta);
+    }
+    centroTotal.textContent = valorOculto(ref.grupo.total);
+    centroEtiqueta.textContent = ref.grupo.nombre;
+  }
+  function desactivar() {
+    for (const [, r] of referencias) {
+      r.li.classList.remove("resumen-gastos-cat-item--activo");
+      if (r.segmento) r.segmento.classList.remove("dona-segmento--atenuado");
+    }
+    centroTotal.textContent = valorOculto(total);
+    centroEtiqueta.textContent = "Total gastos";
+  }
+
   const lista = el(
     "ul",
-    { class: "resumen-act-lista" },
-    recientes.map((m) => {
-      const color = colorMovimiento(m);
-      const icono = el("span", { class: "resumen-act-icono" }, [
-        nodoIconoCategoria(m.categoria, m.nombre),
+    { class: "resumen-gastos-cat-lista" },
+    grupos.map((g, i) => {
+      const color = g.color || PALETA_DONA[i % PALETA_DONA.length];
+      const icono = el("span", { class: "resumen-gastos-cat-icono" }, [
+        g.esOtras ? puntosIcono() : nodoIconoCategoria(g.categoria, g.nombre),
       ]);
       icono.style.background = `color-mix(in srgb, ${color} 16%, transparent)`;
       icono.style.color = color;
-      const esIngreso = m.tipo === "ingreso";
-      const signo = esIngreso ? "+" : "−";
-      return el("li", { class: "resumen-act-item" }, [
-        icono,
-        el("div", { class: "resumen-act-info" }, [
-          el("span", { class: "resumen-act-nombre", text: m.nombre }),
-          el("span", {
-            class: "resumen-act-cat",
-            text: m.categoria ? m.categoria.nombre : "Sin categoría",
-          }),
-        ]),
-        el("span", {
-          class: "resumen-act-fecha",
-          text: fechaCorta(m.fecha_local || m.fecha),
-        }),
-        el("span", {
-          class: `resumen-act-monto ${esIngreso ? "valor-ingreso" : "valor-gasto"}`,
-          text: oculto ? "*****" : `${signo} ${formatoCLP(m.monto)}`,
-        }),
-      ]);
+      const clickeable = !g.esOtras && g.clave !== "sin" && typeof verCategoria === "function";
+      const li = el(
+        "li",
+        {
+          class: `resumen-gastos-cat-item${clickeable ? " resumen-gastos-cat-item--clickable" : ""}`,
+          ...(clickeable
+            ? {
+                role: "button",
+                tabindex: "0",
+                "aria-label": `Ver detalle de ${g.nombre}`,
+                onClick: () => verCategoria(g.clave),
+                onKeydown: (ev) => {
+                  if (ev.key === "Enter" || ev.key === " ") {
+                    ev.preventDefault();
+                    verCategoria(g.clave);
+                  }
+                },
+              }
+            : {}),
+          onMouseenter: () => activar(g.clave),
+          onMouseleave: () => desactivar(),
+        },
+        [
+          icono,
+          el("span", { class: "resumen-gastos-cat-nombre-grupo" }, [
+            el("span", { class: "resumen-gastos-cat-nombre", text: g.nombre }),
+            el("span", {
+              class: "resumen-gastos-cat-detalle",
+              text: g.esOtras ? g.detalle : textoCantidad(g.cantidad),
+            }),
+          ]),
+          el("span", { class: "resumen-gastos-cat-monto", text: valorOculto(g.total) }),
+          el("span", { class: "resumen-gastos-cat-pct" }, [
+            el("span", { class: "resumen-gastos-cat-pct-valor", text: pctCategoria(g.total, total) }),
+          ]),
+        ]
+      );
+      referencias.set(g.clave, { li, grupo: g });
+      return li;
     })
   );
 
-  card.append(tarjetaHead(reloj3Icono, "Actividad reciente", sub, verTodos), lista);
+  cuerpo.append(donutGastos(grupos, total, referencias, activar, desactivar, centro), lista);
+
+  // Acceso a lo que falta categorizar: abre Movimientos para corregirlo.
+  if (sinCategoria) {
+    card.append(
+      el(
+        "button",
+        {
+          type: "button",
+          class: "resumen-sin-categoria",
+          onClick: () => (typeof irA === "function" ? irA("movimientos") : null),
+        },
+        [
+          etiquetaIcono(),
+          el("span", {
+            class: "resumen-sin-categoria-txt",
+            text: `${textoCantidad(sinCategoria.cantidad)} sin categoría (${valorOculto(sinCategoria.total)})`,
+          }),
+          el("span", { class: "resumen-sin-categoria-accion", text: "Revisar" }),
+        ]
+      )
+    );
+  }
   return card;
 }
 
-// Consejo del período: solo a partir de datos del período actual. Si no hay
-// movimientos, no se muestra.
-function seccionConsejo(ingresos, gastos, tipo, numMovimientos) {
-  if (numMovimientos === 0 || (ingresos <= 0 && gastos <= 0)) return null;
-  const balance = ingresos - gastos;
-  let texto;
+// Reemplaza a "Actividad reciente" (que repetía la lista de Movimientos):
+// los 5 gastos más altos del período, que es lo que sirve para analizar.
+function seccionMayoresGastos(movimientos, enPeriodo, irA) {
+  const card = el("section", { class: "panel-tarjeta resumen-mayores" });
+  const verTodos =
+    typeof irA === "function"
+      ? el("button", { class: "enlace-ver", type: "button", text: "Ver todos", onClick: () => irA("movimientos") })
+      : null;
+  const cabecera = tarjetaHead(reloj3Icono, "Mayores gastos", `Los gastos más altos de ${enPeriodo}.`, verTodos);
+  const top = movimientos
+    .filter((m) => m.tipo === "gasto" && Number(m.monto) > 0)
+    .sort((a, b) => Number(b.monto) - Number(a.monto))
+    .slice(0, 5);
 
-  if (balance > 0 && ingresos > 0) {
-    const pct = (balance / ingresos) * 100;
-    texto =
-      pct >= 20
-        ? `Vas muy bien ${sufijoPeriodo(tipo)}: tu balance es positivo y estás reteniendo el ${formatoPct(pct)} de tus ingresos.`
-        : `Tu balance ${sufijoPeriodo(tipo)} es positivo, aunque el margen es ajustado (${formatoPct(pct)} de tus ingresos).`;
-  } else if (balance > 0) {
-    texto = `Tu balance ${sufijoPeriodo(tipo)} es positivo, pero no registraste ingresos en este período.`;
-  } else if (balance < 0) {
-    texto = `Este período gastaste más de lo que ingresaste. Revisa tus categorías con mayor gasto para equilibrarlo.`;
-  } else {
-    texto = `Ingresos y gastos quedaron parejos ${sufijoPeriodo(tipo)}: tu balance es cero.`;
+  if (!top.length) {
+    card.append(cabecera, el("p", { class: "vacio", text: "Sin gastos en este período." }));
+    return card;
   }
 
-  return el("section", { class: "panel-tarjeta resumen-consejo" }, [
-    el("span", { class: "resumen-consejo-icono" }, [bombillaIcono()]),
-    el("div", { class: "resumen-consejo-txt" }, [
-      el("span", { class: "resumen-consejo-titulo", text: `Consejo ${delPeriodo(tipo)}` }),
-      el("span", { class: "resumen-consejo-cuerpo", text: texto }),
+  const lista = el(
+    "ol",
+    { class: "resumen-act-lista resumen-mayores-lista" },
+    top.map((m) => {
+      const color = colorMovimiento(m);
+      const icono = el("span", { class: "resumen-act-icono" }, [nodoIconoCategoria(m.categoria, m.nombre)]);
+      icono.style.background = `color-mix(in srgb, ${color} 16%, transparent)`;
+      icono.style.color = color;
+      return el("li", { class: "resumen-act-item" }, [
+        icono,
+        el("div", { class: "resumen-act-info" }, [
+          el("span", { class: "resumen-act-nombre", text: nombreVisible(m.nombre) }),
+          el("span", {
+            class: "resumen-act-cat",
+            text: `${m.categoria ? m.categoria.nombre : "Sin categoría"} · ${fechaCorta(m.fecha_local || m.fecha)}`,
+          }),
+        ]),
+        el("span", { class: "resumen-act-monto resumen-mayores-monto", text: valorOculto(m.monto) }),
+      ]);
+    })
+  );
+  card.append(cabecera, lista);
+  return card;
+}
+
+// Primer día desde el que el balance acumulado quedó bajo cero (y no volvió
+// a subir). null si el período no termina en negativo.
+function diaDesdeNegativo(movimientos, rango) {
+  const dias = serieVs(movimientos, rango, "dia");
+  let acum = 0;
+  let desde = null;
+  for (const d of dias) {
+    acum += d.ingresos - d.gastos;
+    if (acum < 0 && desde === null) desde = d.clave;
+    else if (acum >= 0) desde = null;
+  }
+  return desde;
+}
+
+// Aviso del período, arriba de todo: un mensaje concreto con datos (no un
+// consejo genérico) y un acceso directo a la categoría con más gasto.
+function seccionAviso(movimientos, totales, tipo, rango, modo, verCategoria) {
+  const { ingresos, gastos, balance } = totales;
+  if (!movimientos.length || (ingresos <= 0 && gastos <= 0)) return null;
+  const estimado = modo === "estimado";
+  const periodo = sufijoPeriodo(tipo); // "este mes"
+  const Periodo = `${periodo[0].toUpperCase()}${periodo.slice(1)}`;
+
+  let tono;
+  let titulo;
+  if (balance < 0) {
+    tono = "negativo";
+    titulo = estimado
+      ? `${Periodo} tienes estimado gastar ${valorOculto(-balance)} más de lo que ingresas`
+      : `${Periodo} gastaste ${valorOculto(-balance)} más de lo que ingresaste`;
+  } else if (balance > 0 && ingresos > 0) {
+    const pct = (balance / ingresos) * 100;
+    tono = pct >= 20 ? "positivo" : "neutro";
+    titulo =
+      pct >= 20
+        ? `Vas muy bien ${periodo}: estás reteniendo el ${formatoPct(pct)} de tus ingresos`
+        : `Tu balance ${periodo} es positivo, aunque el margen es ajustado (${formatoPct(pct)})`;
+  } else if (balance > 0) {
+    tono = "neutro";
+    titulo = `Tu balance ${periodo} es positivo, pero no hay ingresos registrados`;
+  } else {
+    tono = "neutro";
+    titulo = `Ingresos y gastos quedaron parejos ${periodo}`;
+  }
+
+  const detalles = [];
+  const mayor = agruparGastos(movimientos)[0] || null;
+  if (mayor && gastos > 0) {
+    detalles.push(
+      `Tu mayor gasto es ${mayor.nombre}: ${valorOculto(mayor.total)} (${pctCategoria(mayor.total, gastos)}) en ${textoCantidad(
+        mayor.cantidad
+      )}.`
+    );
+  }
+  if (balance < 0 && tipo !== "semana") {
+    const desde = diaDesdeNegativo(movimientos, rango);
+    if (desde && desde !== rango.desde) {
+      const d = new Date(`${desde}T12:00:00`);
+      detalles.push(`El balance está en negativo desde el ${d.getDate()} de ${MESES_LARGO[d.getMonth()]}.`);
+    }
+  }
+
+  const accion =
+    mayor && mayor.clave !== "sin" && typeof verCategoria === "function"
+      ? el("button", {
+          type: "button",
+          class: "enlace-ver resumen-aviso-accion",
+          text: `Ver ${mayor.nombre}`,
+          onClick: () => verCategoria(mayor.clave),
+        })
+      : null;
+
+  const icono = tono === "negativo" ? alertaIcono : tono === "positivo" ? check : bombillaIcono;
+  return el("section", { class: `resumen-aviso resumen-aviso--${tono}`, "aria-label": "Aviso del período" }, [
+    el("span", { class: "resumen-aviso-icono" }, [icono()]),
+    el("div", { class: "resumen-aviso-txt" }, [
+      el("span", { class: "resumen-aviso-titulo", text: titulo }),
+      detalles.length ? el("span", { class: "resumen-aviso-detalle", text: detalles.join(" ") }) : null,
     ]),
+    accion,
   ]);
 }
 
@@ -956,15 +871,14 @@ export async function montarResumen(contenedor, { rango, tipo, fechaRef, modo, i
   contenedor.append(raiz);
 
   let movimientos = [];
-  // Vista mensual: "Día" por defecto, para detectar en qué días concretos
-  // se gastó o ingresó más dentro del mes.
-  let granularidadVs = "dia";
+  // Mes/semana: "Día" por defecto, para ver en qué días se gastó más. Año:
+  // "Mes" (365 barras diarias no se leen).
+  let granularidadVs = tipo === "año" ? "mes" : "dia";
 
   await recargar();
 
   // El toggle de ocultar montos (shell.js) llama a esto en vez de volver a
-  // montar la vista entera: repinta con los datos ya cargados, sin pedirlos
-  // de nuevo a la red (evitaba un parpadeo de "pantalla se vacía y recarga").
+  // montar la vista entera: repinta con los datos ya cargados.
   const repintar = pintar;
 
   async function recargar() {
@@ -988,77 +902,38 @@ export async function montarResumen(contenedor, { rango, tipo, fechaRef, modo, i
       modo,
       incluirInactivos: prefs.get("incluirInactivos"),
     });
-    const { ingresos, gastos, balance } = calcularTotales(paraTotales);
+    const totales = calcularTotales(paraTotales);
     const enPeriodo = etiquetaPeriodo(fechaRef, tipo);
 
     raiz.append(bloqueEncabezado(tipo, null), aviso, error);
 
-    const descIngreso =
-      modo === "estimado"
-        ? `Ingresos estimados ${delPeriodo(tipo)}`
-        : `Total de ingresos ${delPeriodo(tipo)}`;
-    const descGasto =
-      modo === "estimado"
-        ? `Gastos estimados ${delPeriodo(tipo)}`
-        : `Total de gastos ${delPeriodo(tipo)}`;
+    const alerta = seccionAviso(paraTotales, totales, tipo, rango, modo, verCategoria);
+    if (alerta) raiz.append(alerta);
+
+    // Misma franja de KPIs que Movimientos (saldo, ingresos, gastos y
+    // pagos en Estimado / gasto diario promedio en Real).
+    const kpis = el("section", { class: "kpis", "aria-label": "Totales del período" });
+    montarKpis(kpis, paraTotales, { modo, rango });
+    raiz.append(kpis);
 
     raiz.append(
-      el("div", { class: "resumen-metricas" }, [
-        metricaTarjeta(flechaArribaCirculo, "ingreso", "Ingresos", ingresos, "valor-ingreso", descIngreso),
-        metricaTarjeta(flechaAbajoCirculo, "gasto", "Gastos", gastos, "valor-gasto", descGasto),
-        metricaTarjeta(
-          billeteraIcono,
-          "balance",
-          "Balance",
-          balance,
-          balance >= 0 ? "valor-balance" : "valor-gasto",
-          "Ingresos - Gastos"
-        ),
-      ])
-    );
-
-    // Modo estimado: se conserva el desglose pagado / pendiente.
-    if (modo === "estimado") {
-      const d = desglosarPorPago(paraTotales);
-      raiz.append(
-        el("div", { class: "resumen-desglose" }, [
-          desgloseItem("Pagado", d.pagado),
-          desgloseItem("Pendiente", d.pendiente),
-        ])
-      );
-    }
-
-    raiz.append(
-      seccionIngresoGasto(
+      seccionEvolucion(
         paraTotales,
         rango,
-        granularidadVs,
-        { ingresos, gastos, balance },
-        enPeriodo,
         tipo,
-        modo === "estimado" ? "Estimado: evolución financiera" : "Evolución financiera",
+        granularidadVs,
+        enPeriodo,
         (nueva) => {
           granularidadVs = nueva;
           pintar();
-        }
-      )
-    );
-
-    // La distribución semanal solo aplica al ver el mes completo — en las
-    // vistas por semana o por año no hay semanas de un mes que comparar.
-    if (tipo === "mes") {
-      raiz.append(seccionGastosSemana(paraTotales, rango, enPeriodo, irA));
-    }
-
-    raiz.append(
+        },
+        irA
+      ),
       el("div", { class: "resumen-inferior" }, [
-        seccionGastosCategoria(paraTotales, enPeriodo, verCategoria),
-        seccionActividad(movimientos, enPeriodo, irA),
+        seccionGastosCategoria(paraTotales, enPeriodo, verCategoria, irA),
+        seccionMayoresGastos(paraTotales, enPeriodo, irA),
       ])
     );
-
-    const consejo = seccionConsejo(ingresos, gastos, tipo, movimientos.length);
-    if (consejo) raiz.append(consejo);
   }
 
   return { repintar };
