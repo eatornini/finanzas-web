@@ -1,5 +1,5 @@
 import { el, elSvg, limpiar } from "./dom.js";
-import { listarMovimientos } from "../data/movimientos.js";
+import { listarMovimientos, listarUltimosAgregados } from "../data/movimientos.js";
 import { calcularTotales, filtrarParaCalculos } from "../logic/totales.js";
 import { formatoCLP, formatoCLPCompacto } from "../logic/dinero.js";
 import { ticksAgradables, indicesEtiquetas } from "../logic/escalas.js";
@@ -10,6 +10,7 @@ import {
   graficoIcono,
   graficoTortaIcono,
   reloj3Icono,
+  relojIcono,
   bombillaIcono,
   alertaIcono,
   check,
@@ -777,6 +778,51 @@ function seccionMayoresGastos(movimientos, enPeriodo, irA) {
   return card;
 }
 
+// Últimos movimientos agregados: ordenados por cuándo se registraron (no por
+// la fecha del movimiento) y sin acotar al período — sirve para confirmar qué
+// fue lo último que se cargó.
+function seccionUltimosAgregados(ultimos, irA) {
+  const card = el("section", { class: "panel-tarjeta resumen-ultimos" });
+  const verTodos =
+    typeof irA === "function"
+      ? el("button", { class: "enlace-ver", type: "button", text: "Ver todos", onClick: () => irA("movimientos") })
+      : null;
+  const cabecera = tarjetaHead(relojIcono, "Últimos movimientos agregados", "Lo más reciente que registraste.", verTodos);
+
+  if (!ultimos.length) {
+    card.append(cabecera, el("p", { class: "vacio", text: "Aún no has agregado movimientos." }));
+    return card;
+  }
+
+  const lista = el(
+    "ul",
+    { class: "resumen-act-lista resumen-mayores-lista" },
+    ultimos.map((m) => {
+      const color = colorMovimiento(m);
+      const esIngreso = m.tipo === "ingreso";
+      const icono = el("span", { class: "resumen-act-icono" }, [nodoIconoCategoria(m.categoria, m.nombre)]);
+      icono.style.background = `color-mix(in srgb, ${color} 16%, transparent)`;
+      icono.style.color = color;
+      return el("li", { class: "resumen-act-item" }, [
+        icono,
+        el("div", { class: "resumen-act-info" }, [
+          el("span", { class: "resumen-act-nombre", text: nombreVisible(m.nombre) }),
+          el("span", {
+            class: "resumen-act-cat",
+            text: `${m.categoria ? m.categoria.nombre : "Sin categoría"} · ${fechaCorta(m.fecha_local || m.fecha)}`,
+          }),
+        ]),
+        el("span", {
+          class: `resumen-act-monto resumen-mayores-monto${esIngreso ? " valor-ingreso" : ""}`,
+          text: `${esIngreso && !prefs.get("ocultarTotal") ? "+" : ""}${valorOculto(m.monto)}`,
+        }),
+      ]);
+    })
+  );
+  card.append(cabecera, lista);
+  return card;
+}
+
 // Primer día desde el que el balance acumulado quedó bajo cero (y no volvió
 // a subir). null si el período no termina en negativo.
 function diaDesdeNegativo(movimientos, rango) {
@@ -871,6 +917,7 @@ export async function montarResumen(contenedor, { rango, tipo, fechaRef, modo, i
   contenedor.append(raiz);
 
   let movimientos = [];
+  let ultimos = [];
   // Mes/semana: "Día" por defecto, para ver en qué días se gastó más. Año:
   // "Mes" (365 barras diarias no se leen).
   let granularidadVs = tipo === "año" ? "mes" : "dia";
@@ -885,7 +932,10 @@ export async function montarResumen(contenedor, { rango, tipo, fechaRef, modo, i
     error.textContent = "";
     aviso.textContent = "";
     try {
-      movimientos = await listarMovimientos({ ...rango, modo });
+      [movimientos, ultimos] = await Promise.all([
+        listarMovimientos({ ...rango, modo }),
+        listarUltimosAgregados({ modo }),
+      ]);
       pintar();
     } catch (e) {
       limpiar(raiz);
@@ -932,7 +982,8 @@ export async function montarResumen(contenedor, { rango, tipo, fechaRef, modo, i
       el("div", { class: "resumen-inferior" }, [
         seccionGastosCategoria(paraTotales, enPeriodo, verCategoria, irA),
         seccionMayoresGastos(paraTotales, enPeriodo, irA),
-      ])
+      ]),
+      seccionUltimosAgregados(ultimos, irA)
     );
   }
 

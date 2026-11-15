@@ -18,6 +18,19 @@ export async function listarMovimientos({ desde, hasta, modo }) {
   );
 }
 
+// Últimos movimientos agregados (por fecha de creación, no por la fecha del
+// movimiento), sin acotar a un período.
+export async function listarUltimosAgregados({ modo, limite = 5 }) {
+  return verificar(
+    await supabase
+      .from("movimientos")
+      .select(`${SELECT}, created_at`)
+      .eq("modo", modo)
+      .order("created_at", { ascending: false })
+      .limit(limite)
+  );
+}
+
 export async function crearMovimiento({
   nombre,
   monto,
