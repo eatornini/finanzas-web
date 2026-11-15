@@ -11,7 +11,7 @@ import {
   etiquetasIcono,
   lupaIcono,
   puntosIcono,
-  listaIcono,
+  mas,
 } from "./iconos.js";
 import { tituloVista } from "./tituloVista.js";
 
@@ -26,22 +26,30 @@ export function montarCategorias(contenedor) {
   let todas = [];
   const normalizados = new Set();
   let filtroTexto = "";
-  let filtroTipo = "todos"; // todos | gasto | ingreso
+  let filtroTipo = "gasto"; // gasto | ingreso (pestañas)
 
   const error = el("p", { class: "error", role: "alert" });
   const cuerpo = el("div", { class: "categorias-cuerpo" });
-  const resumen = el("div", { class: "categorias-resumen" });
+  const abrirNueva = () =>
+    abrirCategoriaForm({
+      modoInicial: modo,
+      tipoInicial: filtroTipo,
+      categoriasExistentes: todas,
+      onGuardado: recargar,
+    });
 
-  const btnNueva = el("button", {
-    class: "boton--primario",
-    text: "+ Categoría",
-    onClick: () =>
-      abrirCategoriaForm({ modoInicial: modo, tipoInicial: "gasto", onGuardado: recargar }),
-  });
+  const btnNueva = el("button", { class: "boton--primario categorias-btn-nueva", onClick: abrirNueva }, [
+    mas(),
+    el("span", { text: "Nueva categoría" }),
+  ]);
 
   const cabecera = el("div", { class: "categorias-cabecera" }, [
     el("div", { class: "categorias-cabecera-texto" }, [
-      tituloVista(etiquetasIcono, "Categorías", "Organiza tus movimientos según tus necesidades."),
+      tituloVista(
+        etiquetasIcono,
+        "Categorías",
+        `Organiza las categorías del modo ${modo === "estimado" ? "Estimado" : "Real"}.`
+      ),
     ]),
     btnNueva,
   ]);
@@ -55,28 +63,34 @@ export function montarCategorias(contenedor) {
       render();
     },
   });
-  const selectFiltro = el(
-    "select",
-    {
-      class: "categorias-filtro-select",
-      "aria-label": "Filtrar categorías por tipo",
-      onChange: (e) => {
-        filtroTipo = e.target.value;
-        render();
+  // Pestañas Gastos / Ingresos con su cantidad (reemplazan al desplegable
+  // "Todas" y a las tarjetas con los totales).
+  const conteoTab = { gasto: el("span", { class: "categorias-tab-conteo" }), ingreso: el("span", { class: "categorias-tab-conteo" }) };
+  const tabs = ["gasto", "ingreso"].map((t) =>
+    el(
+      "button",
+      {
+        type: "button",
+        "data-tipo": t,
+        onClick: () => {
+          filtroTipo = t;
+          render();
+        },
       },
-    },
-    [
-      el("option", { value: "todos", text: "Todas" }),
-      el("option", { value: "gasto", text: "Gastos" }),
-      el("option", { value: "ingreso", text: "Ingresos" }),
-    ]
+      [el("span", { text: t === "gasto" ? "Gastos" : "Ingresos" }), conteoTab[t]]
+    )
   );
-  const barraBuscar = el("div", { class: "categorias-barra-buscar" }, [
+  const selectorTabs = el(
+    "div",
+    { class: "selector-tipo categorias-tabs", role: "group", "aria-label": "Tipo de categoría" },
+    tabs
+  );
+  const barraBuscar = el("div", { class: "panel-tarjeta categorias-barra-buscar" }, [
+    selectorTabs,
     el("div", { class: "campo-busqueda" }, [lupaIcono(), inputBuscar]),
-    selectFiltro,
   ]);
 
-  contenedor.append(cabecera, error, resumen, barraBuscar, cuerpo);
+  contenedor.append(cabecera, error, barraBuscar, cuerpo);
 
   // Cerrar los menús "⋮" abiertos al hacer clic en cualquier otro lugar.
   if (removerCierreMenus) removerCierreMenus();
@@ -143,78 +157,63 @@ export function montarCategorias(contenedor) {
     for (const m of cuerpo.querySelectorAll(".categoria-menu:not([hidden])")) m.hidden = true;
   }
 
+  function coincide(c) {
+    return !filtroTexto || c.nombre.toLowerCase().includes(filtroTexto);
+  }
+
   function render() {
     cerrarMenus();
-    pintarResumen();
     limpiar(cuerpo);
 
-    const tipos = ["gasto", "ingreso"].filter(
-      (t) => filtroTipo === "todos" || filtroTipo === t
-    );
-    let huboResultados = false;
-
-    for (const tipo of tipos) {
-      const grupo = grupoOrdenado(tipo);
-      const visibles = filtroTexto
-        ? grupo.filter((c) => c.nombre.toLowerCase().includes(filtroTexto))
-        : grupo;
-      if (filtroTexto && visibles.length === 0) continue;
-      if (visibles.length) huboResultados = true;
-      cuerpo.append(seccionGrupo(tipo, grupo, visibles));
+    for (const b of tabs) {
+      const activo = b.dataset.tipo === filtroTipo;
+      b.classList.toggle("activo", activo);
+      b.setAttribute("aria-pressed", String(activo));
+      conteoTab[b.dataset.tipo].textContent = String(grupoOrdenado(b.dataset.tipo).filter(coincide).length);
     }
 
-    if (filtroTexto && !huboResultados) {
+    const grupo = grupoOrdenado(filtroTipo);
+    const visibles = grupo.filter(coincide);
+    const otroTipo = filtroTipo === "gasto" ? "ingreso" : "gasto";
+    const enOtro = filtroTexto ? grupoOrdenado(otroTipo).filter(coincide).length : 0;
+
+    if (filtroTexto && visibles.length === 0) {
       cuerpo.append(
-        el("p", {
-          class: "vacio",
-          text: `No se encontraron categorías para "${inputBuscar.value.trim()}".`,
-        })
+        el("div", { class: "categorias-vacio" }, [
+          el("p", { class: "vacio", text: `No hay categorías de ${filtroTipo === "gasto" ? "gasto" : "ingreso"} con "${inputBuscar.value.trim()}".` }),
+          enOtro
+            ? el("button", {
+                type: "button",
+                class: "enlace-ver",
+                text: `Ver ${enOtro} en ${otroTipo === "gasto" ? "Gastos" : "Ingresos"}`,
+                onClick: () => {
+                  filtroTipo = otroTipo;
+                  render();
+                },
+              })
+            : null,
+        ])
+      );
+      return;
+    }
+
+    const tiles = visibles.map((c) => tarjeta(c, grupo));
+    // Al final de la grilla, un acceso para crear otra del mismo tipo.
+    if (!filtroTexto) {
+      tiles.push(
+        el("button", { type: "button", class: "categoria-tarjeta categoria-tarjeta--nueva", onClick: abrirNueva }, [
+          el("span", { class: "categoria-tarjeta-icono" }, [mas()]),
+          el("span", { class: "categoria-tarjeta-nombre", text: "Nueva categoría" }),
+        ])
       );
     }
-  }
-
-  function pintarResumen() {
-    limpiar(resumen);
-    const nGastos = grupoOrdenado("gasto").length;
-    const nIngresos = grupoOrdenado("ingreso").length;
-    resumen.append(
-      tarjetaResumen(flechaAbajoCirculo, nGastos, "Categorías de gastos", "gasto"),
-      tarjetaResumen(flechaArribaCirculo, nIngresos, "Categorías de ingresos", "ingreso"),
-      tarjetaResumen(listaIcono, nGastos + nIngresos, "Categorías en total", "neutro")
+    cuerpo.append(el("div", { class: "categorias-grid" }, tiles));
+    cuerpo.append(
+      el("p", {
+        class: "categorias-ayuda",
+        text: "Toca una categoría para editarla. Con ⋮ puedes subirla o bajarla: ese orden es el que se usa al agregar un movimiento.",
+      })
     );
-  }
-
-  function tarjetaResumen(fabricaIcono, numero, etiqueta, variante) {
-    return el("div", { class: `categorias-resumen-tarjeta categorias-resumen-tarjeta--${variante}` }, [
-      el("span", { class: "categorias-resumen-icono" }, [fabricaIcono()]),
-      el("div", { class: "categorias-resumen-texto" }, [
-        el("span", { class: "categorias-resumen-numero", text: String(numero) }),
-        el("span", { class: "categorias-resumen-etiqueta", text: etiqueta }),
-      ]),
-    ]);
-  }
-
-  function seccionGrupo(tipo, grupo, visibles) {
-    const esGasto = tipo === "gasto";
-    const n = visibles.length;
-    const cabeceraGrupo = el("div", { class: "categorias-grupo-cabecera" }, [
-      el("h3", { class: "categorias-grupo-titulo" }, [
-        el("span", { class: `categorias-grupo-icono categorias-grupo-icono--${tipo}` }, [
-          (esGasto ? flechaAbajoCirculo : flechaArribaCirculo)(),
-        ]),
-        esGasto ? "Gastos" : "Ingresos",
-      ]),
-      el("span", {
-        class: "categorias-grupo-conteo",
-        text: `${n} categoría${n === 1 ? "" : "s"}`,
-      }),
-    ]);
-
-    const contenido = visibles.length
-      ? el("div", { class: "categorias-grid" }, visibles.map((c) => tarjeta(c, grupo)))
-      : el("p", { class: "vacio", text: "Sin categorías en este grupo." });
-
-    return el("section", { class: "categorias-grupo" }, [cabeceraGrupo, contenido]);
   }
 
   function tarjeta(c, grupo) {
@@ -229,7 +228,7 @@ export function montarCategorias(contenedor) {
     }
 
     const abrirEdicion = () =>
-      abrirCategoriaForm({ categoria: c, modoInicial: modo, onGuardado: recargar });
+      abrirCategoriaForm({ categoria: c, modoInicial: modo, categoriasExistentes: todas, onGuardado: recargar });
 
     return el(
       "div",
@@ -305,7 +304,7 @@ export function montarCategorias(contenedor) {
         intercambiarOrden(c, grupo[indice + 1])
       ),
       item("Editar", lapiz, false, () =>
-        abrirCategoriaForm({ categoria: c, modoInicial: modo, onGuardado: recargar })
+        abrirCategoriaForm({ categoria: c, modoInicial: modo, categoriasExistentes: todas, onGuardado: recargar })
       ),
       item(
         "Eliminar",

@@ -1,6 +1,7 @@
 import { el, limpiar } from "./dom.js";
 import { montarModal } from "./modal.js";
-import { crearCategoria, actualizarCategoria } from "../data/categorias.js";
+import { crearCategoria, actualizarCategoria, listarCategorias } from "../data/categorias.js";
+import { coloresSugeridos } from "../logic/coloresCategoria.js";
 import { spanIcono, cargarIconosCompletos } from "./iconoCategoria.js";
 import { buscarIconos } from "../logic/busquedaIconos.js";
 import {
@@ -61,9 +62,16 @@ export function abrirCategoriaForm({
   categoria = null,
   modoInicial = "real",
   tipoInicial = "gasto",
+  // Categorías existentes, para sugerir colores que todavía no se usan.
+  // Si no se pasan, se cargan aquí.
+  categoriasExistentes = null,
   onGuardado,
 }) {
   const edicion = Boolean(categoria);
+  let existentes = categoriasExistentes;
+  // En alta el color sugerido se aplica solo mientras la persona no elija
+  // otro a mano.
+  let colorElegidoAMano = edicion;
   const estado = {
     color: categoria?.color || PALETA[4],
     emoji: categoria?.emoji || "",
@@ -97,10 +105,53 @@ export function abrirCategoriaForm({
     b.dataset.color = c;
     b.addEventListener("click", () => {
       estado.color = c;
+      colorElegidoAMano = true;
       sincronizarColor();
     });
     return b;
   });
+
+  // --- Colores sugeridos: tonos que ninguna categoría del mismo modo y
+  // tipo usa todavía (ver logic/coloresCategoria.js). ---
+  const sugeridosFila = el("div", { class: "cat-swatches cat-swatches--sugeridos" });
+  const sugeridosWrap = el("div", { class: "cat-sugeridos", hidden: "true" }, [
+    el("p", { class: "cat-sugeridos-titulo", text: "Sugeridos · aún no los usas" }),
+    sugeridosFila,
+  ]);
+  let botonesSugeridos = [];
+  function pintarSugeridos() {
+    if (!existentes) return;
+    const usados = existentes
+      .filter((c) => c.modo === modo.value && c.tipo === tipo.value && (!categoria || c.id !== categoria.id))
+      .map((c) => c.color)
+      .filter(Boolean);
+    const sugerencias = coloresSugeridos(usados, 6);
+    limpiar(sugeridosFila);
+    botonesSugeridos = sugerencias.map((c) => {
+      const b = el("button", {
+        type: "button",
+        class: "cat-swatch",
+        "aria-label": `Color sugerido ${c}`,
+        title: "No lo usa ninguna otra categoría",
+      });
+      b.style.background = c;
+      b.style.setProperty("--swatch-color", c);
+      b.dataset.color = c;
+      b.addEventListener("click", () => {
+        estado.color = c;
+        colorElegidoAMano = true;
+        sincronizarColor();
+      });
+      sugeridosFila.append(b);
+      return b;
+    });
+    sugeridosWrap.hidden = sugerencias.length === 0;
+    if (!colorElegidoAMano && sugerencias[0]) {
+      estado.color = sugerencias[0];
+      inputColorCustom.value = estado.color;
+    }
+    sincronizarColor();
+  }
 
   // Último "círculo": abre el selector de color nativo. El <input type=color>
   // se superpone transparente para que el sistema ancle el picker aquí.
@@ -112,6 +163,7 @@ export function abrirCategoriaForm({
   });
   inputColorCustom.addEventListener("input", () => {
     estado.color = inputColorCustom.value;
+    colorElegidoAMano = true;
     sincronizarColor();
   });
   const swatchCustom = el(
@@ -136,20 +188,21 @@ export function abrirCategoriaForm({
     const normalizado = valor.startsWith("#") ? valor : `#${valor}`;
     if (/^#[0-9a-fA-F]{6}$/.test(normalizado)) {
       estado.color = normalizado.toLowerCase();
+      colorElegidoAMano = true;
       inputColorCustom.value = estado.color;
       sincronizarColor();
     }
   });
 
-  const swatches = el("div", { class: "cat-swatches" }, [
-    ...botonesPaleta,
-    swatchCustom,
-    inputHex,
+  const swatches = el("div", { class: "cat-colores" }, [
+    sugeridosWrap,
+    el("div", { class: "cat-swatches" }, [...botonesPaleta, swatchCustom, inputHex]),
   ]);
 
   function sincronizarColor() {
-    const esCustom = !PALETA.includes(estado.color);
-    for (const b of botonesPaleta) {
+    const enSugeridos = botonesSugeridos.some((b) => b.dataset.color === estado.color);
+    const esCustom = !PALETA.includes(estado.color) && !enSugeridos;
+    for (const b of [...botonesPaleta, ...botonesSugeridos]) {
       b.classList.toggle("activo", b.dataset.color === estado.color);
     }
     swatchCustom.classList.toggle("activo", esCustom);
@@ -334,8 +387,25 @@ export function abrirCategoriaForm({
     icono: etiquetaIcono,
     contenido: form,
     acciones: [btnCancelar, btnGuardar],
-    claseExtra: "modal-panel--ancho",
+    claseExtra: "modal-panel--ancho modal-panel--lateral",
+    claseOverlay: "modal-overlay--lateral",
   });
   sincronizarColor();
   sincronizarGrilla();
+
+  // Las sugerencias dependen del tipo y modo elegidos.
+  tipo.addEventListener("change", pintarSugeridos);
+  modo.addEventListener("change", pintarSugeridos);
+  if (existentes) {
+    pintarSugeridos();
+  } else {
+    listarCategorias()
+      .then((lista) => {
+        existentes = lista;
+        pintarSugeridos();
+      })
+      .catch(() => {
+        /* sin sugerencias: queda la paleta fija */
+      });
+  }
 }

@@ -205,15 +205,9 @@ export async function montarMovimientos(
       {
         type: "button",
         role: "menuitem",
-        onClick: async () => {
+        onClick: () => {
           cerrarMenuAgregar();
-          const cats = await asegurarCategorias();
-          importarListaMovimientos({
-            modo,
-            categorias: cats,
-            tipoInicial: vista === "ingreso" ? "ingreso" : "gasto",
-            onGuardado: alAgregarMovimiento,
-          });
+          abrirImportar();
         },
       },
       [listaIcono(), el("span", { text: "Importar movimientos" })]
@@ -424,6 +418,18 @@ export async function montarMovimientos(
     return recargar();
   }
 
+  // Alta masiva (OCR de capturas del listado del banco). Se llega desde la
+  // flecha junto a "Agregar" o desde "Importar varios" del formulario.
+  async function abrirImportar(tipoInicial = vista === "ingreso" ? "ingreso" : "gasto") {
+    const cats = await asegurarCategorias();
+    importarListaMovimientos({
+      modo,
+      categorias: cats,
+      tipoInicial,
+      onGuardado: alAgregarMovimiento,
+    });
+  }
+
   async function abrirModalNuevo() {
     const cats = await asegurarCategorias();
     // Abre en el tipo de la pestaña activa; desde "Todos" queda en gasto.
@@ -432,6 +438,7 @@ export async function montarMovimientos(
       categorias: cats,
       tipoInicial: vista === "ingreso" ? "ingreso" : "gasto",
       onGuardado: alAgregarMovimiento,
+      onImportar: (tipo) => abrirImportar(tipo),
     });
   }
 

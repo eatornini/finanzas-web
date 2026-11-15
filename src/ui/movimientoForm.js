@@ -21,6 +21,7 @@ import {
   dolarCirculoIcono,
   lupaIcono,
   check,
+  listaIcono,
 } from "./iconos.js";
 import { subirComprobante, urlComprobante, eliminarComprobante } from "../data/storage.js";
 import { reconocerImagen, reconocerImagenAlterno } from "../ocr/tesseractWorker.js";
@@ -140,6 +141,9 @@ export function abrirMovimientoForm({
   // Tipo con el que abre un alta (la pestaña activa de Movimientos).
   tipoInicial = "gasto",
   onGuardado,
+  // Alta masiva (capturas del banco): si se pasa, el alta muestra el acceso
+  // "Importar varios", que cierra este formulario y abre el importador.
+  onImportar = null,
 }) {
   const edicion = Boolean(movimiento);
   const esEstimado = modo === "estimado";
@@ -798,10 +802,11 @@ export function abrirMovimientoForm({
   // por el atributo form= — así el clic sigue disparando el mismo submit
   // de siempre aunque el botón ya no esté anidado adentro. Sin botón
   // Cancelar: la "X" de la cabecera ya cierra el modal.
+  const textoGuardar = el("span", { text: "Guardar" });
   const btnGuardar = el(
     "button",
-    { type: "submit", form: "form-movimiento", class: "boton--primario" },
-    [check(), el("span", { text: "Guardar" })]
+    { type: "submit", form: "form-movimiento", class: "boton--primario mov-guardar" },
+    [check(), textoGuardar]
   );
 
   function formValido() {
@@ -828,6 +833,11 @@ export function abrirMovimientoForm({
   }
   function actualizarBotones() {
     btnGuardar.disabled = !(formValido() && huboCambios());
+    // El botón dice qué se guarda y por cuánto: "Guardar gasto · $15.000".
+    const n = parseCLP(monto.value);
+    const base = edicion ? "Guardar cambios" : tipoActual === "ingreso" ? "Guardar ingreso" : "Guardar gasto";
+    textoGuardar.textContent = n > 0 ? `${base} · ${formatoCLP(n)}` : base;
+    if (typeof sincronizarFechaChips === "function") sincronizarFechaChips();
   }
 
   function campo(etiqueta, input) {
@@ -932,8 +942,109 @@ export function abrirMovimientoForm({
     !activo.checked || (esEstimado && (pagado.checked || recurrente.checked));
   setAvanzado(edicion && (Boolean(detalle.value.trim()) || opcionesFueraDeDefault));
 
+  // --- Accesos rápidos (solo en alta): escanear un comprobante (el mismo
+  // botón de cámara de Comercio) o importar varios desde capturas. ---
+  function accesoRapido(clase, fabricaIcono, titulo, sub, onClick) {
+    return el("button", { type: "button", class: `mov-acceso ${clase}`, onClick }, [
+      el("span", { class: "mov-acceso-icono" }, [fabricaIcono()]),
+      el("span", { class: "mov-acceso-texto" }, [
+        el("span", { class: "mov-acceso-titulo", text: titulo }),
+        el("span", { class: "mov-acceso-sub", text: sub }),
+      ]),
+    ]);
+  }
+  const accesos = edicion
+    ? null
+    : el("div", { class: "mov-accesos" }, [
+        el("div", { class: "mov-accesos-fila" }, [
+          accesoRapido("mov-acceso--escanear", camaraIcono, "Escanear comprobante", "Completa el formulario", () =>
+            btnCargarComprobante.click()
+          ),
+          typeof onImportar === "function"
+            ? accesoRapido("mov-acceso--importar", listaIcono, "Importar varios", "Capturas de tu banco", () => {
+                cerrar();
+                onImportar(tipoActual);
+              })
+            : null,
+        ]),
+        el("p", { class: "mov-accesos-separador" }, [el("span", { text: "o ingrésalo a mano" })]),
+      ]);
+
+  // --- Atajos de fecha (solo en alta): Hoy / Ayer / Otra fecha. Escriben
+  // en el mismo campo "Fecha y hora" de Más opciones. ---
+  function mismoDia(a, b) {
+    return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+  }
+  function fijarDia(desplazamiento) {
+    const actual = fecha.value ? new Date(fecha.value) : new Date();
+    const hoy = new Date();
+    const d = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() - desplazamiento);
+    d.setHours(actual.getHours(), actual.getMinutes());
+    fecha.value = isoAInputLocal(d.toISOString());
+    fechaTocada = true;
+    actualizarBotones();
+  }
+  const chipHoy = el("button", { type: "button", class: "mov-fecha-chip", text: "Hoy", onClick: () => fijarDia(0) });
+  const chipAyer = el("button", { type: "button", class: "mov-fecha-chip", text: "Ayer", onClick: () => fijarDia(1) });
+  const chipOtra = el("button", {
+    type: "button",
+    class: "mov-fecha-chip",
+    text: "Otra fecha",
+    onClick: () => {
+      setAvanzado(true);
+      setTimeout(() => {
+        fecha.focus();
+        try {
+          fecha.showPicker?.();
+        } catch {
+          /* algunos navegadores no permiten abrirlo sin gesto directo */
+        }
+      }, 300);
+    },
+  });
+  function sincronizarFechaChips() {
+    const v = fecha.value ? new Date(fecha.value) : null;
+    const hoy = new Date();
+    const ayer = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate() - 1);
+    const esHoy = Boolean(v) && mismoDia(v, hoy);
+    const esAyer = Boolean(v) && mismoDia(v, ayer);
+    chipHoy.classList.toggle("activo", esHoy);
+    chipAyer.classList.toggle("activo", esAyer);
+    chipOtra.classList.toggle("activo", Boolean(v) && !esHoy && !esAyer);
+    chipOtra.textContent =
+      v && !esHoy && !esAyer
+        ? v.toLocaleDateString("es-CL", { day: "numeric", month: "short", year: "numeric" })
+        : "Otra fecha";
+  }
+  fecha.addEventListener("input", sincronizarFechaChips);
+  const fechaRapida = edicion
+    ? null
+    : el("div", { class: "campo mov-fecha-rapida" }, [
+        seccionCab(calendarioIcono, esEstimado ? "Fecha de vencimiento" : "Fecha"),
+        el("div", { class: "mov-fecha-chips", role: "group", "aria-label": "Fecha" }, [chipHoy, chipAyer, chipOtra]),
+      ]);
+
+  // Orden pensado para registrar rápido: tipo → monto → comercio →
+  // categoría → fecha, y lo secundario en "Más opciones".
   const filas = [
+    accesos,
     selectorTipoMov,
+    el("div", { class: "campo campo-monto" }, [
+      seccionCab(dolarCirculoIcono, "Monto"),
+      el("div", { class: "input-monto input-monto--grande" }, [
+        el("span", { class: "input-monto-simbolo", text: "$" }),
+        monto,
+      ]),
+    ]),
+    el("div", { class: "campo" }, [
+      seccionCab(tiendaIcono, "Comercio"),
+      el("div", { class: "comercio-fila" }, [
+        el("div", { class: "comercio-input" }, [lupaIcono(), nombre]),
+        btnCargarComprobante,
+      ]),
+    ]),
+    sugerencias,
+    comprobante,
     catSelector,
     el("div", { class: "campo mov-rapido-campo" }, [
       seccionCab(
@@ -951,22 +1062,7 @@ export function abrirMovimientoForm({
       ),
       chips,
     ]),
-    el("div", { class: "campo" }, [
-      seccionCab(tiendaIcono, "Comercio"),
-      el("div", { class: "comercio-fila" }, [
-        el("div", { class: "comercio-input" }, [lupaIcono(), nombre]),
-        btnCargarComprobante,
-      ]),
-    ]),
-    sugerencias,
-    comprobante,
-    el("div", { class: "campo campo-monto" }, [
-      seccionCab(dolarCirculoIcono, "Monto"),
-      el("div", { class: "input-monto input-monto--grande" }, [
-        el("span", { class: "input-monto-simbolo", text: "$" }),
-        monto,
-      ]),
-    ]),
+    fechaRapida,
     avanzadoWrap,
   ];
 
@@ -1050,14 +1146,19 @@ export function abrirMovimientoForm({
     [el("div", { class: "form-mov-secciones" }, filas), error]
   );
 
+  const btnCancelarForm = el("button", { type: "button", class: "mov-cancelar", text: "Cancelar", onClick: () => cerrar() });
+  // Panel lateral en escritorio y pantalla completa en móvil (ver CSS
+  // .modal-panel--mov); Guardar queda fijo en el pie.
   const { cerrar } = montarModal({
-    titulo: edicion ? "Editar movimiento" : "Agregar movimiento",
-    subtitulo: edicion
-      ? "Modificá los datos de este movimiento."
-      : "Registra un nuevo ingreso o gasto en tu cuenta.",
+    titulo: edicion ? "Editar movimiento" : "Nuevo movimiento",
+    subtitulo: `${edicion ? "Modifica los datos de este movimiento" : "Se registra en"} ${
+      edicion ? "" : esEstimado ? "Estimado" : "Real"
+    }`.trim(),
     icono: edicion ? lapiz : mas,
     contenido: form,
-    accionesCabecera: [btnGuardar],
+    acciones: [btnCancelarForm, btnGuardar],
+    claseExtra: "modal-panel--lateral modal-panel--mov",
+    claseOverlay: "modal-overlay--lateral",
   });
 
   function cargarUso() {

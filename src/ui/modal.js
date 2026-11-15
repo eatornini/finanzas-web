@@ -17,6 +17,9 @@ export function montarModal({
   accionesCabecera = [],
   acciones = [],
   claseExtra,
+  // `claseOverlay` (opcional): clase extra para el fondo (p. ej. panel
+  // lateral en escritorio en vez de ventana centrada).
+  claseOverlay,
 }) {
   const btnCerrar = el(
     "button",
@@ -56,7 +59,7 @@ export function montarModal({
   const overlay = el(
     "div",
     {
-      class: "modal-overlay",
+      class: claseOverlay ? `modal-overlay ${claseOverlay}` : "modal-overlay",
       onClick: (ev) => {
         if (ev.target === overlay) cerrar();
       },
