@@ -297,6 +297,20 @@ export async function montarMovimientos(
     ])
   );
 
+  // En escritorio "Agregar" vive en el encabezado; cuando el encabezado sale
+  // de pantalla al hacer scroll, el split pasa a flotar abajo a la derecha
+  // para seguir siempre visible (en móvil ya flota siempre, ver CSS).
+  if ("IntersectionObserver" in window) {
+    const observador = new IntersectionObserver(([entrada]) => {
+      if (!encabezado.isConnected) {
+        observador.disconnect();
+        return;
+      }
+      agregarSplit.classList.toggle("agregar-split--flotante", !entrada.isIntersecting);
+    });
+    observador.observe(encabezado);
+  }
+
   // La clase marca cuál svg del encabezado rota al colapsar (el icono del
   // grupo, si hay, no debe rotar).
   function chevronConClase() {

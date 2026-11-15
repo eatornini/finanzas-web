@@ -2030,6 +2030,26 @@
     color: var(--acento);
   }
 
+  /* Escritorio: al salir el encabezado de pantalla (ver movimientosView.js)
+     el split flota abajo a la derecha para seguir visible. */
+  @media (min-width: 721px) {
+    .agregar-split--flotante {
+      position: fixed;
+      right: 24px;
+      bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+      z-index: 30;
+    }
+
+    .agregar-split--flotante > button {
+      box-shadow: 0 8px 24px color-mix(in srgb, black 22%, transparent);
+    }
+
+    .agregar-split--flotante .agregar-menu {
+      top: auto;
+      bottom: calc(100% + 8px);
+    }
+  }
+
   @media (max-width: 720px) {
     /* En móvil el grupo entero flota abajo a la derecha. */
     .agregar-split {
