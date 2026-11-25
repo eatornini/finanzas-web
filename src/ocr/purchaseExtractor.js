@@ -41,6 +41,12 @@ const LABEL_MONTO_REGEX = new RegExp(`(?:Total|Monto|Importe|Valor|Pago)\\s*:?\\
 // El día admite letras que Tesseract confunde con dígitos (visto: "6" leído
 // como "ó" en "martes, ó de oct alas 08:02"); se normalizan con DIGITOS_OCR.
 const FECHA_TEXTO_REGEX = /(?<![\p{L}\d])([\dóòÓÒoOlI|SB]{1,2})\s+de\s+([a-zA-Záéíóúñ]+)\s+a\s*las\s+(\d{1,2}):(\d{2})/iu;
+// Google Pay / Wallet (formato nuevo): "22 nov 2026 (9:38 p.m.)" — día, mes,
+// año opcional y hora en 12 h entre paréntesis. Acepta "de" opcional entre
+// partes, el "." de la abreviatura del mes y las variantes de OCR del sufijo
+// ("p.m.", "p. m.", "pm"). Sin año se asume el actual.
+const FECHA_AMPM_REGEX =
+  /(?<![\p{L}\d])([\dóòÓÒoOlI|SB]{1,2})\s+(?:de\s+)?([a-zA-Záéíóúñ]+)\.?\s+(?:(?:de\s+)?(\d{4})\s*)?[(,]?\s*(?:a\s*las\s+)?(\d{1,2}):(\d{2})\s*([ap])\.?\s*m\b\.?/iu;
 const DIGITOS_OCR = { "ó": "6", "ò": "6", "Ó": "6", "Ò": "6", o: "0", O: "0", l: "1", I: "1", "|": "1", S: "5", B: "8" };
 
 function normalizarDigitosOcr(s) {
@@ -160,6 +166,25 @@ function extractFechaHora(lines) {
   }
 
   for (const line of lines) {
+    const match = FECHA_AMPM_REGEX.exec(line.text.trim());
+    if (!match) continue;
+    const day = aEnteroONull(normalizarDigitosOcr(match[1]));
+    const mesTexto = match[2].toLowerCase();
+    const month = MESES_ES[mesTexto] ?? MESES_ES[mesTexto.slice(0, 3)];
+    const year = match[3] ? aEnteroONull(match[3]) : new Date().getFullYear();
+    let hour = aEnteroONull(match[4]);
+    const minute = aEnteroONull(match[5]);
+    if (day === null || month === undefined || year === null || hour === null || minute === null) continue;
+    if (day < 1 || day > 31 || hour < 1 || hour > 12 || minute > 59) continue;
+    // 12 h -> 24 h: "12 a.m." es medianoche, "12 p.m." es mediodía.
+    const pm = match[6].toLowerCase() === "p";
+    if (hour === 12) hour = pm ? 12 : 0;
+    else if (pm) hour += 12;
+    const horaStr = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+    return [new Date(year, month, day, hour, minute, 0, 0), horaStr];
+  }
+
+  for (const line of lines) {
     const text = line.text.trim();
     if (!text.includes("/")) continue;
     const parts = text.split("/");
@@ -214,8 +239,9 @@ function esBloqueSecundario(block) {
 // Google Wallet incluye al pie el campo "Nombre del estado de cuenta" con el
 // identificador completo del comercio en UNA sola línea (ej.
 // "MERCADOPAGO*ZORROCHISMITO"), sin el corte de línea que sí tiene el título
-// de arriba. Es la fuente más confiable cuando está presente.
-const ESTADO_CUENTA_REGEX = /nombre del estado de cuenta/i;
+// de arriba. Es la fuente más confiable cuando está presente. Google Pay (formato
+// nuevo) la llama "Nombre del resumen".
+const ESTADO_CUENTA_REGEX = /nombre del (?:estado de cuenta|resumen)/i;
 
 function lineaEsRuido(texto) {
   const lower = texto.toLowerCase();

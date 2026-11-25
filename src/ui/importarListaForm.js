@@ -8,8 +8,8 @@ import { mostrarOverlayCarga } from "./overlayCarga.js";
 import { crearMovimiento, buscarMovimientoDuplicado } from "../data/movimientos.js";
 import { categoriaPorComercio } from "../data/rpc.js";
 import { formatoCLP, parseCLP } from "../logic/dinero.js";
-import { reconocerImagen, reconocerImagenAlterno } from "../ocr/tesseractWorker.js";
-import { invertirImagen } from "../ocr/invertirImagen.js";
+import { reconocerImagen, reconocerImagenAlterno, precalentarOcr } from "../ocr/tesseractWorker.js";
+import { invertirImagen, esImagenOscura } from "../ocr/invertirImagen.js";
 import { construirBloques } from "../ocr/construirBloques.js";
 import { analizarLista } from "../ocr/ocrManager.js";
 import { leerImagenPortapapeles } from "./movimientoForm.js";
@@ -23,12 +23,14 @@ const inputAFechaIso = (v) => new Date(`${v}T12:00`).toISOString();
 
 // Mismos reintentos que un comprobante suelto (PSM 11 -> PSM 3 -> imagen
 // invertida), pero acá el criterio de éxito es encontrar al menos una fila.
+// Captura oscura: la invertida va primero (ver movimientoForm.js).
 async function leerCaptura(file) {
   const intentos = [
     () => reconocerImagen(file),
     () => reconocerImagenAlterno(file),
     async () => reconocerImagen(await invertirImagen(file)),
   ];
+  if (await esImagenOscura(file).catch(() => false)) intentos.unshift(intentos.pop());
   for (const intento of intentos) {
     try {
       const { lineas } = construirBloques(await intento());
@@ -58,6 +60,7 @@ function elegirArchivos() {
 // Punto de entrada: pide las capturas (portapapeles o archivos), corre el
 // OCR y abre la revisión. `onGuardado` se llama si se agregó algo.
 export async function importarListaMovimientos({ modo, categorias, tipoInicial = "gasto", onGuardado }) {
+  precalentarOcr();
   let archivos = [];
   const portapapeles = await leerImagenPortapapeles();
   if (portapapeles && confirm("Detectamos una imagen copiada. ¿Usarla para importar movimientos?")) {

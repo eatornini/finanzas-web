@@ -92,6 +92,49 @@ describe("analizarComprobante", () => {
     expect(r.monto).toBe(3750);
   });
 
+  it("recibo Google Pay (formato nuevo): '$1,800', fecha '22 nov 2026 (9:38 p.m.)' y 'Nombre del resumen'", () => {
+    const bloques = [
+      bloque("EL ZORRO", 80, 125, 45),
+      bloque("$1,800", 180, 280, 100),
+      bloque("22 nov 2026 (9:38 p.m.)", 335, 370, 30),
+      bloque("Bci Visa Debito Premier ••5925", 425, 460, 28),
+      bloque("Nombre del resumen", 550, 580, 28),
+      bloque("EL ZORRO", 595, 625, 24),
+      bloque("ID de transacción", 700, 735, 28),
+      bloque("142234093570:VIS.306327022801063.3910333469118399291", 745, 775, 24),
+      bloque("Más información", 850, 885, 28),
+      bloque("Puedes ver esta transacción porque usaste el teléfono para realizar una compra con Google Pay.", 895, 930, 24),
+    ];
+    const lineas = bloques.flatMap((b) => b.lines).sort((a, b) => a.top - b.top);
+
+    const r = analizarComprobante({ lineas, bloques });
+
+    expect(r.tipo).toBe("compra");
+    expect(r.comercio).toBe("EL ZORRO");
+    expect(r.monto).toBe(1800);
+    expect(r.fecha.getFullYear()).toBe(2026);
+    expect(r.fecha.getMonth()).toBe(10);
+    expect(r.fecha.getDate()).toBe(22);
+    expect(r.fecha.getHours()).toBe(21);
+    expect(r.fecha.getMinutes()).toBe(38);
+  });
+
+  it.each([
+    ["22 nov 2026 (12:05 a.m.)", 0, 5],
+    ["22 nov 2026 (12:05 p. m.)", 12, 5],
+    ["22 de nov. de 2026, 9:38 am", 9, 38],
+  ])("fecha en 12 h: %s", (texto, hora, minuto) => {
+    const bloques = [bloque("EL ZORRO", 80, 125, 45), bloque("$1,800", 180, 280, 100), bloque(texto, 335, 370)];
+    const lineas = bloques.flatMap((b) => b.lines);
+
+    const r = analizarComprobante({ lineas, bloques });
+
+    expect(r.fecha.getDate()).toBe(22);
+    expect(r.fecha.getMonth()).toBe(10);
+    expect(r.fecha.getHours()).toBe(hora);
+    expect(r.fecha.getMinutes()).toBe(minuto);
+  });
+
   it("degrada a compra si el clasificador dice transferencia pero el parser específico no encuentra suficientes keywords", () => {
     // Menos de 2 keywords del set (más chico) de transferenciaParser, pero
     // >= 2 del set (más amplio) de documentTypeDetector.

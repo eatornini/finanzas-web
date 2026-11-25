@@ -3,7 +3,13 @@
 // a medida que se piden (cache-first, con red de respaldo).
 // Atado a la versión mostrada en el pie de página (src/ui/shell.js) — bumpear
 // juntos en cada cambio para forzar refresco de caché sin limpiar a mano.
-const CACHE_NAME = "finanzas-v3.69";
+const CACHE_NAME = "finanzas-v3.70";
+// Motor OCR (assets/ocr/, ~9 MB): cache aparte con nombre fijo para que un
+// bump de versión no lo borre y obligue a re-descargarlo. Esos archivos están
+// fijados a versiones exactas de Tesseract.js (ver assets/ocr/README.md); si
+// se reemplazan, cambiar este nombre.
+const CACHE_OCR = "finanzas-ocr-v1";
+const esAssetOcr = (url) => new URL(url).pathname.includes("/assets/ocr/");
 const PRECACHE = [
   "./",
   "index.html",
@@ -22,7 +28,11 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches
       .keys()
-      .then((nombres) => Promise.all(nombres.filter((n) => n !== CACHE_NAME).map((n) => caches.delete(n))))
+      .then((nombres) =>
+        Promise.all(
+          nombres.filter((n) => n !== CACHE_NAME && n !== CACHE_OCR).map((n) => caches.delete(n))
+        )
+      )
   );
   self.clients.claim();
 });
@@ -48,7 +58,10 @@ self.addEventListener("fetch", (event) => {
       (cached) =>
         cached ||
         fetch(request).then((res) => {
-          if (res.ok) caches.open(CACHE_NAME).then((cache) => cache.put(request, res.clone()));
+          if (res.ok) {
+            const destino = esAssetOcr(request.url) ? CACHE_OCR : CACHE_NAME;
+            caches.open(destino).then((cache) => cache.put(request, res.clone()));
+          }
           return res;
         })
     )

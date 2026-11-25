@@ -24,8 +24,8 @@ import {
   listaIcono,
 } from "./iconos.js";
 import { subirComprobante, urlComprobante, eliminarComprobante } from "../data/storage.js";
-import { reconocerImagen, reconocerImagenAlterno } from "../ocr/tesseractWorker.js";
-import { invertirImagen } from "../ocr/invertirImagen.js";
+import { reconocerImagen, reconocerImagenAlterno, precalentarOcr } from "../ocr/tesseractWorker.js";
+import { invertirImagen, esImagenOscura } from "../ocr/invertirImagen.js";
 import { construirBloques } from "../ocr/construirBloques.js";
 import { analizarComprobante } from "../ocr/ocrManager.js";
 import { mostrarOverlayCarga } from "./overlayCarga.js";
@@ -145,6 +145,9 @@ export function abrirMovimientoForm({
   // "Importar varios", que cierra este formulario y abre el importador.
   onImportar = null,
 }) {
+  // El motor OCR se inicializa en segundo plano mientras el usuario completa
+  // el formulario o busca la imagen, no recién al cargar el comprobante.
+  precalentarOcr();
   const edicion = Boolean(movimiento);
   const esEstimado = modo === "estimado";
   // valoresIniciales (de un OCR previo) solo prellena en alta, nunca pisa una edición.
@@ -420,15 +423,6 @@ export function abrirMovimientoForm({
     // intento en vez de solo "no funcionó".
     const debugSecciones = [];
     try {
-      const bloquesTesseract = await reconocerImagen(file);
-      let { lineas, bloques } = construirBloques(bloquesTesseract);
-      let resultado = analizarComprobante({ lineas, bloques });
-      debugSecciones.push(
-        `— Intento 1 (PSM 11) — monto:${resultado.monto ?? "?"} fecha:${
-          resultado.fecha ? resultado.fecha.toISOString() : "?"
-        } —\n${lineas.map((l) => l.text).join("\n")}`
-      );
-
       // Un monto "dudoso" (el parser no lo encontró junto a una etiqueta
       // de monto ni con "$", solo tomó el primer número suelto) cuenta como
       // faltante para los reintentos, y un monto confiable de un reintento
@@ -439,67 +433,59 @@ export function abrirMovimientoForm({
       const mejorMonto = (actual, otro) =>
         otro.monto && (!actual.monto || (actual.montoDudoso && !otro.montoDudoso));
 
-      // PSM 11 a veces igual descarta el bloque del monto (bloque grande y
-      // aislado, ver tesseractWorker.js). Se reintenta con PSM 3 SOLO en ese
-      // caso — duplicaría el tiempo de espera en todas las cargas si se
-      // corriera siempre — y se completa lo que falte sin pisar lo que el
-      // primer intento ya encontró bien.
-      if (faltaMonto(resultado)) {
-        try {
-          const bloquesAlt = await reconocerImagenAlterno(file);
-          const alt = construirBloques(bloquesAlt);
-          const resultadoAlt = analizarComprobante({ lineas: alt.lineas, bloques: alt.bloques });
-          debugSecciones.push(
-            `— Intento 2 (PSM 3) — monto:${resultadoAlt.monto ?? "?"} fecha:${
-              resultadoAlt.fecha ? resultadoAlt.fecha.toISOString() : "?"
-            } —\n${alt.lineas.map((l) => l.text).join("\n")}`
-          );
-          if (mejorMonto(resultado, resultadoAlt)) {
-            resultado = {
-              ...resultado,
-              monto: resultadoAlt.monto,
-              montoDudoso: resultadoAlt.montoDudoso,
-              montoAusente: false,
-              comercio: resultado.comercio ?? resultadoAlt.comercio,
-              fecha: resultado.fecha ?? resultadoAlt.fecha,
-            };
-            lineas = alt.lineas;
-          }
-        } catch (e) {
-          debugSecciones.push(`— Intento 2 (PSM 3) — falló: ${e?.message || e} —`);
-        }
-      }
+      // Intentos en orden; cada uno corre SOLO si los anteriores no dieron un
+      // monto confiable (correrlos siempre multiplicaría la espera), y
+      // completa lo que falte sin pisar lo que un intento previo ya encontró.
+      // - PSM 11: modo principal (ver tesseractWorker.js).
+      // - PSM 3: PSM 11 a veces igual descarta el bloque del monto (grande y
+      //   aislado).
+      // - Invertido: capturas con tema oscuro (texto claro sobre fondo
+      //   oscuro) a veces pierden el monto en ambos PSM; la misma captura en
+      //   tema claro sí se lee. Se invierte (blanco<->negro) y se usa PSM 11.
+      //   Si la imagen ya se detecta oscura, este intento pasa a ser el
+      //   primero: ahorra dos pasadas que en ese caso suelen fallar.
+      const intentos = [
+        { etiqueta: "PSM 11", leer: () => reconocerImagen(file) },
+        { etiqueta: "PSM 3", leer: () => reconocerImagenAlterno(file) },
+        { etiqueta: "invertido", leer: async () => reconocerImagen(await invertirImagen(file)) },
+      ];
+      const oscura = await esImagenOscura(file).catch(() => false);
+      if (oscura) intentos.unshift(intentos.pop());
 
-      // Último recurso: capturas con tema oscuro (texto claro sobre fondo
-      // oscuro) a veces pierden justo el bloque grande del monto en ambos
-      // PSM — la misma captura en tema claro sí se lee. Se invierte la
-      // imagen (blanco<->negro) y se reintenta con PSM 11.
-      if (faltaMonto(resultado)) {
+      let resultado = null;
+      let lineas = [];
+      for (const [i, intento] of intentos.entries()) {
+        if (resultado && !faltaMonto(resultado)) break;
+        const titulo = `— Intento ${i + 1} (${intento.etiqueta})`;
+        let leido;
         try {
-          const invertida = await invertirImagen(file);
-          const bloquesInv = await reconocerImagen(invertida);
-          const inv = construirBloques(bloquesInv);
-          const resultadoInv = analizarComprobante({ lineas: inv.lineas, bloques: inv.bloques });
-          debugSecciones.push(
-            `— Intento 3 (invertido) — monto:${resultadoInv.monto ?? "?"} fecha:${
-              resultadoInv.fecha ? resultadoInv.fecha.toISOString() : "?"
-            } —\n${inv.lineas.map((l) => l.text).join("\n")}`
-          );
-          if (mejorMonto(resultado, resultadoInv)) {
-            resultado = {
-              ...resultado,
-              monto: resultadoInv.monto,
-              montoDudoso: resultadoInv.montoDudoso,
-              montoAusente: false,
-              comercio: resultado.comercio ?? resultadoInv.comercio,
-              fecha: resultado.fecha ?? resultadoInv.fecha,
-            };
-            lineas = inv.lineas;
-          }
+          leido = construirBloques(await intento.leer());
         } catch (e) {
-          debugSecciones.push(`— Intento 3 (invertido) — falló: ${e?.message || e} —`);
+          debugSecciones.push(`${titulo} — falló: ${e?.message || e} —`);
+          continue;
+        }
+        const r = analizarComprobante({ lineas: leido.lineas, bloques: leido.bloques });
+        debugSecciones.push(
+          `${titulo} — monto:${r.monto ?? "?"} fecha:${
+            r.fecha ? r.fecha.toISOString() : "?"
+          } —\n${leido.lineas.map((l) => l.text).join("\n")}`
+        );
+        if (!resultado) {
+          resultado = r;
+          lineas = leido.lineas;
+        } else if (mejorMonto(resultado, r)) {
+          resultado = {
+            ...resultado,
+            monto: r.monto,
+            montoDudoso: r.montoDudoso,
+            montoAusente: false,
+            comercio: resultado.comercio ?? r.comercio,
+            fecha: resultado.fecha ?? r.fecha,
+          };
+          lineas = leido.lineas;
         }
       }
+      if (!resultado) throw new Error(debugSecciones.join("\n"));
 
       // eslint-disable-next-line no-console
       console.log("[OCR debug] resultado:", resultado, "líneas:", lineas.map((l) => l.text));
@@ -1040,7 +1026,10 @@ export function abrirMovimientoForm({
       seccionCab(tiendaIcono, "Comercio"),
       el("div", { class: "comercio-fila" }, [
         el("div", { class: "comercio-input" }, [lupaIcono(), nombre]),
-        btnCargarComprobante,
+        // En alta ya está el acceso "Escanear comprobante" arriba (que dispara
+        // este mismo botón aunque no esté montado); en edición no hay accesos,
+        // así que el botón queda como única forma de reemplazar el comprobante.
+        edicion ? btnCargarComprobante : null,
       ]),
     ]),
     sugerencias,

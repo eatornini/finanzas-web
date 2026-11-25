@@ -28,6 +28,16 @@ function obtenerWorker() {
   return workerPromise;
 }
 
+// Arranca el worker (descarga + init de ~9 MB de WASM y modelo) antes de que
+// el usuario elija una imagen, para que el primer OCR no pague ese costo con
+// el overlay bloqueante encima. Idempotente: reutiliza la misma promesa. Si
+// falla (p. ej. sin red), se descarta para que el OCR real reintente.
+export function precalentarOcr() {
+  obtenerWorker().catch(() => {
+    workerPromise = null;
+  });
+}
+
 async function reconocerConPsm(file, psm) {
   const worker = await obtenerWorker();
   if (psm !== psmActual) {
